@@ -1,5 +1,5 @@
 // ============================================================
-// Pomocha v0.1.6 — 가챠 뽀모도로
+// Tomotto v0.1.6 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -27,12 +27,35 @@ const $timerStatus = document.getElementById('timerStatus');
 
 // localStorage 키
 const STORAGE = {
-  categories: 'pomocha_categories',
-  gachaCount: 'pomocha_gachaCount',
-  duration: 'pomocha_duration',
-  currentTask: 'pomocha_currentTask',
-  timerState: 'pomocha_timerState',
+  categories: 'tomotto_categories',
+  gachaCount: 'tomotto_gachaCount',
+  duration: 'tomotto_duration',
+  currentTask: 'tomotto_currentTask',
+  timerState: 'tomotto_timerState',
 };
+
+// ====== localStorage 마이그레이션 (pomocha_* → tomotto_*) ======
+// 2026-05-21 앱 이름 Pomocha → Tomotto 변경.
+// 옛 키에 저장된 데이터를 새 키로 한 번만 옮기고 옛 키는 정리.
+function migrateStorage() {
+  const renames = {
+    pomocha_categories: 'tomotto_categories',
+    pomocha_gachaCount: 'tomotto_gachaCount',
+    pomocha_duration: 'tomotto_duration',
+    pomocha_currentTask: 'tomotto_currentTask',
+    pomocha_timerState: 'tomotto_timerState',
+  };
+  try {
+    for (const [oldKey, newKey] of Object.entries(renames)) {
+      const oldVal = localStorage.getItem(oldKey);
+      if (oldVal === null) continue;
+      if (localStorage.getItem(newKey) === null) {
+        localStorage.setItem(newKey, oldVal);
+      }
+      localStorage.removeItem(oldKey);
+    }
+  } catch {}
+}
 
 // 상태
 let categories = [];
@@ -48,6 +71,9 @@ let timer = {
 
 // ====== 초기화 — 페이지 로드 ======
 window.addEventListener('load', () => {
+  // 옛 키(pomocha_*) 데이터를 새 키로 이전 — 첫 로드 때 한 번
+  migrateStorage();
+
   // 카테고리 복원
   try {
     categories = JSON.parse(localStorage.getItem(STORAGE.categories) || '[]');
@@ -519,7 +545,7 @@ function finishTimer() {
   // 브라우저 알림
   if ('Notification' in window && Notification.permission === 'granted') {
     try {
-      new Notification('Pomocha 타이머 완료!', {
+      new Notification('Tomotto 타이머 완료!', {
         body: `"${currentTask}" 작업 시간 끝!`,
       });
     } catch {}
