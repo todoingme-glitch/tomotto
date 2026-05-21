@@ -1,0 +1,25 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs / temp
+*.log
+*.tmp
+.cache/
+
+# Node (혹시 나중에 추가)
+node_modules/
+package-lock.json
+dist/
+.env
+.env.local
+
+# Vercel
+.vercel/

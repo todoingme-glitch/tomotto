@@ -1,0 +1,701 @@
+:root {
+  /* 배경 — 따뜻한 크림 */
+  --bg: #fdf8f5;
+  --bg-card: #ffffff;
+  --text: #3a2826;
+  --text-soft: #6f5e5c;
+  --text-muted: #ada098;
+  --border: #f0e4e0;
+  --border-soft: #faf3f0;
+
+  /* 메인 — 토마토 빨강 */
+  --accent: #d94e3a;
+  --accent-hover: #b83b2a;
+  --accent-soft: #fde4e0;
+  --accent-deep: #8b2a1f;
+  --tomato-gradient: linear-gradient(135deg, #ff7a5c 0%, #d94e3a 50%, #b83b2a 100%);
+
+  /* 포인트 — 바질 초록 */
+  --basil: #6ba368;
+  --basil-deep: #4f8a5d;
+  --basil-soft: #e0f0dc;
+
+  /* 타이머 — 토마토 빨강 (완료 시 바질로 전환) */
+  --timer: #d94e3a;
+  --timer-soft: #fde4e0;
+
+  --shadow: 0 1px 3px rgba(80, 40, 40, 0.06), 0 2px 8px rgba(80, 40, 40, 0.04);
+  --shadow-lg: 0 4px 16px rgba(217, 78, 58, 0.18);
+  --shadow-basil: 0 4px 16px rgba(107, 163, 104, 0.18);
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 40px 20px 60px;
+}
+
+/* Header */
+header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+header h1 {
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  background: var(--tomato-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 8px;
+}
+
+.version {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--accent);
+  background: var(--accent-soft);
+  -webkit-text-fill-color: var(--accent);
+  padding: 2px 8px;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+
+.tagline {
+  color: var(--text-soft);
+  font-size: 15px;
+}
+
+/* Card */
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.card h2 {
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Category section */
+.add-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+#categoryInput {
+  flex: 1;
+  font-family: inherit;
+  font-size: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+#categoryInput:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--bg-card);
+}
+
+.btn-add {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 12px 20px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.btn-add:hover {
+  background: var(--accent-hover);
+}
+
+.category-list {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.category-list li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--basil-soft);
+  color: var(--basil-deep);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.category-list li.highlight {
+  animation: pulse 0.6s ease-out;
+}
+
+.category-list .remove-btn {
+  background: none;
+  border: none;
+  color: var(--basil);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0;
+  line-height: 1;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+.category-list .remove-btn:hover {
+  opacity: 1;
+}
+
+.empty-hint {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-style: italic;
+  margin-top: 8px;
+}
+
+.empty-hint.hidden {
+  display: none;
+}
+
+/* Gacha section — 슬롯머신 스타일 */
+.gacha-result {
+  background: var(--bg);
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-sm);
+  padding: 28px 20px;
+  text-align: center;
+  margin-bottom: 16px;
+  min-height: 130px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s, border-color 0.3s;
+  overflow: hidden;
+  position: relative;
+}
+
+.gacha-result.spinning {
+  border-style: solid;
+  border-color: var(--accent);
+  background: var(--bg);
+  padding: 0;
+  min-height: 240px;
+  overflow: hidden;
+}
+
+/* 슬롯 윈도우 — 결과 박스 안에 꽉 차게 */
+.slot-window {
+  width: 100%;
+  height: 240px;
+  overflow: hidden;
+  position: relative;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, black 22%, black 78%, transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0%, black 22%, black 78%, transparent 100%);
+}
+
+/* 중앙 강조 띠 + 좌우 fade 마스킹 (한 ::before에 합침) */
+.slot-window::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    /* 좌우 fade — 양 끝 20% 영역까지 자연스럽게 사라짐 (장식용) */
+    linear-gradient(90deg, var(--bg) 0%, var(--bg) 5%, transparent 22%, transparent 78%, var(--bg) 95%, var(--bg) 100%),
+    /* 중앙 강조 띠 (살짝) */
+    linear-gradient(180deg,
+      transparent calc(50% - 40px),
+      rgba(217, 78, 58, 0.06) calc(50% - 40px),
+      rgba(217, 78, 58, 0.06) calc(50% + 40px),
+      transparent calc(50% + 40px));
+}
+
+/* reel 컨테이너 — JS에서 transform 제어 */
+.slot-reel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  will-change: transform;
+}
+
+.slot-item {
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-soft);
+  flex-shrink: 0;
+  padding: 0 28px;
+  text-align: center;
+
+  /* 슬롯 굴러갈 때는 한 줄 + 말줄임 — 너무 길거나 공백 없어도 칸 안에 맞춤 */
+  width: 100%;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+
+  transition: color 0.2s;
+}
+
+.slot-item.is-center {
+  color: var(--accent);
+}
+
+/* 최종 정착 시 */
+.slot-item.locked {
+  background: var(--tomato-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 800;
+  animation: lock-pop 0.45s ease-out;
+  position: relative;
+}
+
+@keyframes lock-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+.gacha-result.revealed {
+  background: linear-gradient(135deg, rgba(255, 122, 92, 0.08), rgba(217, 78, 58, 0.08));
+  border-style: solid;
+  border-color: var(--accent);
+}
+
+.gacha-placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 14px;
+}
+
+.gacha-label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-soft);
+  font-weight: 500;
+  margin-bottom: 8px;
+  letter-spacing: 0.05em;
+}
+
+/* 슬롯 스피너 (가챠 돌아가는 동안) */
+.gacha-spinner {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--accent);
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  font-variant-numeric: tabular-nums;
+}
+
+.gacha-spinner-text {
+  display: inline-block;
+  padding: 4px 0;
+  animation: slot-bounce 0.08s linear infinite;
+  background: var(--tomato-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gacha-spinner-text.slowing {
+  animation: slot-bounce 0.15s linear infinite;
+}
+
+.gacha-spinner-text.locking {
+  animation: slot-settle 0.3s ease-out forwards;
+}
+
+.gacha-winner {
+  font-size: 28px;
+  font-weight: 800;
+  background: var(--tomato-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: pop 0.5s ease-out, winner-glow 1.2s ease-out;
+  position: relative;
+  z-index: 2;
+  display: block;
+
+  /* 긴 텍스트도 전문 표시 — 한국어 어절 단위 줄바꿈 + 공백 없는 긴 문자도 강제 줄바꿈 */
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  max-width: 100%;
+  padding: 8px 16px 0;
+  line-height: 1.3;
+  white-space: normal;
+}
+
+/* 결과 박스 안 inline 컨테이너 — inline-block 너비 제한 */
+.gacha-result-inner {
+  display: block;
+  max-width: 100%;
+  position: relative;
+}
+
+/* 폭죽 컨테이너 — 결과 박스 안 절대 위치 */
+.confetti-burst {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.confetti-piece {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  opacity: 0;
+  --x: 0px;
+  --y: 0px;
+  --rot: 0deg;
+  --color: var(--accent);
+  background: var(--color);
+  animation: confetti-fly 1s cubic-bezier(0.15, 0.6, 0.3, 1) forwards;
+  animation-delay: var(--delay, 0s);
+}
+
+.confetti-piece.circle {
+  border-radius: 50%;
+}
+
+.confetti-piece.star {
+  width: 0;
+  height: 0;
+  background: transparent;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 10px solid var(--color);
+}
+
+@keyframes confetti-fly {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg) scale(0.5);
+    opacity: 1;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) rotate(var(--rot)) scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes winner-glow {
+  0% {
+    filter: drop-shadow(0 0 0 rgba(217, 78, 58, 0));
+  }
+  30% {
+    filter: drop-shadow(0 0 12px rgba(217, 78, 58, 0.6));
+  }
+  100% {
+    filter: drop-shadow(0 0 0 rgba(217, 78, 58, 0));
+  }
+}
+
+.btn-gacha {
+  width: 100%;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 16px;
+  background: var(--tomato-gradient);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: transform 0.05s, box-shadow 0.15s, opacity 0.15s;
+  box-shadow: var(--shadow-lg);
+  letter-spacing: 0.02em;
+}
+
+.btn-gacha:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(217, 78, 58, 0.28);
+}
+
+.btn-gacha:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-gacha:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-gacha.rolling {
+  animation: shake 0.4s;
+}
+
+.gacha-counter {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.ad-hint {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+/* Timer section */
+.timer-display {
+  font-size: 64px;
+  font-weight: 800;
+  text-align: center;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  margin: 8px 0 20px;
+  font-feature-settings: "tnum";
+  transition: color 0.3s;
+}
+
+.timer-display.running {
+  color: var(--accent);
+  animation: tick 1s infinite;
+}
+
+.timer-display.finished {
+  color: var(--basil-deep);
+  animation: celebrate 0.8s ease-out;
+}
+
+.timer-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.btn-timer {
+  flex: 1;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-timer:not(:disabled):hover {
+  border-color: var(--basil);
+  background: var(--basil-soft);
+  color: var(--basil-deep);
+}
+
+.btn-timer.btn-start:not(:disabled) {
+  background: var(--basil);
+  color: white;
+  border-color: var(--basil);
+  box-shadow: var(--shadow-basil);
+}
+
+.btn-timer.btn-start:not(:disabled):hover {
+  background: var(--basil-deep);
+  color: white;
+}
+
+.btn-timer:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.timer-settings {
+  font-size: 13px;
+  color: var(--text-soft);
+}
+
+.timer-settings select {
+  font-family: inherit;
+  font-size: 13px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  margin-left: 8px;
+  cursor: pointer;
+}
+
+.timer-status {
+  margin-top: 12px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-soft);
+  min-height: 18px;
+}
+
+.timer-status.success {
+  color: var(--basil-deep);
+  font-weight: 600;
+}
+
+.timer-status.resumed {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+/* Footer */
+footer {
+  text-align: center;
+  margin-top: 24px;
+  padding: 16px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+/* Animations */
+@keyframes pop {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes tick {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+
+@keyframes celebrate {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.18); }
+  60% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+/* 슬롯 텍스트 위아래로 빠르게 흔들리는 효과 */
+@keyframes slot-bounce {
+  0% { transform: translateY(-3px); }
+  100% { transform: translateY(3px); }
+}
+
+@keyframes slot-settle {
+  0% { transform: translateY(0) scale(1); }
+  40% { transform: translateY(-2px) scale(1.05); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .container {
+    padding: 20px 14px 40px;
+  }
+
+  header h1 {
+    font-size: 28px;
+  }
+
+  .timer-display {
+    font-size: 48px;
+  }
+
+  .card {
+    padding: 20px;
+  }
+
+  .add-row {
+    flex-direction: column;
+  }
+
+  .btn-add {
+    width: 100%;
+  }
+
+  .gacha-winner,
+  .gacha-spinner {
+    font-size: 22px;
+  }
+}

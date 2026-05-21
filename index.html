@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pomocha — 가챠 뽀모도로</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Pomocha <span class="version">v0.1</span></h1>
+      <p class="tagline">뭐부터 할지 모르겠을 때, 가챠로 결정하자</p>
+    </header>
+
+    <!-- 1. 카테고리 설정 -->
+    <section class="card category-section">
+      <h2><span class="step">1</span> 오늘 할 일 카테고리</h2>
+      <div class="add-row">
+        <input type="text" id="categoryInput" placeholder="예: 보고서, 운동, 청소, 공부..." maxlength="30">
+        <button id="addBtn" class="btn-add">+ 추가</button>
+      </div>
+      <ul id="categoryList" class="category-list"></ul>
+      <p id="emptyHint" class="empty-hint">카테고리를 2개 이상 등록하면 가챠를 돌릴 수 있어요.</p>
+    </section>
+
+    <!-- 2. 가챠 -->
+    <section class="card gacha-section">
+      <h2><span class="step">2</span> 가챠 돌리기</h2>
+      <div class="gacha-result" id="gachaResult">
+        <p class="gacha-placeholder">아직 안 돌렸어요. 카테고리 등록 후 버튼을 눌러보세요.</p>
+      </div>
+      <button id="gachaBtn" class="btn-gacha" disabled>가챠 돌리기!</button>
+      <p class="gacha-counter">
+        <span id="gachaCount">0</span>회 돌렸어요
+        <span class="ad-hint" id="adHint" hidden>· 다음 가챠는 광고 시청 후 (시뮬레이션)</span>
+      </p>
+    </section>
+
+    <!-- 3. 타이머 -->
+    <section class="card timer-section">
+      <h2><span class="step">3</span> 뽀모도로 타이머</h2>
+      <div class="timer-display" id="timerDisplay">25:00</div>
+      <div class="timer-controls">
+        <button id="startBtn" class="btn-timer btn-start" disabled>시작</button>
+        <button id="pauseBtn" class="btn-timer btn-pause" disabled>일시정지</button>
+        <button id="resetBtn" class="btn-timer btn-reset" disabled>리셋</button>
+      </div>
+      <div class="timer-settings">
+        <label>
+          시간 설정:
+          <select id="durationSelect">
+            <option value="30">30초 (테스트)</option>
+            <option value="300">5분 (테스트)</option>
+            <option value="900">15분</option>
+            <option value="1500" selected>25분 (기본)</option>
+            <option value="2700">45분</option>
+            <option value="3600">60분</option>
+          </select>
+        </label>
+      </div>
+      <p id="timerStatus" class="timer-status"></p>
+    </section>
+
+    <footer>
+      <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1 - 개인 모드만. 친구 배틀은 W3-W4에 추가</span></small>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
