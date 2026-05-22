@@ -1,3 +1,9 @@
+/* v0.1.10 hotfix — HTML hidden 속성 강제 적용
+   display: flex/inline-flex 같은 명시적 display가 hidden 을 override 하는 문제 방지 */
+[hidden] {
+  display: none !important;
+}
+
 :root {
   /* 배경 — 따뜻한 크림 */
   --bg: #fdf8f5;
@@ -58,27 +64,92 @@ header {
   margin-bottom: 32px;
 }
 
-header h1 {
-  font-size: 36px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  background: var(--tomato-gradient);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+/* v0.1.11 — SVG 로고 + 하이파이브 애니메이션 */
+.logo-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.logo-svg {
+  width: 360px;
+  max-width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+
+@media (max-width: 480px) {
+  .logo-svg { width: 260px; }
+}
+
+/* 각 그룹 transform-origin 기준 (SVG box 내) */
+#hifive,
+#motto-arm,
+#tom-arm {
+  transform-box: fill-box;
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+
+#hifive { transform-origin: center; }
+#motto-arm { transform-origin: center bottom; }
+#tom-arm { transform-origin: center bottom; }
+
+/* 기본 상태 — 하이파이브 효과는 안 보임 */
+.logo-svg #hifive { opacity: 0; }
+
+/* 페이지 로드 시 자동 재생 + 클릭으로 재트리거 */
+.logo-svg.play #tom-arm {
+  animation: tom-swing 1.1s cubic-bezier(0.34, 1.2, 0.64, 1) both;
+}
+
+.logo-svg.play #motto-arm {
+  animation: motto-swing 1.1s cubic-bezier(0.34, 1.2, 0.64, 1) both;
+}
+
+/* hifive — swing 60% (=0.66s) 손 만남 직전 0.6s 시작, 0.5s 동안 펑 */
+.logo-svg.play #hifive {
+  animation: hifive-pop 0.55s 0.6s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
+/* 양 손이 가운데서 만나는 시점(60%)에 살짝 정지 효과 → 임팩트 강조 */
+@keyframes tom-swing {
+  0%   { transform: translate(-22px, 18px) rotate(-14deg); }
+  55%  { transform: translate(10px, -5px) rotate(9deg); }
+  68%  { transform: translate(6px, -3px) rotate(5deg); }   /* 만남 후 살짝 멈춤 */
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+@keyframes motto-swing {
+  0%   { transform: translate(22px, 18px) rotate(14deg); }
+  55%  { transform: translate(-10px, -5px) rotate(-9deg); }
+  68%  { transform: translate(-6px, -3px) rotate(-5deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+/* hifive — 더 크고 임팩트 있게. 빠르게 펑 → 살짝 줄어들었다 정착 */
+@keyframes hifive-pop {
+  0%   { opacity: 0; transform: scale(0.2) rotate(-8deg); }
+  30%  { opacity: 1; transform: scale(1.7) rotate(4deg); }   /* 가장 크게 */
+  55%  { opacity: 1; transform: scale(0.85) rotate(-2deg); } /* 살짝 줄어듦 */
+  80%  { opacity: 1; transform: scale(1.05) rotate(1deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
 }
 
 .version {
   display: inline-block;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--accent);
   background: var(--accent-soft);
-  -webkit-text-fill-color: var(--accent);
   padding: 2px 8px;
   border-radius: 999px;
   vertical-align: middle;
+  flex-shrink: 0;
 }
 
 .tagline {
@@ -831,6 +902,15 @@ dialog.modal {
   max-width: 380px;
   color: var(--text);
   font-family: inherit;
+
+  /* 강제 화면 중앙 정렬 (브라우저별 dialog 기본 위치 차이 보정) */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
 }
 
 dialog.modal::backdrop {
@@ -924,6 +1004,46 @@ dialog.modal input[type="text"]:focus {
   background: var(--accent-soft);
   color: var(--accent);
   border-color: var(--accent);
+}
+
+/* v0.1.10 — 인앱 카메라 모달 */
+.modal-camera {
+  max-width: 460px;
+}
+
+.camera-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #181210;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin: 14px 0 12px;
+}
+
+.camera-stage video,
+.camera-stage img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.camera-stage video {
+  /* 후면 카메라는 거울 효과 X (전면일 때만 거울 자연스러움) */
+}
+
+.camera-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  margin-bottom: 12px;
+  min-height: 18px;
+}
+
+.camera-hint.error {
+  color: var(--accent);
 }
 
 /* Mobile */

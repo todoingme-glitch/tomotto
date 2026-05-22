@@ -44,6 +44,41 @@ const $catEditSave = document.getElementById('categoryEditSave');
 const $catEditCancel = document.getElementById('categoryEditCancel');
 const $catEditDelete = document.getElementById('categoryEditDelete');
 
+// v0.1.11 — SVG 로고 + 하이파이브 애니메이션
+const $logoSvg = document.getElementById('tomottoLogo');
+const $logoWrap = document.getElementById('logoWrap');
+
+function playHifive() {
+  if (!$logoSvg) return;
+  // 클래스 토글로 애니메이션 재트리거
+  $logoSvg.classList.remove('play');
+  // reflow 강제 → 클래스 다시 추가하면 애니메이션 처음부터
+  void $logoSvg.offsetWidth;
+  $logoSvg.classList.add('play');
+}
+
+// 페이지 로드 시 한 번 자동 재생 + 클릭 시 다시 재생
+window.addEventListener('load', () => {
+  setTimeout(playHifive, 400);  // 페이지 그리기 끝나고 살짝 후
+});
+if ($logoWrap) {
+  $logoWrap.addEventListener('click', playHifive);
+}
+
+// v0.1.10 — 인앱 카메라 모달
+const $cameraModal = document.getElementById('cameraModal');
+const $cameraVideo = document.getElementById('cameraVideo');
+const $cameraPreview = document.getElementById('cameraPreview');
+const $cameraCanvas = document.getElementById('cameraCanvas');
+const $cameraHint = document.getElementById('cameraHint');
+const $cameraShootBtn = document.getElementById('cameraShootBtn');
+const $cameraRetryBtn = document.getElementById('cameraRetryBtn');
+const $cameraSaveBtn = document.getElementById('cameraSaveBtn');
+const $cameraCancelBtn = document.getElementById('cameraCancelBtn');
+const $cameraGalleryBtn = document.getElementById('cameraGalleryBtn');
+let cameraStream = null;
+let lastCapturedDataUrl = null;
+
 // localStorage 키
 const STORAGE = {
   categories: 'tomotto_categories',
@@ -126,11 +161,13 @@ window.addEventListener('load', () => {
     $durationSelect.value = savedDuration;
     const parsed = parseInt(savedDuration, 10);
     timer.duration = Number.isFinite(parsed) && parsed > 0 ? parsed : 1500;
+    $customDurationWrap.hidden = true;  // 명시 hide (v0.1.10 hotfix)
   } else {
     // 디폴트 25분 (1500초) — select.value도 명시
     $durationSelect.value = '1500';
     timer.duration = 1500;
     if (savedDuration) localStorage.setItem(STORAGE.duration, '1500');
+    $customDurationWrap.hidden = true;  // 명시 hide
   }
   timer.remaining = timer.duration;
 
@@ -808,35 +845,169 @@ function updateCompletedDisplay() {
 }
 
 // ====== v0.1.8 — 인증샷 ======
+// v0.1.10: 인증샷 첨부 → 인앱 카메라 모달 우선. 모달 안에 갤러리 옵션도 있음.
 $captureBtn.addEventListener('click', () => {
+  openCameraModal();
+});
+
+// ====== v0.1.10 — 인앱 카메라 (셔터 소리 X, getUserMedia 기반) ======
+async function openCameraModal() {
+  lastCapturedDataUrl = null;
+  // 초기 UI 상태 (촬영 모드)
+  $cameraVideo.hidden = false;
+  $cameraPreview.hidden = true;
+  $cameraShootBtn.hidden = false;
+  $cameraRetryBtn.hidden = true;
+  $cameraSaveBtn.hidden = true;
+  $cameraHint.textContent = '카메라 준비 중...';
+  $cameraHint.classList.remove('error');
+
+  if (typeof $cameraModal.showModal === 'function') {
+    $cameraModal.showModal();
+  } else {
+    $cameraModal.setAttribute('open', '');
+  }
+
+  // 카메라 stream 시작
+  await startCameraStream();
+}
+
+async function startCameraStream() {
+  // getUserMedia 지원 확인
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    $cameraHint.textContent = '이 브라우저는 인앱 카메라를 지원하지 않아요. 갤러리에서 선택해주세요.';
+    $cameraHint.classList.add('error');
+    $cameraShootBtn.hidden = true;
+    return;
+  }
+  try {
+    stopCameraStream();
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' } },  // 후면 우선
+      audio: false,  // 오디오 0 → 셔터 소리 원천 X
+    });
+    $cameraVideo.srcObject = cameraStream;
+    // video 메타데이터 로드 후 hint
+    await $cameraVideo.play().catch(() => {});
+    $cameraHint.textContent = '준비 완료. 촬영 버튼을 눌러주세요.';
+    $cameraHint.classList.remove('error');
+  } catch (err) {
+    let msg = '카메라를 열 수 없어요.';
+    if (err && err.name === 'NotAllowedError') {
+      msg = '카메라 권한이 거부됐어요. 브라우저 설정에서 허용 후 다시 시도하거나 갤러리를 사용해주세요.';
+    } else if (err && err.name === 'NotFoundError') {
+      msg = '카메라를 찾지 못했어요. 갤러리에서 사진을 선택해주세요.';
+    } else if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+      msg = '카메라는 HTTPS에서만 동작해요. 갤러리 옵션을 이용해주세요.';
+    }
+    $cameraHint.textContent = msg;
+    $cameraHint.classList.add('error');
+    $cameraShootBtn.hidden = true;
+  }
+}
+
+function stopCameraStream() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach((t) => {
+      try { t.stop(); } catch {}
+    });
+    cameraStream = null;
+  }
+  $cameraVideo.srcObject = null;
+}
+
+function captureFromVideo() {
+  const video = $cameraVideo;
+  const canvas = $cameraCanvas;
+  const w = video.videoWidth || 720;
+  const h = video.videoHeight || 720;
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, w, h);
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+  lastCapturedDataUrl = dataUrl;
+
+  // 미리보기 모드로 전환
+  $cameraPreview.src = dataUrl;
+  $cameraPreview.hidden = false;
+  $cameraVideo.hidden = true;
+  $cameraShootBtn.hidden = true;
+  $cameraRetryBtn.hidden = false;
+  $cameraSaveBtn.hidden = false;
+  $cameraHint.textContent = '괜찮으면 저장, 마음에 안 들면 다시 찍기';
+}
+
+function retryCamera() {
+  lastCapturedDataUrl = null;
+  $cameraPreview.hidden = true;
+  $cameraVideo.hidden = false;
+  $cameraShootBtn.hidden = false;
+  $cameraRetryBtn.hidden = true;
+  $cameraSaveBtn.hidden = true;
+  $cameraHint.textContent = '준비 완료. 촬영 버튼을 눌러주세요.';
+}
+
+function saveCameraCapture() {
+  if (!lastCapturedDataUrl) return;
+  saveCaptureToStorage(lastCapturedDataUrl);
+  closeCameraModal();
+}
+
+function closeCameraModal() {
+  stopCameraStream();
+  if (typeof $cameraModal.close === 'function') {
+    $cameraModal.close();
+  } else {
+    $cameraModal.removeAttribute('open');
+  }
+}
+
+// 압축 + localStorage 저장 (기존 인증샷 저장 로직 분리)
+function saveCaptureToStorage(dataUrl) {
+  compressImage(dataUrl, 800, 0.7).then((compressedUrl) => {
+    $lastCaptureImg.src = compressedUrl;
+    $lastCapture.hidden = false;
+    try {
+      localStorage.setItem(STORAGE.lastCapture, compressedUrl);
+    } catch (err) {
+      compressImage(dataUrl, 480, 0.5).then((smaller) => {
+        $lastCaptureImg.src = smaller;
+        try { localStorage.setItem(STORAGE.lastCapture, smaller); } catch {}
+      });
+    }
+  });
+}
+
+// 카메라 모달 핸들러
+$cameraShootBtn.addEventListener('click', captureFromVideo);
+$cameraRetryBtn.addEventListener('click', retryCamera);
+$cameraSaveBtn.addEventListener('click', saveCameraCapture);
+$cameraCancelBtn.addEventListener('click', closeCameraModal);
+$cameraGalleryBtn.addEventListener('click', () => {
+  closeCameraModal();
   $captureInput.click();
+});
+// backdrop 클릭 시 닫기 + stream 정리
+$cameraModal.addEventListener('click', (e) => {
+  if (e.target === $cameraModal) closeCameraModal();
+});
+$cameraModal.addEventListener('close', () => {
+  stopCameraStream();
 });
 
 $captureInput.addEventListener('change', (e) => {
   const file = e.target.files && e.target.files[0];
   if (!file) return;
 
-  // 파일을 Data URL로 읽고 → 작게 압축해서 localStorage 저장
+  // 파일을 Data URL로 읽고 → 압축 후 저장 (v0.1.10: 카메라/갤러리 공통 함수 사용)
   const reader = new FileReader();
   reader.onload = (ev) => {
-    const dataUrl = ev.target.result;
-    compressImage(dataUrl, 800, 0.7).then((compressedUrl) => {
-      $lastCaptureImg.src = compressedUrl;
-      $lastCapture.hidden = false;
-      try {
-        localStorage.setItem(STORAGE.lastCapture, compressedUrl);
-      } catch (err) {
-        // QuotaExceeded — 더 작게 재시도
-        compressImage(dataUrl, 480, 0.5).then((smaller) => {
-          $lastCaptureImg.src = smaller;
-          try { localStorage.setItem(STORAGE.lastCapture, smaller); } catch {}
-        });
-      }
-    });
+    saveCaptureToStorage(ev.target.result);
   };
   reader.readAsDataURL(file);
 
-  // 같은 파일 다시 선택할 수 있게 input value 초기화
+  // 같은 파일 다시 선택 가능하게 input value 초기화
   $captureInput.value = '';
 });
 
