@@ -189,26 +189,11 @@ header h1 {
   animation: pulse 0.6s ease-out;
 }
 
-/* 카테고리 텍스트 — 탭하면 인라인 편집 */
+/* 카테고리 텍스트 — 탭하면 수정 모달 */
 .cat-text {
-  cursor: text;
+  cursor: pointer;
   user-select: none;
   padding: 0 2px;
-}
-
-/* 인라인 편집용 input */
-.cat-edit-input {
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  padding: 2px 6px;
-  border: 1px solid var(--basil);
-  background: white;
-  color: var(--basil-deep);
-  border-radius: 4px;
-  outline: none;
-  min-width: 60px;
-  max-width: 280px;
 }
 
 .category-list .remove-btn {
@@ -527,8 +512,15 @@ header h1 {
 .gacha-counter {
   margin-top: 12px;
   font-size: 13px;
-  color: var(--text-muted);
+  color: var(--text-soft);
   text-align: center;
+}
+
+.gacha-counter strong {
+  color: var(--accent);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 0 2px;
 }
 
 .ad-hint {
@@ -624,16 +616,17 @@ header h1 {
   margin-top: 10px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-size: 13px;
   color: var(--text-soft);
+  flex-wrap: wrap;
 }
 
 .custom-duration input {
-  width: 90px;
+  width: 64px;
   font-family: inherit;
   font-size: 14px;
-  padding: 6px 10px;
+  padding: 6px 8px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--bg);
@@ -691,6 +684,14 @@ header h1 {
 .btn-capture:hover {
   background: white;
   border-color: var(--basil);
+}
+
+.capture-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 6px;
+  line-height: 1.5;
 }
 
 .last-capture {
@@ -814,6 +815,115 @@ footer {
   0% { transform: translateY(0) scale(1); }
   40% { transform: translateY(-2px) scale(1.05); }
   100% { transform: translateY(0) scale(1); }
+}
+
+/* ============================================================
+   v0.1.9 — 카테고리 편집 모달
+   ============================================================ */
+
+dialog.modal {
+  border: none;
+  border-radius: var(--radius);
+  padding: 24px;
+  background: var(--bg-card);
+  box-shadow: 0 12px 40px rgba(80, 40, 40, 0.18);
+  width: 90%;
+  max-width: 380px;
+  color: var(--text);
+  font-family: inherit;
+}
+
+dialog.modal::backdrop {
+  background: rgba(58, 40, 38, 0.35);
+  backdrop-filter: blur(3px);
+}
+
+dialog.modal h3 {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+dialog.modal input[type="text"] {
+  width: 100%;
+  font-family: inherit;
+  font-size: 15px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  box-sizing: border-box;
+}
+
+dialog.modal input[type="text"]:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--bg-card);
+}
+
+.modal-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 8px 2px 18px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-actions-right {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-modal {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid transparent;
+}
+
+.btn-modal-primary {
+  background: var(--accent);
+  color: white;
+}
+
+.btn-modal-primary:hover {
+  background: var(--accent-hover);
+}
+
+.btn-modal-secondary {
+  background: var(--bg);
+  color: var(--text-soft);
+  border-color: var(--border);
+}
+
+.btn-modal-secondary:hover {
+  background: white;
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+
+.btn-modal-danger {
+  background: transparent;
+  color: var(--text-muted);
+  border-color: var(--border);
+  font-size: 13px;
+  padding: 10px 12px;
+}
+
+.btn-modal-danger:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 /* Mobile */

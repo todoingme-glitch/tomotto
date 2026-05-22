@@ -24,7 +24,8 @@ const $pauseBtn = document.getElementById('pauseBtn');
 const $resetBtn = document.getElementById('resetBtn');
 const $durationSelect = document.getElementById('durationSelect');
 const $customDurationWrap = document.getElementById('customDurationWrap');
-const $customDuration = document.getElementById('customDuration');
+const $customHours = document.getElementById('customHours');
+const $customMinutes = document.getElementById('customMinutes');
 const $timerStatus = document.getElementById('timerStatus');
 
 // v0.1.8 — 완료 카운트 + 인증샷
@@ -35,6 +36,13 @@ const $captureInput = document.getElementById('captureInput');
 const $lastCapture = document.getElementById('lastCapture');
 const $lastCaptureImg = document.getElementById('lastCaptureImg');
 const $removeCaptureBtn = document.getElementById('removeCaptureBtn');
+
+// v0.1.9 — 카테고리 편집 모달
+const $catEditModal = document.getElementById('categoryEditModal');
+const $catEditInput = document.getElementById('categoryEditInput');
+const $catEditSave = document.getElementById('categoryEditSave');
+const $catEditCancel = document.getElementById('categoryEditCancel');
+const $catEditDelete = document.getElementById('categoryEditDelete');
 
 // localStorage 키
 const STORAGE = {
@@ -105,12 +113,14 @@ window.addEventListener('load', () => {
   const validValues = Array.from($durationSelect.options).map(o => o.value);
   const savedDuration = localStorage.getItem(STORAGE.duration);
   if (savedDuration === 'custom') {
-    // 커스텀 시간 모드 복원
+    // 커스텀 시간 모드 복원 (시:분 분리)
     $durationSelect.value = 'custom';
     const savedCustom = parseInt(localStorage.getItem(STORAGE.customDuration) || '1500', 10);
     const customSec = Number.isFinite(savedCustom) && savedCustom > 0 ? savedCustom : 1500;
     timer.duration = customSec;
-    $customDuration.value = String(Math.round(customSec / 60));
+    const totalMin = Math.round(customSec / 60);
+    $customHours.value = String(Math.floor(totalMin / 60));
+    $customMinutes.value = String(totalMin % 60);
     $customDurationWrap.hidden = false;
   } else if (savedDuration && validValues.includes(savedDuration)) {
     $durationSelect.value = savedDuration;
@@ -235,65 +245,93 @@ function renderCategories() {
   editingCategoryIndex = -1;
 }
 
-// v0.1.8 — 카테고리 인라인 편집
-function enterEditMode(index) {
+// v0.1.9 — 카테고리 편집 모달
+function openEditModal(index) {
   if (index < 0 || index >= categories.length) return;
-  if (editingCategoryIndex === index) return;  // 이미 편집 중
   editingCategoryIndex = index;
+  $catEditInput.value = categories[index];
+  if (typeof $catEditModal.showModal === 'function') {
+    $catEditModal.showModal();
+  } else {
+    // 구버전 브라우저 fallback
+    $catEditModal.setAttribute('open', '');
+  }
+  // 모달 열린 직후 input focus + 전체 선택
+  setTimeout(() => {
+    $catEditInput.focus();
+    $catEditInput.select();
+  }, 50);
+}
 
-  const li = $catList.children[index];
-  const span = li.querySelector('.cat-text');
-  if (!span) return;
+function closeEditModal() {
+  if (typeof $catEditModal.close === 'function') {
+    $catEditModal.close();
+  } else {
+    $catEditModal.removeAttribute('open');
+  }
+  editingCategoryIndex = -1;
+}
+
+function saveEditModal() {
+  const index = editingCategoryIndex;
+  if (index < 0 || index >= categories.length) {
+    closeEditModal();
+    return;
+  }
+  const newText = $catEditInput.value.trim();
   const oldText = categories[index];
 
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.className = 'cat-edit-input';
-  input.value = oldText;
-  input.maxLength = 30;
-
-  span.replaceWith(input);
-  input.focus();
-  input.select();
-
-  let resolved = false;
-  function saveEdit() {
-    if (resolved) return;
-    resolved = true;
-    const newText = input.value.trim();
-    if (!newText) {
-      // 빈 값 → 삭제
-      categories.splice(index, 1);
-    } else if (newText !== oldText) {
-      // 중복 체크 (자기 자신 제외)
-      const dup = categories.some((c, i) => i !== index && c === newText);
-      if (dup) {
-        alert('이미 있는 카테고리예요.');
-        renderCategories();
-        return;
-      }
-      categories[index] = newText;
+  if (!newText) {
+    // 빈 값으로 저장 → 삭제 확인
+    if (!confirm('빈 값으로 저장하면 이 카테고리가 삭제돼요. 진행할까요?')) return;
+    categories.splice(index, 1);
+  } else if (newText !== oldText) {
+    // 중복 체크 (자기 자신 제외)
+    const dup = categories.some((c, i) => i !== index && c === newText);
+    if (dup) {
+      alert('이미 있는 카테고리예요.');
+      return;  // 모달 유지
     }
-    renderCategories();
-  }
-
-  function cancelEdit() {
-    if (resolved) return;
-    resolved = true;
-    renderCategories();
-  }
-
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      saveEdit();
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      cancelEdit();
+    if (newText.length > 30) {
+      alert('30자 이내로 적어주세요.');
+      return;
     }
-  });
-  input.addEventListener('blur', saveEdit);
+    categories[index] = newText;
+  }
+  renderCategories();
+  closeEditModal();
 }
+
+function deleteEditModal() {
+  const index = editingCategoryIndex;
+  if (index < 0 || index >= categories.length) {
+    closeEditModal();
+    return;
+  }
+  if (!confirm(`"${categories[index]}" 카테고리를 삭제할까요?`)) return;
+  categories.splice(index, 1);
+  renderCategories();
+  closeEditModal();
+}
+
+// 모달 이벤트
+$catEditSave.addEventListener('click', saveEditModal);
+$catEditCancel.addEventListener('click', closeEditModal);
+$catEditDelete.addEventListener('click', deleteEditModal);
+$catEditInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    saveEditModal();
+  }
+});
+// Esc 키는 dialog 자체가 처리 (close 이벤트 발생)
+$catEditModal.addEventListener('close', () => {
+  editingCategoryIndex = -1;
+});
+// backdrop 클릭 시 닫기
+$catEditModal.addEventListener('click', (e) => {
+  if (e.target === $catEditModal) closeEditModal();
+});
 
 function saveCategories() {
   localStorage.setItem(STORAGE.categories, JSON.stringify(categories));
@@ -332,10 +370,10 @@ $catList.addEventListener('click', (e) => {
     renderCategories();
     return;
   }
-  // v0.1.8 — 카테고리 텍스트 탭 시 인라인 편집 진입
+  // v0.1.9 — 카테고리 텍스트 탭 시 편집 모달 열기
   if (e.target.classList.contains('cat-text')) {
     const i = parseInt(e.target.dataset.index, 10);
-    enterEditMode(i);
+    openEditModal(i);
   }
 });
 
@@ -346,8 +384,9 @@ function escapeHtml(s) {
   })[c]);
 }
 
+// v0.1.9 — 가챠 카운트는 "이번 사이클 N/3" 표시. 3 도달 → 다음엔 광고 사이클 시작.
 function updateGachaCounter() {
-  $gachaCount.textContent = gachaCount;
+  $gachaCount.textContent = String(gachaCount);
   $adHint.hidden = gachaCount < 3;
   localStorage.setItem(STORAGE.gachaCount, String(gachaCount));
 }
@@ -415,13 +454,17 @@ function spawnConfetti() {
 async function spinGacha() {
   if (categories.length < 2) return;
 
-  // 광고 안내 (3번 초과) — 테스트 단계에서는 SHOW_AD_PROMPT=false 로 건너뜀
-  if (SHOW_AD_PROMPT && gachaCount >= 3) {
-    const confirmAd = confirm(
-      '가챠 3번을 모두 썼어요!\n다시 돌리려면 광고 시청이 필요해요.\n\n(현재는 시뮬레이션 — 실제 광고는 W3-W4에 연동 예정)\n\n광고 본 것으로 처리하고 계속?'
-    );
-    if (!confirmAd) return;
+  // v0.1.9 — 사이클 3 도달 시 자동 리셋. 운영 모드면 광고 confirm 후 리셋.
+  if (gachaCount >= 3) {
+    if (SHOW_AD_PROMPT) {
+      const confirmAd = confirm(
+        '이번 사이클(3회) 다 썼어요!\n광고 보고 새 사이클 시작?\n\n(현재는 시뮬레이션 — 실제 광고는 W3-W4에 연동 예정)'
+      );
+      if (!confirmAd) return;
+    }
+    // 테스트 모드: 조용히 리셋. 운영 모드: 광고 본 것으로 처리하고 리셋.
     gachaCount = 0;
+    updateGachaCounter();
   }
 
   $gachaBtn.disabled = true;
@@ -515,8 +558,13 @@ function formatTime(seconds) {
   // NaN / undefined / 비정상 값 방어 → 0으로 fallback
   if (!Number.isFinite(seconds)) seconds = 0;
   seconds = Math.max(0, Math.floor(seconds));
-  const m = Math.floor(seconds / 60);
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
   const s = seconds % 60;
+  // v0.1.9 — 60분 이상이면 H:MM:SS, 미만은 기존 MM:SS
+  if (h > 0) {
+    return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
@@ -626,11 +674,15 @@ function resetTimer() {
   saveTimerState(null);
 }
 
-// v0.1.8 — select·custom input 종합해서 현재 적용 시간(초) 반환
+// v0.1.9 — select·custom input(시·분) 종합해서 현재 적용 시간(초) 반환
 function getCurrentDurationSeconds() {
   if ($durationSelect.value === 'custom') {
-    const min = parseInt($customDuration.value, 10);
-    return Number.isFinite(min) && min > 0 ? min * 60 : 1500;
+    const h = parseInt($customHours.value, 10);
+    const m = parseInt($customMinutes.value, 10);
+    const hours = Number.isFinite(h) && h >= 0 ? h : 0;
+    const mins = Number.isFinite(m) && m >= 0 ? m : 0;
+    const totalSec = (hours * 60 + mins) * 60;
+    return totalSec > 0 ? totalSec : 1500;  // 최소 25분 fallback
   }
   const sec = parseInt($durationSelect.value, 10);
   return Number.isFinite(sec) && sec > 0 ? sec : 1500;
@@ -708,13 +760,14 @@ $resetBtn.addEventListener('click', resetTimer);
 
 $durationSelect.addEventListener('change', () => {
   localStorage.setItem(STORAGE.duration, $durationSelect.value);
-  // v0.1.8 — 직접 입력 모드 토글
+  // v0.1.9 — 직접 입력 모드 토글 (시:분 분리)
   if ($durationSelect.value === 'custom') {
     $customDurationWrap.hidden = false;
-    if (!$customDuration.value) {
-      $customDuration.value = '25';  // 기본값 25분
+    if (!$customHours.value && !$customMinutes.value) {
+      $customHours.value = '0';
+      $customMinutes.value = '25';  // 기본 25분
     }
-    $customDuration.focus();
+    setTimeout(() => $customHours.focus(), 50);
   } else {
     $customDurationWrap.hidden = true;
   }
@@ -725,22 +778,29 @@ $durationSelect.addEventListener('change', () => {
   }
 });
 
-// v0.1.8 — 커스텀 시간 input 변경
-$customDuration.addEventListener('input', () => {
-  let min = parseInt($customDuration.value, 10);
-  if (!Number.isFinite(min) || min < 1) return;  // 빈값/잘못된 값은 무시
-  if (min > 999) {
-    min = 999;
-    $customDuration.value = '999';
+// v0.1.9 — 커스텀 시간 input(시·분) 변경
+function onCustomDurationChange() {
+  // 시간 0~23, 분 0~59 클램프
+  let h = parseInt($customHours.value, 10);
+  let m = parseInt($customMinutes.value, 10);
+  if (Number.isFinite(h)) {
+    if (h < 0) { h = 0; $customHours.value = '0'; }
+    if (h > 23) { h = 23; $customHours.value = '23'; }
   }
-  const sec = min * 60;
+  if (Number.isFinite(m)) {
+    if (m < 0) { m = 0; $customMinutes.value = '0'; }
+    if (m > 59) { m = 59; $customMinutes.value = '59'; }
+  }
+  const sec = getCurrentDurationSeconds();
   localStorage.setItem(STORAGE.customDuration, String(sec));
   if (!timer.isRunning) {
     timer.duration = sec;
     timer.remaining = sec;
     updateTimerDisplay();
   }
-});
+}
+$customHours.addEventListener('input', onCustomDurationChange);
+$customMinutes.addEventListener('input', onCustomDurationChange);
 
 // ====== v0.1.8 — 완료 카운트 ======
 function updateCompletedDisplay() {

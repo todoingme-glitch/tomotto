@@ -33,7 +33,7 @@
       </div>
       <button id="gachaBtn" class="btn-gacha" disabled>가챠 돌리기!</button>
       <p class="gacha-counter">
-        <span id="gachaCount">0</span>회 돌렸어요
+        이번 사이클 <strong id="gachaCount">0</strong>/3
         <span class="ad-hint" id="adHint" hidden>· 다음 가챠는 광고 시청 후 (시뮬레이션)</span>
       </p>
     </section>
@@ -61,8 +61,10 @@
           </select>
         </label>
         <div class="custom-duration" id="customDurationWrap" hidden>
-          <input type="number" id="customDuration" min="1" max="999" step="1" placeholder="분 입력">
-          <span>분 (1~999)</span>
+          <input type="number" id="customHours" min="0" max="23" step="1" placeholder="0">
+          <span>시간</span>
+          <input type="number" id="customMinutes" min="0" max="59" step="1" placeholder="30">
+          <span>분</span>
         </div>
       </div>
       <p id="timerStatus" class="timer-status"></p>
@@ -74,7 +76,8 @@
         </div>
         <div class="capture-row" id="captureRow" hidden>
           <button id="captureBtn" class="btn-capture">📷 인증샷 첨부 (선택)</button>
-          <input type="file" id="captureInput" accept="image/*" capture="environment" hidden>
+          <input type="file" id="captureInput" accept="image/*" hidden>
+          <p class="capture-hint">갤러리에서 선택하면 셔터 소리 없음. 카메라로 찍어도 OK.<br>※ v0.1.10에 인앱 카메라(셔터 소리 완전 X) 추가 예정</p>
         </div>
         <div class="last-capture" id="lastCapture" hidden>
           <span class="last-capture-label">마지막 인증샷</span>
@@ -88,6 +91,20 @@
       <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1 - 개인 모드만. 친구 배틀은 W3-W4에 추가</span></small>
     </footer>
   </div>
+
+  <!-- 카테고리 편집 모달 -->
+  <dialog id="categoryEditModal" class="modal">
+    <h3>카테고리 수정</h3>
+    <input type="text" id="categoryEditInput" maxlength="30" placeholder="카테고리 이름">
+    <p class="modal-hint">최대 30자 · 빈 값으로 저장하면 삭제됩니다</p>
+    <div class="modal-actions">
+      <button id="categoryEditDelete" class="btn-modal btn-modal-danger" type="button">삭제</button>
+      <div class="modal-actions-right">
+        <button id="categoryEditCancel" class="btn-modal btn-modal-secondary" type="button">취소</button>
+        <button id="categoryEditSave" class="btn-modal btn-modal-primary" type="button">저장</button>
+      </div>
+    </div>
+  </dialog>
 
   <script src="app.js"></script>
 </body>
