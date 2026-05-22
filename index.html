@@ -131,11 +131,12 @@
                   </g>
                   <path class="cls-5" d="M461.46,96.01c3.77.39,5.36-2.48,5.74-6.17l-10.11-1.04c-.38,3.69.54,6.81,4.37,7.2Z"/>
                 </g>
+                <!-- v0.1.17 — tom 입 (원래 그룹 바깥에 있었음 → 카운트다운 미니 SVG를 위해 그룹 안으로 이동) -->
+                <path class="cls-2" d="M444.73,105.88s8.87,2.54,13.5-2.22"/>
               </g>
               <path class="cls-6" d="M209.85,87.32l-.3,26.84c-.04,3.73-2.71,6.57-6.27,7.15-2.07.34-4.19.36-6.22.05-3.86-.6-6.43-3.65-6.43-7.53l-.03-29.07c0-1.93-1.1-3.8-2.16-4.74-1.59-1.4-3.72-1.73-5.8-1.12-3.46,1.01-6.23,4.41-6.3,8.25l-.43,26.95c-.06,3.79-2.98,6.68-6.59,7.21-2.36.35-4.58.39-6.98,0-3.33-.53-6.4-3.32-6.39-7.05l.1-48.91c0-3.89,3.07-6.96,6.59-7.6,2.44-.45,4.72-.34,7.07.1,3.77.72,6.27,3.86,6.21,7.63,4.14-4.87,9.61-7.04,15.63-6.62,5.49.39,10.8,3.28,13.92,8.42,6.47-8.8,18.67-11.39,27.8-5.21,6.68,4.52,9.16,14.06,9.11,22.13l-.18,30.32c-.02,3.57-2.81,6.29-6.13,6.84-2.26.37-4.45.39-6.65-.06-3.28-.66-5.76-3.39-5.78-6.82l-.09-29.88c0-2.05-1.2-4-2.44-4.88-1.8-1.26-3.99-1.29-6.03-.39-2.93,1.29-5.18,4.39-5.22,7.99Z"/>
               <path class="cls-6" d="M69.49,119.54c-3.25,1.8-6.33,1.83-9.82,1.92-5.2.13-10.33-3.17-10.97-8.89l-6.37-56.49-14.56,1.31c-4.89.44-9.01-2.13-10.75-6.69-1.08-3.22-1.38-6.5-.9-10.02.59-4.32,3.93-8.26,8.64-8.71l56.87-5.42c4.78-.46,8.82,3.02,10.02,7.24.86,3.02,1.02,5.83.72,8.88-.46,4.32-3.36,8.15-7.83,8.67l-15.4,1.78,2.66,25.25,2.93,31.3c.37,4-1.9,8.02-5.25,9.88Z"/>
               <path class="cls-6" d="M114.43,55.06c-18.34,0-33.2,14.86-33.2,33.2s14.86,33.2,33.2,33.2,33.2-14.86,33.2-33.2-14.86-33.2-33.2-33.2ZM114.43,104.58c-9.01,0-16.32-7.31-16.32-16.32s7.31-16.32,16.32-16.32,16.32,7.31,16.32,16.32-7.31,16.32-16.32,16.32Z"/>
-              <path class="cls-2" d="M444.73,105.88s8.87,2.54,13.5-2.22"/>
             </g>
           </g>
         </svg>
@@ -143,6 +144,26 @@
       </div>
       <p class="tagline">뭐부터 할지 모르겠을 때, 가챠로 결정하자</p>
     </header>
+
+    <!-- v0.1.17 — 하단 탭 네비게이션 -->
+    <nav class="bottom-tab" id="bottomTab" aria-label="메인 탭 메뉴">
+      <button class="tab-btn active" data-tab="personal" type="button" aria-pressed="true">
+        <span class="tab-icon tab-icon-tom" aria-hidden="true"></span>
+        <span class="tab-label">개인</span>
+      </button>
+      <button class="tab-btn" data-tab="social" type="button" aria-pressed="false">
+        <span class="tab-icon tab-icon-motto" aria-hidden="true"></span>
+        <span class="tab-label">소셜</span>
+      </button>
+      <button class="tab-btn tab-btn-soon" data-tab="league" type="button" aria-pressed="false" disabled>
+        <span class="tab-icon">🏆</span>
+        <span class="tab-label">리그</span>
+        <span class="tab-soon-badge">준비 중</span>
+      </button>
+    </nav>
+
+    <!-- 탭 패널 : 개인 -->
+    <div class="tab-panel" id="tab-personal">
 
     <!-- 1. 카테고리 설정 -->
     <section class="card category-section">
@@ -228,6 +249,11 @@
       </div>
     </section>
 
+    </div><!-- /tab-panel#tab-personal -->
+
+    <!-- 탭 패널 : 소셜 -->
+    <div class="tab-panel tab-panel-hidden" id="tab-social">
+
     <!-- 4. 친구 배틀 (v0.1.13~) -->
     <section class="card battle-section">
       <h2><span class="step">4</span> 친구 배틀 <span class="badge-beta">beta</span></h2>
@@ -251,8 +277,19 @@
       <p class="battle-hint">친구한테 초대 링크 보내면 받는 쪽도 닉네임만 입력하면 시작.</p>
     </section>
 
+    </div><!-- /tab-panel#tab-social -->
+
+    <!-- 탭 패널 : 리그 (준비 중) -->
+    <div class="tab-panel tab-panel-hidden" id="tab-league">
+      <div class="tab-coming-soon">
+        <span class="tab-coming-icon">🏆</span>
+        <p class="tab-coming-title">리그 / 리더보드</p>
+        <p class="tab-coming-desc">친구들과 주간 리그에서 경쟁하는 기능이 곧 추가됩니다.</p>
+      </div>
+    </div><!-- /tab-panel#tab-league -->
+
     <footer>
-      <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1.16 · 친구 배틀 · Supabase 연동</span></small>
+      <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1.17 · 하단 탭 · Supabase 연동</span></small>
     </footer>
   </div>
 
@@ -323,11 +360,9 @@
       </div>
     </div>
 
-    <div class="modal-actions">
-      <div class="modal-actions-right">
-        <button id="battleCreateCancelBtn" class="btn-modal btn-modal-secondary" type="button">취소</button>
-        <button id="battleCreateConfirmBtn" class="btn-modal btn-modal-primary" type="button">만들기</button>
-      </div>
+    <div class="modal-actions modal-battle-create-actions">
+      <button id="battleCreateCancelBtn" class="btn-modal btn-modal-secondary" type="button">취소</button>
+      <button id="battleCreateConfirmBtn" class="btn-modal btn-modal-primary" type="button">만들기</button>
     </div>
   </dialog>
 

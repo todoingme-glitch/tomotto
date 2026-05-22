@@ -125,6 +125,21 @@ function makeFaceSvg(faceEl, viewBox, size = '80px') {
   g.setAttribute('class', 'tomotto-svg');
   g.appendChild(faceEl.cloneNode(true));
   svg.appendChild(g);
+  // CSS 클래스 미적용 fallback — stroke path(입 등) 인라인 스타일 강제 적용
+  svg.querySelectorAll('.cls-2').forEach(el => {
+    el.style.fill = 'none';
+    el.style.stroke = '#5a1010';
+    el.style.strokeWidth = '2.5px';
+    el.style.strokeLinecap = 'round';
+    el.style.strokeLinejoin = 'round';
+  });
+  svg.querySelectorAll('.cls-1').forEach(el => {
+    el.style.fill = 'none';
+    el.style.stroke = '#5a1010';
+    el.style.strokeWidth = '2px';
+    el.style.strokeLinecap = 'round';
+    el.style.strokeLinejoin = 'round';
+  });
   return svg;
 }
 
@@ -749,7 +764,12 @@ async function acceptBattle() {
   }
 
   await refreshBattleRoom();
-  renderMyBattles();  // 수락자 쪽 배틀카드 목록에도 추가
+
+  // v0.1.17 — 수락자 쪽 localStorage에도 배틀 저장 (Supabase SELECT 정책 없을 때 fallback 보장)
+  if (currentBattleData?.battle) {
+    addToMyBattles({ ...currentBattleData.battle, _isCreator: false });
+  }
+  await renderMyBattles();  // 수락자 쪽 배틀카드 목록에도 추가 (await 추가)
 }
 
 // v0.1.17 — 3·2·1 카운트다운 (얼굴 양 옆 배치)
@@ -773,14 +793,14 @@ async function startBattleWithCountdown() {
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:10px;padding:4px 0';
 
-    if (mottoFaceEl) row.appendChild(makeFaceSvg(mottoFaceEl, '240 50 90 85', '80px'));
+    if (mottoFaceEl) row.appendChild(makeFaceSvg(mottoFaceEl, '237 45 98 95', '80px'));
 
     const mid = document.createElement('div');
     mid.className = 'battle-countdown-num';
     mid.innerHTML = content;
     row.appendChild(mid);
 
-    if (tomFaceEl) row.appendChild(makeFaceSvg(tomFaceEl, '408 50 90 85', '80px'));
+    if (tomFaceEl) row.appendChild(makeFaceSvg(tomFaceEl, '405 45 98 95', '80px'));
 
     countEl.appendChild(row);
   }
@@ -790,8 +810,8 @@ async function startBattleWithCountdown() {
     await new Promise(r => setTimeout(r, 900));
   }
 
-  // 시작! — 얼굴 양옆 + 가운데 🍅
-  renderCountRow('🍅');
+  // 시작! — 얼굴 양옆 + 가운데 텍스트
+  renderCountRow('시작!');
   playHifive();
 
   await new Promise(r => setTimeout(r, 750));
@@ -806,6 +826,12 @@ function startBattleTimer() {
   const { battle } = currentBattleData;
   activeBattleId = battle.id;   // v0.1.17 — 인증샷 업로드용
   localStorage.setItem('tomotto_activeBattleId', battle.id);
+
+  // v0.1.17 — 새 배틀 시작 시 이전 인증샷 초기화 (다른 배틀의 스크린샷 잔류 방지)
+  $lastCaptureImg.src = '';
+  $lastCapture.hidden = true;
+  localStorage.removeItem(STORAGE.lastCapture);
+  lastCapturedDataUrl = null;
   // URL에서 ?battle= 제거 — 새로고침 시 모달 재오픈 방지
   if (location.search.includes('battle=')) {
     history.replaceState({}, '', location.pathname);
@@ -827,7 +853,8 @@ function startBattleTimer() {
   // 타이머 시작 (기존 메인 타이머 사용)
   startTimer();
 
-  // 메인 타이머 섹션으로 스크롤
+  // v0.1.17 — 배틀 시작 시 개인 탭으로 자동 전환 + 타이머 섹션으로 스크롤
+  switchTab('personal');
   document.querySelector('.timer-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
@@ -838,10 +865,11 @@ function closeBattleRoom() {
 
 $battleRoomCancelBtn.addEventListener('click', closeBattleRoom);
 $battleRoomAcceptBtn.addEventListener('click', acceptBattle);
-// v0.1.15 — 가챠 유도: 모달 닫고 가챠 섹션으로 이동
+// v0.1.15 — 가챠 유도: 모달 닫고 개인 탭 → 가챠 섹션으로 이동
 $battleRoomGachaBtn.addEventListener('click', () => {
   showBattleLock(currentBattleId);   // 배너 유지 (없으면 새로 켜기)
   closeBattleRoom();
+  switchTab('personal');  // v0.1.17 — 개인 탭 자동 전환
   document.querySelector('.category-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 $battleRoomStartBtn.addEventListener('click', startBattleWithCountdown);
@@ -850,6 +878,44 @@ $battleRoomStartBtn.addEventListener('click', startBattleWithCountdown);
 function dispatchNickSaved() {
   document.dispatchEvent(new CustomEvent('nick-saved'));
 }
+
+// ====== v0.1.17 — 하단 탭 네비게이션 ======
+// 외부(배틀 타이머 등)에서 탭 전환 가능하도록 전역 노출
+let switchTab = () => {};
+
+(function initBottomTab() {
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  const tabPanels = document.querySelectorAll('.tab-panel');
+  const TAB_STORAGE_KEY = 'tomotto_active_tab';
+
+  switchTab = function(tabId) {
+    tabBtns.forEach(btn => {
+      const active = btn.dataset.tab === tabId;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+    tabPanels.forEach(panel => {
+      panel.classList.toggle('tab-panel-hidden', panel.id !== `tab-${tabId}`);
+    });
+    localStorage.setItem(TAB_STORAGE_KEY, tabId);
+  };
+
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!btn.disabled) switchTab(btn.dataset.tab);
+    });
+  });
+
+  // 소셜 탭에서 배틀 초대 링크로 들어왔을 때 자동 전환
+  const params = new URLSearchParams(location.search);
+  const savedTab = localStorage.getItem(TAB_STORAGE_KEY);
+  if (params.has('battle')) {
+    switchTab('social');
+  } else if (savedTab) {
+    switchTab(savedTab);
+  }
+  // 기본값(personal)은 HTML에서 이미 active 클래스로 설정돼 있음
+})();
 
 // 페이지 로드 시 닉네임 + 내 배틀 복원, ?battle=ID 있으면 배틀 룸 자동 열기
 window.addEventListener('load', () => {
@@ -1482,6 +1548,10 @@ function startTimer() {
   $timerStatus.textContent = `"${currentTask}" 작업 중...`;
   $timerStatus.classList.remove('success', 'resumed');
 
+  // v0.1.17 — 새 타이머 시작 시 배틀 결과 버튼 숨김 (이전 배틀 결과 클리어)
+  $battleResultBtn.hidden = true;
+  $battleResultBtn.dataset.battleId = '';
+
   startTimerInternal();
 }
 
@@ -1522,7 +1592,7 @@ function resetTimer() {
 
   // v0.1.8 — 인증샷 첨부 버튼 숨기기 (완료 후에만 보임)
   $captureRow.hidden = true;
-  $battleResultBtn.hidden = true;   // v0.1.17
+  // v0.1.17 — 배틀 결과 버튼은 리셋 시 숨기지 않음 (새 배틀 시작 전까지 유지)
 
   saveTimerState(null);
   activeBattleId = null;   // v0.1.17 — 배틀 세션 종료
@@ -1685,14 +1755,15 @@ async function uploadProofToSupabase(dataUrl, battleId) {
   if (!sb || !myNickname || !battleId) return { ok: false, reason: 'no-config' };
   try {
     const blob = dataUrlToBlob(dataUrl);
-    // 한글 등 특수문자 닉네임 → URL 인코딩 (Storage key 오류 방지)
-    const safeName = encodeURIComponent(myNickname);
-    const path = `${battleId}/${safeName}.jpg`;
+    // 한글 등 특수문자 닉네임 → ASCII만 남김 (Storage key InvalidKey 방지)
+    const safeName = (myNickname.replace(/[^\w-]/g, '_') || 'player').slice(0, 40);
+    // timestamp 추가 → 항상 고유한 경로 → upsert(UPDATE 권한) 불필요
+    const path = `${battleId}/${safeName}_${Date.now()}.jpg`;
 
-    // 1) Storage 업로드
+    // 1) Storage 업로드 (upsert 제거 — INSERT 정책만으로 충분)
     const { error: uploadError } = await sb.storage
       .from('proofs')
-      .upload(path, blob, { contentType: 'image/jpeg', upsert: true });
+      .upload(path, blob, { contentType: 'image/jpeg' });
     if (uploadError) {
       console.error('Storage 업로드 실패:', uploadError);
       return { ok: false, reason: 'storage', message: uploadError.message };
