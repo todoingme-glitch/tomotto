@@ -278,7 +278,7 @@ $battleCreateConfirmBtn.addEventListener('click', async () => {
   // 모달 닫고 초대 링크 표시
   closeBattleCreateModal();
   openInviteModal(battle);
-  renderMyBattles();
+  await renderMyBattles();
 });
 
 // v0.1.14 — Supabase 배틀 저장 + 생성자를 battle_players에도 등록
@@ -338,16 +338,45 @@ function addToMyBattles(battle) {
   localStorage.setItem(BATTLE_STORAGE.myBattles, JSON.stringify(list));
 }
 
-function loadMyBattles() {
-  try {
-    return JSON.parse(localStorage.getItem(BATTLE_STORAGE.myBattles) || '[]');
-  } catch { return []; }
+// v0.1.14.1 — 내가 참여한 모든 배틀 Supabase에서 fetch (생성자 + 수락자 둘 다)
+async function loadMyBattles() {
+  if (sb && myNickname) {
+    try {
+      // 1) 본인 nickname으로 battle_players에서 본인 row 찾기
+      const { data: myPlayerRows, error: e1 } = await sb
+        .from('battle_players')
+        .select('battle_id, is_creator')
+        .eq('nickname', myNickname);
+      if (e1) throw e1;
+      const battleIds = (myPlayerRows || []).map((r) => r.battle_id);
+      if (battleIds.length === 0) return [];
+
+      // 2) 해당 battle_id들의 battle 정보 가져오기
+      const { data: battles, error: e2 } = await sb
+        .from('battles')
+        .select('*')
+        .in('id', battleIds)
+        .order('created_at', { ascending: false });
+      if (e2) throw e2;
+      return (battles || []).map((b) => {
+        const myRow = myPlayerRows.find((r) => r.battle_id === b.id);
+        return { ...b, _isCreator: myRow ? myRow.is_creator : false };
+      });
+    } catch (err) {
+      console.error('내 배틀 fetch 실패:', err);
+      // 실패 시 localStorage fallback
+      try { return JSON.parse(localStorage.getItem(BATTLE_STORAGE.myBattles) || '[]'); }
+      catch { return []; }
+    }
+  }
+  try { return JSON.parse(localStorage.getItem(BATTLE_STORAGE.myBattles) || '[]'); }
+  catch { return []; }
 }
 
-function renderMyBattles() {
-  const list = loadMyBattles();
+async function renderMyBattles() {
+  const list = await loadMyBattles();
   if (list.length === 0) {
-    $battleList.innerHTML = '<p class="battle-empty">아직 만든 배틀이 없어요.</p>';
+    $battleList.innerHTML = '<p class="battle-empty">아직 참여한 배틀이 없어요.</p>';
     return;
   }
   $battleList.innerHTML = list.map((b) => {
@@ -355,28 +384,60 @@ function renderMyBattles() {
     const statusLabel = b.status === 'waiting' ? '친구 대기 중' : (b.status === 'active' ? '진행 중' : '완료');
     const taskLabel = b.mode === 'common' ? escapeHtml(b.task_common || '') : '(각자 가챠)';
     const minutes = Math.round(b.duration_sec / 60);
+    const roleLabel = b._isCreator ? '내가 만듦' : '초대받음';
+    // 삭제 버튼은 생성자만
+    const deleteBtn = b._isCreator
+      ? `<button class="btn-mini btn-danger-mini" data-action="delete" data-id="${b.id}">🗑 삭제</button>`
+      : '';
     return `
       <div class="battle-card" data-id="${b.id}">
         <div class="battle-card-top">
-          <span class="battle-card-mode">${modeLabel}</span>
+          <span class="battle-card-mode">${modeLabel} · ${roleLabel}</span>
           <span class="battle-card-status ${b.status}">${statusLabel}</span>
         </div>
         <div class="battle-card-task">${taskLabel}</div>
         <div class="battle-card-meta">시간 ${minutes}분 · ID ${b.id}</div>
         <div class="battle-card-actions">
+          <button class="btn-mini" data-action="open" data-id="${b.id}">열기</button>
           <button class="btn-mini" data-action="invite" data-id="${b.id}">초대 링크</button>
+          ${deleteBtn}
         </div>
       </div>
     `;
   }).join('');
 }
 
-$battleList.addEventListener('click', (e) => {
-  if (e.target.dataset.action === 'invite') {
-    const id = e.target.dataset.id;
-    const list = loadMyBattles();
+// 배틀 삭제 (생성자만)
+async function deleteBattle(battleId) {
+  if (!sb) return;
+  if (!confirm('이 배틀을 삭제할까요? 되돌릴 수 없어요.')) return;
+  // battle_players는 ON DELETE CASCADE로 자동 삭제됨
+  const { error } = await sb.from('battles').delete().eq('id', battleId);
+  if (error) {
+    alert('삭제 실패: ' + error.message);
+    return;
+  }
+  // localStorage 캐시에서도 제거
+  let cached = [];
+  try { cached = JSON.parse(localStorage.getItem(BATTLE_STORAGE.myBattles) || '[]'); } catch {}
+  cached = cached.filter((b) => b.id !== battleId);
+  localStorage.setItem(BATTLE_STORAGE.myBattles, JSON.stringify(cached));
+  renderMyBattles();
+}
+
+$battleList.addEventListener('click', async (e) => {
+  const action = e.target.dataset.action;
+  const id = e.target.dataset.id;
+  if (!action || !id) return;
+
+  if (action === 'invite') {
+    const list = await loadMyBattles();
     const battle = list.find((b) => b.id === id);
     if (battle) openInviteModal(battle);
+  } else if (action === 'open') {
+    openBattleRoom(id);
+  } else if (action === 'delete') {
+    deleteBattle(id);
   }
 });
 
