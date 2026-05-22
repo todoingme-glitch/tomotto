@@ -23,15 +23,29 @@ const $startBtn = document.getElementById('startBtn');
 const $pauseBtn = document.getElementById('pauseBtn');
 const $resetBtn = document.getElementById('resetBtn');
 const $durationSelect = document.getElementById('durationSelect');
+const $customDurationWrap = document.getElementById('customDurationWrap');
+const $customDuration = document.getElementById('customDuration');
 const $timerStatus = document.getElementById('timerStatus');
+
+// v0.1.8 — 완료 카운트 + 인증샷
+const $completedCount = document.getElementById('completedCount');
+const $captureRow = document.getElementById('captureRow');
+const $captureBtn = document.getElementById('captureBtn');
+const $captureInput = document.getElementById('captureInput');
+const $lastCapture = document.getElementById('lastCapture');
+const $lastCaptureImg = document.getElementById('lastCaptureImg');
+const $removeCaptureBtn = document.getElementById('removeCaptureBtn');
 
 // localStorage 키
 const STORAGE = {
   categories: 'tomotto_categories',
   gachaCount: 'tomotto_gachaCount',
   duration: 'tomotto_duration',
+  customDuration: 'tomotto_customDuration',  // v0.1.8 — 사용자 지정 시간 (초)
   currentTask: 'tomotto_currentTask',
   timerState: 'tomotto_timerState',
+  completedCount: 'tomotto_completedCount',  // v0.1.8 — 누적 완료 횟수
+  lastCapture: 'tomotto_lastCapture',        // v0.1.8 — 마지막 인증샷 (data URL, 작게 압축)
 };
 
 // ====== localStorage 마이그레이션 (pomocha_* → tomotto_*) ======
@@ -61,6 +75,8 @@ function migrateStorage() {
 let categories = [];
 let gachaCount = 0;
 let currentTask = null;
+let completedCount = 0;             // v0.1.8 — 누적 완료
+let editingCategoryIndex = -1;      // v0.1.8 — 카테고리 인라인 편집 진행 중인 인덱스
 let timer = {
   duration: 1500,    // 초 단위 (25분 기본)
   remaining: 1500,
@@ -88,7 +104,15 @@ window.addEventListener('load', () => {
   // 타이머 길이 복원 — select option에 있는 값만 받기 (NaN/구버전 방어)
   const validValues = Array.from($durationSelect.options).map(o => o.value);
   const savedDuration = localStorage.getItem(STORAGE.duration);
-  if (savedDuration && validValues.includes(savedDuration)) {
+  if (savedDuration === 'custom') {
+    // 커스텀 시간 모드 복원
+    $durationSelect.value = 'custom';
+    const savedCustom = parseInt(localStorage.getItem(STORAGE.customDuration) || '1500', 10);
+    const customSec = Number.isFinite(savedCustom) && savedCustom > 0 ? savedCustom : 1500;
+    timer.duration = customSec;
+    $customDuration.value = String(Math.round(customSec / 60));
+    $customDurationWrap.hidden = false;
+  } else if (savedDuration && validValues.includes(savedDuration)) {
     $durationSelect.value = savedDuration;
     const parsed = parseInt(savedDuration, 10);
     timer.duration = Number.isFinite(parsed) && parsed > 0 ? parsed : 1500;
@@ -96,10 +120,21 @@ window.addEventListener('load', () => {
     // 디폴트 25분 (1500초) — select.value도 명시
     $durationSelect.value = '1500';
     timer.duration = 1500;
-    // 잘못 저장된 옛 값(예: 분 단위 "25") 정리
     if (savedDuration) localStorage.setItem(STORAGE.duration, '1500');
   }
   timer.remaining = timer.duration;
+
+  // v0.1.8 — 누적 완료 카운트 복원
+  const savedCompleted = parseInt(localStorage.getItem(STORAGE.completedCount) || '0', 10);
+  completedCount = Number.isFinite(savedCompleted) && savedCompleted >= 0 ? savedCompleted : 0;
+  updateCompletedDisplay();
+
+  // v0.1.8 — 마지막 인증샷 복원
+  const savedCapture = localStorage.getItem(STORAGE.lastCapture);
+  if (savedCapture) {
+    $lastCaptureImg.src = savedCapture;
+    $lastCapture.hidden = false;
+  }
 
   // 마지막 작업 복원
   currentTask = localStorage.getItem(STORAGE.currentTask);
@@ -178,6 +213,8 @@ function restoreTimerState() {
     $startBtn.disabled = true;
     $pauseBtn.disabled = true;
     $resetBtn.disabled = false;
+    // v0.1.8 — 완료 후 페이지 다시 열렸을 때도 인증샷 첨부 가능
+    $captureRow.hidden = false;
   }
   else {
     $startBtn.disabled = !currentTask;
@@ -189,12 +226,73 @@ function renderCategories() {
   $catList.innerHTML = '';
   categories.forEach((cat, i) => {
     const li = document.createElement('li');
-    li.innerHTML = `${escapeHtml(cat)} <button class="remove-btn" data-index="${i}" title="삭제">✕</button>`;
+    li.innerHTML = `<span class="cat-text" data-index="${i}" title="탭하면 수정">${escapeHtml(cat)}</span> <button class="remove-btn" data-index="${i}" title="삭제">✕</button>`;
     $catList.appendChild(li);
   });
   $emptyHint.classList.toggle('hidden', categories.length >= 2);
   $gachaBtn.disabled = categories.length < 2;
   saveCategories();
+  editingCategoryIndex = -1;
+}
+
+// v0.1.8 — 카테고리 인라인 편집
+function enterEditMode(index) {
+  if (index < 0 || index >= categories.length) return;
+  if (editingCategoryIndex === index) return;  // 이미 편집 중
+  editingCategoryIndex = index;
+
+  const li = $catList.children[index];
+  const span = li.querySelector('.cat-text');
+  if (!span) return;
+  const oldText = categories[index];
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'cat-edit-input';
+  input.value = oldText;
+  input.maxLength = 30;
+
+  span.replaceWith(input);
+  input.focus();
+  input.select();
+
+  let resolved = false;
+  function saveEdit() {
+    if (resolved) return;
+    resolved = true;
+    const newText = input.value.trim();
+    if (!newText) {
+      // 빈 값 → 삭제
+      categories.splice(index, 1);
+    } else if (newText !== oldText) {
+      // 중복 체크 (자기 자신 제외)
+      const dup = categories.some((c, i) => i !== index && c === newText);
+      if (dup) {
+        alert('이미 있는 카테고리예요.');
+        renderCategories();
+        return;
+      }
+      categories[index] = newText;
+    }
+    renderCategories();
+  }
+
+  function cancelEdit() {
+    if (resolved) return;
+    resolved = true;
+    renderCategories();
+  }
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveEdit();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      cancelEdit();
+    }
+  });
+  input.addEventListener('blur', saveEdit);
 }
 
 function saveCategories() {
@@ -232,6 +330,12 @@ $catList.addEventListener('click', (e) => {
     const i = parseInt(e.target.dataset.index, 10);
     categories.splice(i, 1);
     renderCategories();
+    return;
+  }
+  // v0.1.8 — 카테고리 텍스트 탭 시 인라인 편집 진입
+  if (e.target.classList.contains('cat-text')) {
+    const i = parseInt(e.target.dataset.index, 10);
+    enterEditMode(i);
   }
 });
 
@@ -506,7 +610,7 @@ function resetTimer() {
   timer.intervalId = null;
   timer.isRunning = false;
   timer.endTime = null;
-  timer.duration = parseInt($durationSelect.value, 10);
+  timer.duration = getCurrentDurationSeconds();
   timer.remaining = timer.duration;
   updateTimerDisplay();
   $timerDisplay.classList.remove('running', 'finished');
@@ -516,7 +620,20 @@ function resetTimer() {
   $timerStatus.textContent = '';
   $timerStatus.classList.remove('success', 'resumed');
 
+  // v0.1.8 — 인증샷 첨부 버튼 숨기기 (완료 후에만 보임)
+  $captureRow.hidden = true;
+
   saveTimerState(null);
+}
+
+// v0.1.8 — select·custom input 종합해서 현재 적용 시간(초) 반환
+function getCurrentDurationSeconds() {
+  if ($durationSelect.value === 'custom') {
+    const min = parseInt($customDuration.value, 10);
+    return Number.isFinite(min) && min > 0 ? min * 60 : 1500;
+  }
+  const sec = parseInt($durationSelect.value, 10);
+  return Number.isFinite(sec) && sec > 0 ? sec : 1500;
 }
 
 function finishTimer() {
@@ -534,6 +651,12 @@ function finishTimer() {
   $timerStatus.textContent = `✓ "${currentTask}" 완료! 수고하셨어요`;
   $timerStatus.classList.add('success');
   $timerStatus.classList.remove('resumed');
+
+  // v0.1.8 — 누적 완료 카운트 증가 + 인증샷 첨부 버튼 표시
+  completedCount++;
+  localStorage.setItem(STORAGE.completedCount, String(completedCount));
+  updateCompletedDisplay();
+  $captureRow.hidden = false;
 
   saveTimerState({
     status: 'finished',
@@ -585,9 +708,107 @@ $resetBtn.addEventListener('click', resetTimer);
 
 $durationSelect.addEventListener('change', () => {
   localStorage.setItem(STORAGE.duration, $durationSelect.value);
+  // v0.1.8 — 직접 입력 모드 토글
+  if ($durationSelect.value === 'custom') {
+    $customDurationWrap.hidden = false;
+    if (!$customDuration.value) {
+      $customDuration.value = '25';  // 기본값 25분
+    }
+    $customDuration.focus();
+  } else {
+    $customDurationWrap.hidden = true;
+  }
   if (!timer.isRunning) {
-    timer.duration = parseInt($durationSelect.value, 10);
+    timer.duration = getCurrentDurationSeconds();
     timer.remaining = timer.duration;
     updateTimerDisplay();
   }
 });
+
+// v0.1.8 — 커스텀 시간 input 변경
+$customDuration.addEventListener('input', () => {
+  let min = parseInt($customDuration.value, 10);
+  if (!Number.isFinite(min) || min < 1) return;  // 빈값/잘못된 값은 무시
+  if (min > 999) {
+    min = 999;
+    $customDuration.value = '999';
+  }
+  const sec = min * 60;
+  localStorage.setItem(STORAGE.customDuration, String(sec));
+  if (!timer.isRunning) {
+    timer.duration = sec;
+    timer.remaining = sec;
+    updateTimerDisplay();
+  }
+});
+
+// ====== v0.1.8 — 완료 카운트 ======
+function updateCompletedDisplay() {
+  $completedCount.textContent = String(completedCount);
+}
+
+// ====== v0.1.8 — 인증샷 ======
+$captureBtn.addEventListener('click', () => {
+  $captureInput.click();
+});
+
+$captureInput.addEventListener('change', (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+
+  // 파일을 Data URL로 읽고 → 작게 압축해서 localStorage 저장
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const dataUrl = ev.target.result;
+    compressImage(dataUrl, 800, 0.7).then((compressedUrl) => {
+      $lastCaptureImg.src = compressedUrl;
+      $lastCapture.hidden = false;
+      try {
+        localStorage.setItem(STORAGE.lastCapture, compressedUrl);
+      } catch (err) {
+        // QuotaExceeded — 더 작게 재시도
+        compressImage(dataUrl, 480, 0.5).then((smaller) => {
+          $lastCaptureImg.src = smaller;
+          try { localStorage.setItem(STORAGE.lastCapture, smaller); } catch {}
+        });
+      }
+    });
+  };
+  reader.readAsDataURL(file);
+
+  // 같은 파일 다시 선택할 수 있게 input value 초기화
+  $captureInput.value = '';
+});
+
+$removeCaptureBtn.addEventListener('click', () => {
+  if (!confirm('마지막 인증샷을 지울까요?')) return;
+  $lastCaptureImg.src = '';
+  $lastCapture.hidden = true;
+  localStorage.removeItem(STORAGE.lastCapture);
+});
+
+// v0.1.8 — 이미지 압축 (canvas 사용)
+// maxDim: 가로/세로 중 긴 변 기준 최대 px / quality: 0~1 JPEG 품질
+function compressImage(dataUrl, maxDim, quality) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > height && width > maxDim) {
+        height = Math.round(height * maxDim / width);
+        width = maxDim;
+      } else if (height > maxDim) {
+        width = Math.round(width * maxDim / height);
+        height = maxDim;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => resolve(dataUrl);  // 실패 시 원본
+    img.src = dataUrl;
+  });
+}

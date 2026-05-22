@@ -57,10 +57,31 @@
             <option value="1500" selected>25분 (기본)</option>
             <option value="2700">45분</option>
             <option value="3600">60분</option>
+            <option value="custom">⚙ 직접 입력...</option>
           </select>
         </label>
+        <div class="custom-duration" id="customDurationWrap" hidden>
+          <input type="number" id="customDuration" min="1" max="999" step="1" placeholder="분 입력">
+          <span>분 (1~999)</span>
+        </div>
       </div>
       <p id="timerStatus" class="timer-status"></p>
+
+      <!-- 완료 카운트 + 인증샷 -->
+      <div class="completed-log">
+        <div class="completed-counter">
+          지금까지 <strong id="completedCount">0</strong>번 완료 🍅
+        </div>
+        <div class="capture-row" id="captureRow" hidden>
+          <button id="captureBtn" class="btn-capture">📷 인증샷 첨부 (선택)</button>
+          <input type="file" id="captureInput" accept="image/*" capture="environment" hidden>
+        </div>
+        <div class="last-capture" id="lastCapture" hidden>
+          <span class="last-capture-label">마지막 인증샷</span>
+          <img id="lastCaptureImg" alt="마지막 인증샷">
+          <button id="removeCaptureBtn" class="btn-remove-capture" title="삭제">✕</button>
+        </div>
+      </div>
     </section>
 
     <footer>
