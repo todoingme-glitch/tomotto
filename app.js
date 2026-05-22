@@ -74,8 +74,11 @@ const $nickCancelBtn = document.getElementById('nickCancelBtn');
 
 // 배틀 생성 모달
 const $battleCreateModal = document.getElementById('battleCreateModal');
-const $battleCommonTaskField = document.getElementById('battleCommonTaskField');
-const $battleCommonTask = document.getElementById('battleCommonTask');
+// v0.1.15 — 공통 작업 text input 제거, 가챠 결과 미리보기로 대체
+const $battleTaskPreviewField = document.getElementById('battleTaskPreviewField');
+const $battleTaskText = document.getElementById('battleTaskText');
+const $battleTaskLabel = document.getElementById('battleTaskLabel');
+const $battleTaskHint = document.getElementById('battleTaskHint');
 const $battleDuration = document.getElementById('battleDuration');
 const $battleCustomWrap = document.getElementById('battleCustomWrap');
 const $battleCustomHours = document.getElementById('battleCustomHours');
@@ -105,11 +108,13 @@ const $logoWrap = document.getElementById('logoWrap');
 
 function playHifive() {
   if (!$logoSvg) return;
-  // 클래스 토글로 애니메이션 재트리거
+  // SVG는 offsetWidth reflow가 안 먹힘 → 더블 rAF로 클래스 재트리거
   $logoSvg.classList.remove('play');
-  // reflow 강제 → 클래스 다시 추가하면 애니메이션 처음부터
-  void $logoSvg.offsetWidth;
-  $logoSvg.classList.add('play');
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      $logoSvg.classList.add('play');
+    });
+  });
 }
 
 // ====== v0.1.13 — 친구 배틀 ======
@@ -185,6 +190,8 @@ $nickInput.addEventListener('keydown', (e) => {
 });
 
 $battleNickEditBtn.addEventListener('click', () => openNickModal('edit'));
+// 닉네임 텍스트 직접 클릭/탭으로도 수정 모달 열기 (웹·모바일 공통)
+$battleNick.addEventListener('click', () => openNickModal('edit'));
 
 // 배틀 생성 모달
 $battleCreateBtn.addEventListener('click', () => {
@@ -196,13 +203,36 @@ $battleCreateBtn.addEventListener('click', () => {
   openBattleCreateModal();
 });
 
+// v0.1.15 — 배틀 생성 모달: 모드에 따라 가챠 결과 미리보기 업데이트
+function updateBattleTaskPreview(mode) {
+  if (mode === 'common') {
+    $battleTaskLabel.textContent = '공통 작업 (내 가챠 결과가 자동으로 사용돼요)';
+  } else {
+    $battleTaskLabel.textContent = '내 가챠 결과 (친구는 각자 가챠를 돌려요)';
+  }
+
+  if (currentTask) {
+    $battleTaskText.textContent = currentTask;
+    $battleTaskText.className = 'has-task';
+    $battleTaskHint.textContent = mode === 'common'
+      ? `"${currentTask}"이 친구에게 공통 작업으로 공유돼요.`
+      : `내 작업: "${currentTask}". 친구는 본인 가챠로 정해요.`;
+    $battleTaskHint.style.color = '';
+    $battleCreateConfirmBtn.disabled = false;
+  } else {
+    $battleTaskText.textContent = '가챠 결과 없음';
+    $battleTaskText.className = 'no-task';
+    $battleTaskHint.textContent = '⚠ 먼저 가챠를 돌려서 작업을 정해주세요!';
+    $battleTaskHint.style.color = 'var(--accent)';
+    $battleCreateConfirmBtn.disabled = true;
+  }
+}
+
 function openBattleCreateModal() {
-  // 초기화
   document.querySelector('input[name="battleMode"][value="common"]').checked = true;
-  $battleCommonTask.value = '';
-  $battleCommonTaskField.hidden = false;
   $battleDuration.value = '1500';
   $battleCustomWrap.hidden = true;
+  updateBattleTaskPreview('common');
   if (typeof $battleCreateModal.showModal === 'function') $battleCreateModal.showModal();
   else $battleCreateModal.setAttribute('open', '');
 }
@@ -212,10 +242,10 @@ function closeBattleCreateModal() {
   else $battleCreateModal.removeAttribute('open');
 }
 
-// 모드 변경 시 공통 작업 input 토글
+// 모드 변경 시 가챠 결과 미리보기 업데이트 (v0.1.15)
 document.querySelectorAll('input[name="battleMode"]').forEach((radio) => {
   radio.addEventListener('change', (e) => {
-    $battleCommonTaskField.hidden = e.target.value !== 'common';
+    updateBattleTaskPreview(e.target.value);
   });
 });
 
@@ -248,13 +278,16 @@ $battleCreateConfirmBtn.addEventListener('click', async () => {
   const durationSec = getBattleDurationSec();
   let taskCommon = null;
 
+  // v0.1.15 — 두 모드 모두 가챠 결과 필수
+  if (!currentTask) {
+    alert('먼저 가챠를 돌려서 작업을 정해주세요!');
+    closeBattleCreateModal();
+    document.querySelector('.gacha-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
+
   if (mode === 'common') {
-    taskCommon = $battleCommonTask.value.trim();
-    if (!taskCommon) {
-      alert('공통 작업을 입력해주세요.');
-      $battleCommonTask.focus();
-      return;
-    }
+    taskCommon = currentTask;  // 가챠 결과 자동 사용
   }
 
   // 배틀 데이터 생성
@@ -409,25 +442,42 @@ async function renderMyBattles() {
 
 // 배틀 삭제 (생성자만)
 async function deleteBattle(battleId) {
-  if (!sb) return;
   if (!confirm('이 배틀을 삭제할까요? 되돌릴 수 없어요.')) return;
-  // battle_players는 ON DELETE CASCADE로 자동 삭제됨
-  const { error } = await sb.from('battles').delete().eq('id', battleId);
-  if (error) {
-    alert('삭제 실패: ' + error.message);
-    return;
+
+  // 1. Supabase에서 삭제 — battle_players 먼저, 그 다음 battles
+  if (sb) {
+    // 1-a. 참여자 행 먼저 삭제 (외래 키 제약 해제)
+    const { error: playersError } = await sb.from('battle_players').delete().eq('battle_id', battleId);
+    if (playersError) {
+      console.error('battle_players 삭제 실패:', playersError);
+      alert('삭제 실패: ' + playersError.message);
+      return;
+    }
+    // 1-b. 배틀 본체 삭제
+    const { error } = await sb.from('battles').delete().eq('id', battleId);
+    if (error) {
+      console.error('battles 삭제 실패:', error);
+      alert('삭제 실패: ' + error.message);
+      return;
+    }
   }
-  // localStorage 캐시에서도 제거
+
+  // 2. DB 삭제 성공(또는 Supabase 미연결) 후 localStorage 캐시도 제거
   let cached = [];
   try { cached = JSON.parse(localStorage.getItem(BATTLE_STORAGE.myBattles) || '[]'); } catch {}
   cached = cached.filter((b) => b.id !== battleId);
   localStorage.setItem(BATTLE_STORAGE.myBattles, JSON.stringify(cached));
-  renderMyBattles();
+
+  // 3. 이제 re-render (Supabase에서도 사라졌으므로 카드가 다시 뜨지 않음)
+  await renderMyBattles();
 }
 
 $battleList.addEventListener('click', async (e) => {
-  const action = e.target.dataset.action;
-  const id = e.target.dataset.id;
+  // closest로 버튼 내부 요소 클릭도 안전하게 처리
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const action = btn.dataset.action;
+  const id = btn.dataset.id;
   if (!action || !id) return;
 
   if (action === 'invite') {
@@ -492,6 +542,11 @@ $inviteShareBtn.addEventListener('click', async () => {
   } catch {}
 });
 
+// v0.1.15 — 배틀 잠금 배너 요소 (B안)
+const $battleLockBanner = document.getElementById('battleLockBanner');
+const $battleLockOpenBtn = document.getElementById('battleLockOpenBtn');
+const $battleLockDismissBtn = document.getElementById('battleLockDismissBtn');
+
 // v0.1.14 — 배틀 룸 모달 요소
 const $battleRoomModal = document.getElementById('battleRoomModal');
 const $battleRoomTitle = document.getElementById('battleRoomTitle');
@@ -501,10 +556,41 @@ const $battleRoomTask = document.getElementById('battleRoomTask');
 const $battleRoomStatus = document.getElementById('battleRoomStatus');
 const $battleRoomCancelBtn = document.getElementById('battleRoomCancelBtn');
 const $battleRoomAcceptBtn = document.getElementById('battleRoomAcceptBtn');
+const $battleRoomGachaBtn = document.getElementById('battleRoomGachaBtn');  // v0.1.15
 const $battleRoomStartBtn = document.getElementById('battleRoomStartBtn');
 
 let currentBattleId = null;
 let currentBattleData = null;
+
+// v0.1.15 — 배틀 초대 URL로 들어온 경우 타이머 잠금 (B안)
+let lockedBattleId = null;
+
+function showBattleLock(battleId) {
+  lockedBattleId = battleId;
+  $battleLockBanner.hidden = false;
+  $startBtn.disabled = true;
+}
+
+function hideBattleLock() {
+  lockedBattleId = null;
+  $battleLockBanner.hidden = true;
+  // currentTask 있으면 시작 버튼 복원, 없으면 그대로 비활성
+  $startBtn.disabled = !currentTask;
+}
+
+// v0.1.15 — 가챠 완료 후 배너를 "준비됐어요! 배틀 시작" 상태로 전환
+function updateBattleLockReady() {
+  $battleLockBanner.querySelector('.battle-lock-text').textContent = '✓ 가챠 완료! 이제 배틀을 시작할 수 있어요';
+  $battleLockOpenBtn.textContent = '배틀 시작 ▶';
+}
+
+$battleLockOpenBtn.addEventListener('click', () => {
+  if (lockedBattleId) openBattleRoom(lockedBattleId);
+});
+
+$battleLockDismissBtn.addEventListener('click', () => {
+  hideBattleLock();
+});
 
 async function openBattleRoom(battleId) {
   currentBattleId = battleId;
@@ -596,7 +682,9 @@ function renderBattleRoom() {
 
   // 버튼 상태 결정
   $battleRoomAcceptBtn.hidden = true;
+  $battleRoomGachaBtn.hidden = true;
   $battleRoomStartBtn.hidden = true;
+  $battleRoomStatus.classList.remove('error');
 
   if (!alreadyJoined && !friend) {
     // 아직 참여 안 했고 자리 비어있으면 수락 가능
@@ -605,8 +693,14 @@ function renderBattleRoom() {
   } else if (alreadyJoined && !friend) {
     $battleRoomStatus.textContent = '친구가 링크를 열고 수락하길 기다리는 중...';
   } else if (alreadyJoined && friend) {
-    $battleRoomStatus.textContent = '둘 다 준비됐어요. 시작하면 타이머가 돌아가요.';
-    $battleRoomStartBtn.hidden = false;
+    // v0.1.15 — 따로 가챠 모드인데 본인 가챠 결과가 없으면 → 가챠 유도
+    if (battle.mode === 'separate' && !currentTask) {
+      $battleRoomGachaBtn.hidden = false;
+      $battleRoomStatus.textContent = '가챠를 먼저 돌려서 내 작업을 정해주세요!';
+    } else {
+      $battleRoomStartBtn.hidden = false;
+      $battleRoomStatus.textContent = '둘 다 준비됐어요. 시작하면 타이머가 돌아가요.';
+    }
   } else if (!alreadyJoined && friend) {
     $battleRoomStatus.textContent = '이미 두 사람이 참여한 배틀이에요. 새 배틀을 만들어주세요.';
     $battleRoomStatus.classList.add('error');
@@ -632,16 +726,57 @@ async function acceptBattle() {
   }
 
   await refreshBattleRoom();
+  renderMyBattles();  // 수락자 쪽 배틀카드 목록에도 추가
+}
+
+// v0.1.15 — 3·2·1 카운트다운 후 배틀 타이머 시작
+async function startBattleWithCountdown() {
+  if (!currentBattleData) return;
+
+  // 버튼 숨기고 카운트다운 UI 표시
+  $battleRoomStartBtn.hidden = true;
+  $battleRoomCancelBtn.hidden = true;
+  $battleRoomStatus.textContent = '';
+
+  const countEl = document.createElement('div');
+  countEl.className = 'battle-countdown';
+  $battleRoomModal.querySelector('.modal-actions').before(countEl);
+
+  for (let n = 3; n >= 1; n--) {
+    countEl.textContent = n;
+    await new Promise(r => setTimeout(r, 900));
+  }
+
+  // "시작!" — 미니 로고 클론 + 메인 로고 하이파이브 동시 실행
+  countEl.textContent = '';
+  const miniSvg = $logoSvg ? $logoSvg.cloneNode(true) : null;
+  if (miniSvg) {
+    miniSvg.removeAttribute('id');
+    miniSvg.classList.remove('play');
+    miniSvg.style.cssText = 'width:110px;height:auto;display:block;margin:0 auto 6px;filter:drop-shadow(0 2px 6px rgba(217,78,58,0.35))';
+    countEl.appendChild(miniSvg);
+    // 미니 로고도 하이파이브
+    requestAnimationFrame(() => requestAnimationFrame(() => miniSvg.classList.add('play')));
+  }
+  const startLabel = document.createElement('span');
+  startLabel.textContent = '시작!';
+  startLabel.style.cssText = 'display:block;font-size:1.5rem;font-weight:800;color:var(--accent);letter-spacing:0.05em';
+  countEl.appendChild(startLabel);
+  playHifive();  // 메인 로고도 동시에 하이파이브
+
+  await new Promise(r => setTimeout(r, 750));
+  countEl.remove();
+
+  startBattleTimer();  // 기존 로직 실행
 }
 
 function startBattleTimer() {
   if (!currentBattleData) return;
+  hideBattleLock();  // v0.1.15 — 배틀 시작 시 타이머 잠금 해제
   const { battle } = currentBattleData;
   // 메인 타이머에 배틀 작업 적용
-  let task = battle.task_common;
-  if (battle.mode === 'separate') {
-    task = '각자 가챠 모드 (개인 가챠 돌려서 작업 정해주세요)';
-  }
+  // v0.1.15 — 따로 가챠 모드는 본인 가챠 결과 사용 (공통 작업은 task_common)
+  let task = battle.mode === 'separate' ? currentTask : battle.task_common;
   currentTask = task;
   localStorage.setItem(STORAGE.currentTask, task);
   showGachaResult(task, false);
@@ -667,7 +802,13 @@ function closeBattleRoom() {
 
 $battleRoomCancelBtn.addEventListener('click', closeBattleRoom);
 $battleRoomAcceptBtn.addEventListener('click', acceptBattle);
-$battleRoomStartBtn.addEventListener('click', startBattleTimer);
+// v0.1.15 — 가챠 유도: 모달 닫고 가챠 섹션으로 이동
+$battleRoomGachaBtn.addEventListener('click', () => {
+  showBattleLock(currentBattleId);   // 배너 유지 (없으면 새로 켜기)
+  closeBattleRoom();
+  document.querySelector('.category-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+$battleRoomStartBtn.addEventListener('click', startBattleWithCountdown);
 
 // 닉네임 저장 후 이벤트 (배틀 룸 열기 재시도용)
 function dispatchNickSaved() {
@@ -679,10 +820,11 @@ window.addEventListener('load', () => {
   loadNickname();
   renderMyBattles();
 
-  // URL에 ?battle=ID 있으면 배틀 룸 모달 자동 열기
+  // URL에 ?battle=ID 있으면 배틀 룸 모달 자동 열기 + 타이머 잠금 (B안)
   const params = new URLSearchParams(location.search);
   const battleId = params.get('battle');
   if (battleId) {
+    showBattleLock(battleId);           // 타이머 시작 버튼 잠금
     setTimeout(() => openBattleRoom(battleId), 400);
   }
 });
@@ -774,32 +916,12 @@ window.addEventListener('load', () => {
   gachaCount = Number.isFinite(savedGacha) && savedGacha >= 0 ? savedGacha : 0;
   updateGachaCounter();
 
-  // 타이머 길이 복원 — select option에 있는 값만 받기 (NaN/구버전 방어)
-  const validValues = Array.from($durationSelect.options).map(o => o.value);
-  const savedDuration = localStorage.getItem(STORAGE.duration);
-  if (savedDuration === 'custom') {
-    // 커스텀 시간 모드 복원 (시:분 분리)
-    $durationSelect.value = 'custom';
-    const savedCustom = parseInt(localStorage.getItem(STORAGE.customDuration) || '1500', 10);
-    const customSec = Number.isFinite(savedCustom) && savedCustom > 0 ? savedCustom : 1500;
-    timer.duration = customSec;
-    const totalMin = Math.round(customSec / 60);
-    $customHours.value = String(Math.floor(totalMin / 60));
-    $customMinutes.value = String(totalMin % 60);
-    $customDurationWrap.hidden = false;
-  } else if (savedDuration && validValues.includes(savedDuration)) {
-    $durationSelect.value = savedDuration;
-    const parsed = parseInt(savedDuration, 10);
-    timer.duration = Number.isFinite(parsed) && parsed > 0 ? parsed : 1500;
-    $customDurationWrap.hidden = true;  // 명시 hide (v0.1.10 hotfix)
-  } else {
-    // 디폴트 25분 (1500초) — select.value도 명시
-    $durationSelect.value = '1500';
-    timer.duration = 1500;
-    if (savedDuration) localStorage.setItem(STORAGE.duration, '1500');
-    $customDurationWrap.hidden = true;  // 명시 hide
-  }
-  timer.remaining = timer.duration;
+  // 타이머 길이 — 새로고침 시 항상 25분(1500초)으로 초기화
+  // (직접 입력 등 이전 설정값은 복원하지 않음)
+  $durationSelect.value = '1500';
+  timer.duration = 1500;
+  timer.remaining = 1500;
+  $customDurationWrap.hidden = true;
 
   // v0.1.8 — 누적 완료 카운트 복원
   const savedCompleted = parseInt(localStorage.getItem(STORAGE.completedCount) || '0', 10);
@@ -910,6 +1032,15 @@ function renderCategories() {
   $gachaBtn.disabled = categories.length < 2;
   saveCategories();
   editingCategoryIndex = -1;
+
+  // 카테고리가 모두 사라지면 가챠 결과도 초기화
+  if (categories.length === 0 && currentTask) {
+    currentTask = null;
+    localStorage.removeItem(STORAGE.currentTask);
+    $gachaResult.className = 'gacha-result';
+    $gachaResult.innerHTML = '<p class="gacha-placeholder">아직 안 돌렸어요. 카테고리 등록 후 버튼을 눌러보세요.</p>';
+    $startBtn.disabled = true;
+  }
 }
 
 // v0.1.9 — 카테고리 편집 모달
@@ -1071,6 +1202,8 @@ function showGachaResult(task, animate = true) {
   `;
   if (animate) {
     spawnConfetti();
+    // v0.1.15 — 배틀 초대 링크로 들어온 사람이 가챠 완료 시 배너 상태 전환
+    if (lockedBattleId) updateBattleLockReady();
   }
 }
 
@@ -1139,8 +1272,13 @@ async function spinGacha() {
   $gachaResult.classList.add('spinning');
   $gachaResult.classList.remove('revealed');
 
-  // 최종 결과 미리 결정
-  const winner = categories[Math.floor(Math.random() * categories.length)];
+  // 최종 결과 미리 결정 — 직전 결과와 연속 중복 방지
+  let winner = categories[Math.floor(Math.random() * categories.length)];
+  if (categories.length >= 2 && winner === currentTask) {
+    do {
+      winner = categories[Math.floor(Math.random() * categories.length)];
+    } while (winner === currentTask);
+  }
 
   // 슬롯 설정
   const ITEM_HEIGHT = 80;             // px — CSS와 동기
@@ -1280,8 +1418,11 @@ function startTimer() {
     timer.remaining = timer.duration;
   }
 
-  // 알림 권한 요청
-  if ('Notification' in window && Notification.permission === 'default') {
+  // 알림 권한 요청 — 최초 1회만 (localStorage 플래그로 중복 방지)
+  if ('Notification' in window &&
+      Notification.permission === 'default' &&
+      !localStorage.getItem('tomotto_notif_asked')) {
+    localStorage.setItem('tomotto_notif_asked', '1');
     Notification.requestPermission();
   }
 
@@ -1349,7 +1490,7 @@ function getCurrentDurationSeconds() {
     const hours = Number.isFinite(h) && h >= 0 ? h : 0;
     const mins = Number.isFinite(m) && m >= 0 ? m : 0;
     const totalSec = (hours * 60 + mins) * 60;
-    return totalSec > 0 ? totalSec : 1500;  // 최소 25분 fallback
+    return totalSec;  // 0:00도 허용 — 직접 입력 시 00:00 표시
   }
   const sec = parseInt($durationSelect.value, 10);
   return Number.isFinite(sec) && sec > 0 ? sec : 1500;
@@ -1430,11 +1571,10 @@ $durationSelect.addEventListener('change', () => {
   // v0.1.9 — 직접 입력 모드 토글 (시:분 분리)
   if ($durationSelect.value === 'custom') {
     $customDurationWrap.hidden = false;
-    if (!$customHours.value && !$customMinutes.value) {
-      $customHours.value = '0';
-      $customMinutes.value = '25';  // 기본 25분
-    }
-    setTimeout(() => $customHours.focus(), 50);
+    // 값이 없을 때만 0으로 초기화 (이미 입력된 값은 유지)
+    if ($customHours.value === '') $customHours.value = '0';
+    if ($customMinutes.value === '') $customMinutes.value = '0';
+    setTimeout(() => $customMinutes.focus(), 50);
   } else {
     $customDurationWrap.hidden = true;
   }

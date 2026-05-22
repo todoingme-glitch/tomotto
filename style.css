@@ -622,6 +622,47 @@ header {
   animation: celebrate 0.8s ease-out;
 }
 
+/* v0.1.15 B안 — 배틀 초대 링크로 들어왔을 때 타이머 잠금 배너 */
+.battle-lock-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--accent-soft);
+  border: 1px solid #f4c4ba;
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-deep);
+}
+
+.battle-lock-text {
+  flex: 1;
+  line-height: 1.4;
+}
+
+.battle-lock-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.btn-mini-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-muted);
+}
+
+.btn-mini-ghost:hover {
+  background: var(--bg);
+  border-color: var(--border);
+  color: var(--text);
+}
+
 .timer-controls {
   display: flex;
   gap: 8px;
@@ -1094,6 +1135,10 @@ dialog.modal input[type="text"]:focus {
   font-weight: 700;
   color: var(--accent);
   flex: 1;
+  cursor: pointer;
+  /* 탭/클릭 시 직접 수정 가능 — 모바일 터치 영역 확보 */
+  padding: 4px 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .btn-mini {
@@ -1305,6 +1350,62 @@ dialog.modal input[type="text"]:focus {
 /* 배틀 룸 모달 */
 .modal-battle-room {
   max-width: 480px;
+}
+
+/* v0.1.15 — 배틀 생성 모달: 가챠 결과 미리보기 */
+.battle-task-preview {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 14px;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.battle-task-preview .has-task {
+  color: var(--accent-deep);
+}
+
+.battle-task-preview .no-task {
+  color: var(--text-muted);
+  font-weight: 400;
+  font-style: italic;
+}
+
+.battle-task-hint {
+  font-size: 12px;
+  margin: 2px 0 0 0;
+}
+
+/* v0.1.15 — 배틀 룸 모달: 3·2·1 카운트다운 */
+.battle-countdown {
+  text-align: center;
+  font-size: 72px;
+  font-weight: 900;
+  color: var(--accent);
+  line-height: 1;
+  padding: 8px 0 16px;
+  letter-spacing: -2px;
+  animation: countPop 0.25s ease-out;
+}
+
+@keyframes countPop {
+  from { transform: scale(1.4); opacity: 0.5; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+/* v0.1.15 A안 — 배틀 룸 모달 앱 소개 (초대받은 사람 대상) */
+.battle-room-app-intro {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: -4px 0 14px 0;
+  padding: 0;
+  line-height: 1.5;
 }
 
 .battle-room-summary {

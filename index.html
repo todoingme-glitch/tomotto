@@ -10,7 +10,7 @@
 <body>
   <div class="container">
     <header>
-      <div class="logo-wrap" id="logoWrap" title="클릭하면 하이파이브 다시 보기">
+      <div class="logo-wrap" id="logoWrap" title="한 번 더 하이파이브! 🍅">
         <svg class="logo-svg" id="tomottoLogo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 506.18 183.13" aria-label="Tomotto logo">
           <defs>
             <style>
@@ -172,6 +172,14 @@
     <section class="card timer-section">
       <h2><span class="step">3</span> 뽀모도로 타이머</h2>
       <div class="timer-display" id="timerDisplay">25:00</div>
+      <!-- B안: 배틀 초대 링크로 들어왔을 때 타이머 잠금 배너 -->
+      <div class="battle-lock-banner" id="battleLockBanner" hidden>
+        <span class="battle-lock-text">⚔️ 배틀 연결됨 — 배틀 창에서 타이머를 시작해주세요</span>
+        <div class="battle-lock-actions">
+          <button id="battleLockOpenBtn" class="btn-mini" type="button">배틀 열기</button>
+          <button id="battleLockDismissBtn" class="btn-mini btn-mini-ghost" type="button" title="배틀 무시하고 혼자 사용">✕</button>
+        </div>
+      </div>
       <div class="timer-controls">
         <button id="startBtn" class="btn-timer btn-start" disabled>시작</button>
         <button id="pauseBtn" class="btn-timer btn-pause" disabled>일시정지</button>
@@ -191,9 +199,9 @@
           </select>
         </label>
         <div class="custom-duration" id="customDurationWrap" hidden>
-          <input type="number" id="customHours" min="0" max="23" step="1" placeholder="0">
+          <input type="number" id="customHours" min="0" max="23" step="1" placeholder="0" value="0">
           <span>시간</span>
-          <input type="number" id="customMinutes" min="0" max="59" step="1" placeholder="30">
+          <input type="number" id="customMinutes" min="0" max="59" step="1" placeholder="0" value="0">
           <span>분</span>
         </div>
       </div>
@@ -241,7 +249,7 @@
     </section>
 
     <footer>
-      <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1.14 · 친구 배틀 · Supabase 연동</span></small>
+      <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1.16 · 친구 배틀 · Supabase 연동</span></small>
     </footer>
   </div>
 
@@ -283,9 +291,13 @@
       </div>
     </div>
 
-    <div class="field" id="battleCommonTaskField">
-      <label for="battleCommonTask">공통 작업</label>
-      <input type="text" id="battleCommonTask" maxlength="40" placeholder="예: 보고서 정리, 운동, 공부...">
+    <!-- v0.1.15 — 가챠 결과 자동 연동 (직접 입력 제거) -->
+    <div class="field" id="battleTaskPreviewField">
+      <label id="battleTaskLabel">공통 작업 (내 가챠 결과)</label>
+      <div class="battle-task-preview" id="battleTaskPreview">
+        <span id="battleTaskText">—</span>
+      </div>
+      <p class="modal-hint battle-task-hint" id="battleTaskHint"></p>
     </div>
 
     <div class="field">
@@ -299,9 +311,9 @@
           <option value="custom">⚙ 직접 입력</option>
         </select>
         <div class="custom-duration" id="battleCustomWrap" hidden>
-          <input type="number" id="battleCustomHours" min="0" max="23" placeholder="0">
+          <input type="number" id="battleCustomHours" min="0" max="23" placeholder="0" value="0">
           <span>시간</span>
-          <input type="number" id="battleCustomMinutes" min="0" max="59" placeholder="25">
+          <input type="number" id="battleCustomMinutes" min="0" max="59" placeholder="0" value="0">
           <span>분</span>
         </div>
       </div>
@@ -372,6 +384,8 @@
   <!-- v0.1.14 — 배틀 룸 모달 -->
   <dialog id="battleRoomModal" class="modal modal-battle-room">
     <h3 id="battleRoomTitle">친구 배틀</h3>
+    <!-- A안: 초대로 처음 들어온 사람을 위한 앱 소개 한 줄 -->
+    <p class="battle-room-app-intro">Tomotto는 가챠로 작업을 뽑고 친구랑 같이 집중하는 앱이에요 🍅</p>
     <div class="battle-room-summary" id="battleRoomSummary">불러오는 중...</div>
 
     <div class="battle-players" id="battleRoomPlayers">
@@ -386,6 +400,8 @@
       <div class="modal-actions-right">
         <button id="battleRoomCancelBtn" class="btn-modal btn-modal-secondary" type="button">닫기</button>
         <button id="battleRoomAcceptBtn" class="btn-modal btn-modal-primary" type="button" hidden>✓ 수락하고 참여</button>
+        <!-- v0.1.15 — 따로 가챠 모드에서 가챠 없을 때 -->
+        <button id="battleRoomGachaBtn" class="btn-modal btn-modal-primary" type="button" hidden>🎰 가챠 먼저 돌리기</button>
         <button id="battleRoomStartBtn" class="btn-modal btn-modal-primary" type="button" hidden>▶ 타이머 시작</button>
       </div>
     </div>
