@@ -1046,6 +1046,374 @@ dialog.modal input[type="text"]:focus {
   color: var(--accent);
 }
 
+/* ============================================================
+   v0.1.13 — 친구 배틀 섹션
+   ============================================================ */
+
+.battle-section { position: relative; }
+
+.badge-beta {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--basil-deep);
+  background: var(--basil-soft);
+  padding: 2px 6px;
+  border-radius: 999px;
+  letter-spacing: 0.06em;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+.battle-intro {
+  font-size: 13px;
+  color: var(--text-soft);
+  line-height: 1.55;
+  margin-bottom: 14px;
+}
+
+.battle-me {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 14px;
+}
+
+.battle-me-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.battle-me-nick {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--accent);
+  flex: 1;
+}
+
+.btn-mini {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 10px;
+  background: var(--bg-card);
+  color: var(--text-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-mini:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.btn-battle-create {
+  width: 100%;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 14px;
+  background: var(--tomato-gradient);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: transform 0.05s, box-shadow 0.15s;
+  box-shadow: var(--shadow-lg);
+  margin-bottom: 14px;
+}
+
+.btn-battle-create:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(238, 90, 60, 0.25);
+}
+
+.btn-battle-create:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.battle-list {
+  margin-bottom: 12px;
+}
+
+.battle-empty {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+  padding: 16px;
+  background: var(--bg);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.battle-card {
+  padding: 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+}
+
+.battle-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.battle-card-mode {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--basil-deep);
+  background: var(--basil-soft);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.battle-card-status {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.battle-card-status.waiting { color: var(--accent); }
+.battle-card-status.active { color: var(--basil-deep); }
+
+.battle-card-task {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.battle-card-meta {
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.battle-card-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.battle-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* 모달 — 배틀 만들기 */
+.modal-battle {
+  max-width: 460px;
+}
+
+.battle-mode-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.battle-mode-option {
+  cursor: pointer;
+  position: relative;
+}
+
+.battle-mode-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+}
+
+.battle-mode-card {
+  display: block;
+  padding: 12px 14px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  transition: all 0.15s;
+}
+
+.battle-mode-card strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.battle-mode-card small {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.battle-mode-option input[type="radio"]:checked + .battle-mode-card {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.battle-mode-option input[type="radio"]:checked + .battle-mode-card strong {
+  color: var(--accent-deep);
+}
+
+.battle-time-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.battle-time-row select {
+  width: 100%;
+  font-family: inherit;
+  font-size: 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.battle-time-row select:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--bg-card);
+}
+
+/* 배틀 룸 모달 */
+.modal-battle-room {
+  max-width: 480px;
+}
+
+.battle-room-summary {
+  font-size: 13px;
+  color: var(--text-soft);
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--accent);
+}
+
+.battle-players {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.battle-player {
+  text-align: center;
+  padding: 14px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.battle-player.is-me {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.battle-player-nick {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.battle-player-role {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.battle-player.empty {
+  border-style: dashed;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.battle-vs {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: 0.05em;
+}
+
+.battle-room-task {
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  padding: 12px;
+  background: var(--basil-soft);
+  color: var(--basil-deep);
+  border-radius: var(--radius-sm);
+  margin-bottom: 12px;
+}
+
+.battle-room-task.empty {
+  background: var(--bg);
+  color: var(--text-muted);
+  font-weight: 500;
+  font-style: italic;
+}
+
+.battle-room-status {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-soft);
+  margin-bottom: 8px;
+  min-height: 20px;
+}
+
+.battle-room-status.error {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+/* 초대 링크 박스 */
+.invite-link-box {
+  display: flex;
+  gap: 6px;
+  margin: 16px 0 8px;
+}
+
+.invite-link-box input {
+  flex: 1;
+  font-family: inherit;
+  font-size: 13px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text-soft);
+  cursor: text;
+  min-width: 0;
+}
+
+.invite-link-box .btn-mini {
+  padding: 10px 14px;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
 /* Mobile */
 @media (max-width: 480px) {
   .container {

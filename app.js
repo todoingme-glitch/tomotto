@@ -44,6 +44,61 @@ const $catEditSave = document.getElementById('categoryEditSave');
 const $catEditCancel = document.getElementById('categoryEditCancel');
 const $catEditDelete = document.getElementById('categoryEditDelete');
 
+// v0.1.14 — Supabase 연동 활성화
+const USE_SUPABASE = true;
+const SUPABASE_URL = 'https://xiuwgqmrojvesmxljegm.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhpdXdncW1yb2p2ZXNteGxqZWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0Mjg4OTksImV4cCI6MjA5NTAwNDg5OX0.WdTaoOMkwnBvwWUuNRq-BPcELxQ7Y_ctqG93f-hjq0s';
+
+// Supabase client — SDK가 CDN으로 로드된 후 초기화
+let sb = null;
+if (USE_SUPABASE && window.supabase && SUPABASE_URL && SUPABASE_ANON_KEY) {
+  try {
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  } catch (err) {
+    console.error('Supabase client 초기화 실패:', err);
+  }
+}
+
+// 친구 배틀 요소
+const $battleNick = document.getElementById('battleNick');
+const $battleNickEditBtn = document.getElementById('battleNickEditBtn');
+const $battleCreateBtn = document.getElementById('battleCreateBtn');
+const $battleList = document.getElementById('battleList');
+
+// 닉네임 모달
+const $nickModal = document.getElementById('nickModal');
+const $nickModalTitle = document.getElementById('nickModalTitle');
+const $nickInput = document.getElementById('nickInput');
+const $nickSaveBtn = document.getElementById('nickSaveBtn');
+const $nickCancelBtn = document.getElementById('nickCancelBtn');
+
+// 배틀 생성 모달
+const $battleCreateModal = document.getElementById('battleCreateModal');
+const $battleCommonTaskField = document.getElementById('battleCommonTaskField');
+const $battleCommonTask = document.getElementById('battleCommonTask');
+const $battleDuration = document.getElementById('battleDuration');
+const $battleCustomWrap = document.getElementById('battleCustomWrap');
+const $battleCustomHours = document.getElementById('battleCustomHours');
+const $battleCustomMinutes = document.getElementById('battleCustomMinutes');
+const $battleCreateCancelBtn = document.getElementById('battleCreateCancelBtn');
+const $battleCreateConfirmBtn = document.getElementById('battleCreateConfirmBtn');
+
+// 초대 링크 모달
+const $inviteModal = document.getElementById('inviteModal');
+const $inviteSummary = document.getElementById('inviteSummary');
+const $inviteLinkInput = document.getElementById('inviteLinkInput');
+const $inviteCopyBtn = document.getElementById('inviteCopyBtn');
+const $inviteShareBtn = document.getElementById('inviteShareBtn');
+const $inviteCloseBtn = document.getElementById('inviteCloseBtn');
+
+// 친구 배틀 STORAGE 키
+const BATTLE_STORAGE = {
+  nickname: 'tomotto_battle_nickname',
+  myBattles: 'tomotto_battle_myBattles',  // 내가 만든 배틀 목록 (JSON 배열)
+};
+
+let myNickname = '';
+
 // v0.1.11 — SVG 로고 + 하이파이브 애니메이션
 const $logoSvg = document.getElementById('tomottoLogo');
 const $logoWrap = document.getElementById('logoWrap');
@@ -56,6 +111,520 @@ function playHifive() {
   void $logoSvg.offsetWidth;
   $logoSvg.classList.add('play');
 }
+
+// ====== v0.1.13 — 친구 배틀 ======
+
+// 짧은 랜덤 ID 생성 (배틀 ID용)
+function makeBattleId() {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let id = '';
+  for (let i = 0; i < 8; i++) {
+    id += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return id;
+}
+
+// 닉네임 복원·표시
+function loadNickname() {
+  myNickname = localStorage.getItem(BATTLE_STORAGE.nickname) || '';
+  renderBattleNickname();
+}
+
+function renderBattleNickname() {
+  if (myNickname) {
+    $battleNick.textContent = myNickname;
+    $battleNick.style.color = '';
+  } else {
+    $battleNick.textContent = '(미설정)';
+    $battleNick.style.color = 'var(--text-muted)';
+  }
+}
+
+// 닉네임 모달 열기 (mode: 'first' 처음 입력, 'edit' 수정)
+function openNickModal(mode) {
+  $nickInput.value = myNickname || '';
+  if (mode === 'first') {
+    $nickModalTitle.textContent = '닉네임을 알려주세요';
+    $nickCancelBtn.hidden = true;
+  } else {
+    $nickModalTitle.textContent = '닉네임 수정';
+    $nickCancelBtn.hidden = false;
+  }
+  if (typeof $nickModal.showModal === 'function') $nickModal.showModal();
+  else $nickModal.setAttribute('open', '');
+  setTimeout(() => $nickInput.focus(), 50);
+}
+
+function closeNickModal() {
+  if (typeof $nickModal.close === 'function') $nickModal.close();
+  else $nickModal.removeAttribute('open');
+}
+
+function saveNickname() {
+  const v = $nickInput.value.trim();
+  if (!v) {
+    alert('닉네임을 입력해주세요.');
+    return;
+  }
+  if (v.length > 12) {
+    alert('12자 이내로 적어주세요.');
+    return;
+  }
+  myNickname = v;
+  localStorage.setItem(BATTLE_STORAGE.nickname, v);
+  renderBattleNickname();
+  closeNickModal();
+  // v0.1.14 — 닉네임 저장 후 대기 중인 곳(배틀 룸 등)에 알림
+  document.dispatchEvent(new CustomEvent('nick-saved'));
+}
+
+$nickSaveBtn.addEventListener('click', saveNickname);
+$nickCancelBtn.addEventListener('click', closeNickModal);
+$nickInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); saveNickname(); }
+});
+
+$battleNickEditBtn.addEventListener('click', () => openNickModal('edit'));
+
+// 배틀 생성 모달
+$battleCreateBtn.addEventListener('click', () => {
+  // 닉네임 없으면 먼저 입력받음
+  if (!myNickname) {
+    openNickModal('first');
+    return;
+  }
+  openBattleCreateModal();
+});
+
+function openBattleCreateModal() {
+  // 초기화
+  document.querySelector('input[name="battleMode"][value="common"]').checked = true;
+  $battleCommonTask.value = '';
+  $battleCommonTaskField.hidden = false;
+  $battleDuration.value = '1500';
+  $battleCustomWrap.hidden = true;
+  if (typeof $battleCreateModal.showModal === 'function') $battleCreateModal.showModal();
+  else $battleCreateModal.setAttribute('open', '');
+}
+
+function closeBattleCreateModal() {
+  if (typeof $battleCreateModal.close === 'function') $battleCreateModal.close();
+  else $battleCreateModal.removeAttribute('open');
+}
+
+// 모드 변경 시 공통 작업 input 토글
+document.querySelectorAll('input[name="battleMode"]').forEach((radio) => {
+  radio.addEventListener('change', (e) => {
+    $battleCommonTaskField.hidden = e.target.value !== 'common';
+  });
+});
+
+// 시간 직접 입력 토글
+$battleDuration.addEventListener('change', () => {
+  if ($battleDuration.value === 'custom') {
+    $battleCustomWrap.hidden = false;
+    if (!$battleCustomHours.value && !$battleCustomMinutes.value) {
+      $battleCustomHours.value = '0';
+      $battleCustomMinutes.value = '25';
+    }
+  } else {
+    $battleCustomWrap.hidden = true;
+  }
+});
+
+function getBattleDurationSec() {
+  if ($battleDuration.value === 'custom') {
+    const h = parseInt($battleCustomHours.value, 10) || 0;
+    const m = parseInt($battleCustomMinutes.value, 10) || 0;
+    return Math.max(60, (h * 60 + m) * 60);  // 최소 1분
+  }
+  return parseInt($battleDuration.value, 10) || 1500;
+}
+
+$battleCreateCancelBtn.addEventListener('click', closeBattleCreateModal);
+
+$battleCreateConfirmBtn.addEventListener('click', async () => {
+  const mode = document.querySelector('input[name="battleMode"]:checked').value;
+  const durationSec = getBattleDurationSec();
+  let taskCommon = null;
+
+  if (mode === 'common') {
+    taskCommon = $battleCommonTask.value.trim();
+    if (!taskCommon) {
+      alert('공통 작업을 입력해주세요.');
+      $battleCommonTask.focus();
+      return;
+    }
+  }
+
+  // 배틀 데이터 생성
+  const battleId = makeBattleId();
+  const battle = {
+    id: battleId,
+    creator_nickname: myNickname,
+    mode,
+    task_common: taskCommon,
+    duration_sec: durationSec,
+    status: 'waiting',  // waiting → active → completed
+    created_at: new Date().toISOString(),
+  };
+
+  // 저장 — 일단 localStorage (Supabase 연동되면 서버로)
+  await saveBattle(battle);
+
+  // 내 배틀 목록에 추가
+  addToMyBattles(battle);
+
+  // 모달 닫고 초대 링크 표시
+  closeBattleCreateModal();
+  openInviteModal(battle);
+  renderMyBattles();
+});
+
+// v0.1.14 — Supabase 배틀 저장 + 생성자를 battle_players에도 등록
+async function saveBattle(battle) {
+  if (USE_SUPABASE && sb) {
+    // battles 테이블에 insert
+    const { error: e1 } = await sb.from('battles').insert(battle);
+    if (e1) {
+      console.error('배틀 저장 실패:', e1);
+      alert('배틀 저장 실패: ' + e1.message);
+      throw e1;
+    }
+    // battle_players에 생성자 등록
+    const { error: e2 } = await sb.from('battle_players').insert({
+      battle_id: battle.id,
+      nickname: battle.creator_nickname,
+      is_creator: true,
+    });
+    if (e2) {
+      console.error('플레이어 등록 실패:', e2);
+      // 배틀은 만들어졌으니 치명적이진 않음 — 알림만
+    }
+  } else {
+    localStorage.setItem(`tomotto_battle_${battle.id}`, JSON.stringify(battle));
+  }
+}
+
+// v0.1.14 — Supabase에서 단일 배틀 + 참여자 정보 가져오기
+async function fetchBattle(battleId) {
+  if (!sb) return null;
+  const { data: battle, error: e1 } = await sb
+    .from('battles')
+    .select('*')
+    .eq('id', battleId)
+    .single();
+  if (e1) {
+    console.error('배틀 조회 실패:', e1);
+    return null;
+  }
+  const { data: players, error: e2 } = await sb
+    .from('battle_players')
+    .select('*')
+    .eq('battle_id', battleId)
+    .order('created_at', { ascending: true });
+  if (e2) {
+    console.error('참여자 조회 실패:', e2);
+  }
+  return { battle, players: players || [] };
+}
+
+function addToMyBattles(battle) {
+  let list = [];
+  try { list = JSON.parse(localStorage.getItem(BATTLE_STORAGE.myBattles) || '[]'); } catch {}
+  list.unshift(battle);  // 최신 위로
+  // 최대 10개 유지
+  list = list.slice(0, 10);
+  localStorage.setItem(BATTLE_STORAGE.myBattles, JSON.stringify(list));
+}
+
+function loadMyBattles() {
+  try {
+    return JSON.parse(localStorage.getItem(BATTLE_STORAGE.myBattles) || '[]');
+  } catch { return []; }
+}
+
+function renderMyBattles() {
+  const list = loadMyBattles();
+  if (list.length === 0) {
+    $battleList.innerHTML = '<p class="battle-empty">아직 만든 배틀이 없어요.</p>';
+    return;
+  }
+  $battleList.innerHTML = list.map((b) => {
+    const modeLabel = b.mode === 'common' ? '공통 작업' : '따로 가챠';
+    const statusLabel = b.status === 'waiting' ? '친구 대기 중' : (b.status === 'active' ? '진행 중' : '완료');
+    const taskLabel = b.mode === 'common' ? escapeHtml(b.task_common || '') : '(각자 가챠)';
+    const minutes = Math.round(b.duration_sec / 60);
+    return `
+      <div class="battle-card" data-id="${b.id}">
+        <div class="battle-card-top">
+          <span class="battle-card-mode">${modeLabel}</span>
+          <span class="battle-card-status ${b.status}">${statusLabel}</span>
+        </div>
+        <div class="battle-card-task">${taskLabel}</div>
+        <div class="battle-card-meta">시간 ${minutes}분 · ID ${b.id}</div>
+        <div class="battle-card-actions">
+          <button class="btn-mini" data-action="invite" data-id="${b.id}">초대 링크</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+$battleList.addEventListener('click', (e) => {
+  if (e.target.dataset.action === 'invite') {
+    const id = e.target.dataset.id;
+    const list = loadMyBattles();
+    const battle = list.find((b) => b.id === id);
+    if (battle) openInviteModal(battle);
+  }
+});
+
+// 초대 링크 모달
+function openInviteModal(battle) {
+  const link = makeInviteLink(battle.id);
+  const modeLabel = battle.mode === 'common' ? '공통 작업' : '따로 가챠';
+  const taskLabel = battle.mode === 'common' ? ` · "${battle.task_common}"` : '';
+  const minutes = Math.round(battle.duration_sec / 60);
+  $inviteSummary.textContent = `${modeLabel}${taskLabel} · ${minutes}분`;
+  $inviteLinkInput.value = link;
+
+  // Web Share API 지원 시 공유 버튼 표시
+  $inviteShareBtn.hidden = !navigator.share;
+
+  if (typeof $inviteModal.showModal === 'function') $inviteModal.showModal();
+  else $inviteModal.setAttribute('open', '');
+}
+
+function makeInviteLink(battleId) {
+  const base = location.origin + location.pathname;
+  return `${base}?battle=${battleId}`;
+}
+
+function closeInviteModal() {
+  if (typeof $inviteModal.close === 'function') $inviteModal.close();
+  else $inviteModal.removeAttribute('open');
+}
+
+$inviteCloseBtn.addEventListener('click', closeInviteModal);
+
+$inviteCopyBtn.addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText($inviteLinkInput.value);
+    const original = $inviteCopyBtn.textContent;
+    $inviteCopyBtn.textContent = '복사됨 ✓';
+    setTimeout(() => { $inviteCopyBtn.textContent = original; }, 1500);
+  } catch {
+    $inviteLinkInput.select();
+    document.execCommand('copy');
+  }
+});
+
+$inviteShareBtn.addEventListener('click', async () => {
+  if (!navigator.share) return;
+  try {
+    await navigator.share({
+      title: 'Tomotto 친구 배틀',
+      text: '같이 작업할래? 시간 정해서 같이 집중하기.',
+      url: $inviteLinkInput.value,
+    });
+  } catch {}
+});
+
+// v0.1.14 — 배틀 룸 모달 요소
+const $battleRoomModal = document.getElementById('battleRoomModal');
+const $battleRoomTitle = document.getElementById('battleRoomTitle');
+const $battleRoomSummary = document.getElementById('battleRoomSummary');
+const $battleRoomPlayers = document.getElementById('battleRoomPlayers');
+const $battleRoomTask = document.getElementById('battleRoomTask');
+const $battleRoomStatus = document.getElementById('battleRoomStatus');
+const $battleRoomCancelBtn = document.getElementById('battleRoomCancelBtn');
+const $battleRoomAcceptBtn = document.getElementById('battleRoomAcceptBtn');
+const $battleRoomStartBtn = document.getElementById('battleRoomStartBtn');
+
+let currentBattleId = null;
+let currentBattleData = null;
+
+async function openBattleRoom(battleId) {
+  currentBattleId = battleId;
+  $battleRoomSummary.textContent = '불러오는 중...';
+  $battleRoomPlayers.innerHTML = '';
+  $battleRoomTask.textContent = '';
+  $battleRoomTask.className = 'battle-room-task empty';
+  $battleRoomStatus.textContent = '';
+  $battleRoomStatus.classList.remove('error');
+  $battleRoomAcceptBtn.hidden = true;
+  $battleRoomStartBtn.hidden = true;
+
+  if (typeof $battleRoomModal.showModal === 'function') $battleRoomModal.showModal();
+  else $battleRoomModal.setAttribute('open', '');
+
+  if (!sb) {
+    $battleRoomSummary.textContent = 'Supabase가 연결되지 않았어요.';
+    $battleRoomStatus.textContent = 'SDK 로드를 확인해주세요.';
+    $battleRoomStatus.classList.add('error');
+    return;
+  }
+
+  // 닉네임 없으면 먼저 받기
+  if (!myNickname) {
+    closeBattleRoom();
+    openNickModal('first');
+    // 닉네임 저장 후 다시 열기
+    const reopen = () => {
+      if (myNickname) {
+        openBattleRoom(battleId);
+        document.removeEventListener('nick-saved', reopen);
+      }
+    };
+    document.addEventListener('nick-saved', reopen);
+    return;
+  }
+
+  await refreshBattleRoom();
+}
+
+async function refreshBattleRoom() {
+  if (!currentBattleId) return;
+  const result = await fetchBattle(currentBattleId);
+  if (!result || !result.battle) {
+    $battleRoomSummary.textContent = '배틀을 찾을 수 없어요.';
+    $battleRoomStatus.textContent = '링크가 잘못됐거나 만든 사람이 삭제했을 수 있어요.';
+    $battleRoomStatus.classList.add('error');
+    return;
+  }
+  currentBattleData = result;
+  renderBattleRoom();
+}
+
+function renderBattleRoom() {
+  const { battle, players } = currentBattleData;
+  const minutes = Math.round(battle.duration_sec / 60);
+  const modeLabel = battle.mode === 'common' ? '공통 작업' : '따로 가챠';
+  const statusLabel = battle.status === 'waiting' ? '친구 대기 중' : (battle.status === 'active' ? '진행 중' : '완료');
+
+  $battleRoomSummary.textContent = `${modeLabel} · ${minutes}분 · ${statusLabel}`;
+
+  // 플레이어 카드 — 정확히 2칸 (생성자 + 친구)
+  const creator = players.find((p) => p.is_creator);
+  const friend = players.find((p) => !p.is_creator);
+  const meIsCreator = creator && creator.nickname === myNickname;
+  const meIsFriend = friend && friend.nickname === myNickname;
+  const alreadyJoined = meIsCreator || meIsFriend;
+
+  $battleRoomPlayers.innerHTML = `
+    <div class="battle-player ${meIsCreator ? 'is-me' : ''}">
+      <div class="battle-player-nick">${creator ? escapeHtml(creator.nickname) : '—'}</div>
+      <div class="battle-player-role">만든 사람${meIsCreator ? ' (나)' : ''}</div>
+    </div>
+    <div class="battle-vs">VS</div>
+    <div class="battle-player ${friend ? (meIsFriend ? 'is-me' : '') : 'empty'}">
+      <div class="battle-player-nick">${friend ? escapeHtml(friend.nickname) : '대기 중'}</div>
+      <div class="battle-player-role">${friend ? `친구${meIsFriend ? ' (나)' : ''}` : '아직 수락 안 함'}</div>
+    </div>
+  `;
+
+  // 작업 표시 — 공통 모드일 때
+  if (battle.mode === 'common' && battle.task_common) {
+    $battleRoomTask.textContent = `오늘의 공통 작업: ${battle.task_common}`;
+    $battleRoomTask.className = 'battle-room-task';
+  } else if (battle.mode === 'separate') {
+    $battleRoomTask.textContent = '각자 가챠 모드 — 각자 카테고리에서 가챠 돌리기';
+    $battleRoomTask.className = 'battle-room-task';
+  }
+
+  // 버튼 상태 결정
+  $battleRoomAcceptBtn.hidden = true;
+  $battleRoomStartBtn.hidden = true;
+
+  if (!alreadyJoined && !friend) {
+    // 아직 참여 안 했고 자리 비어있으면 수락 가능
+    $battleRoomAcceptBtn.hidden = false;
+    $battleRoomStatus.textContent = '이 배틀에 참여하시겠어요?';
+  } else if (alreadyJoined && !friend) {
+    $battleRoomStatus.textContent = '친구가 링크를 열고 수락하길 기다리는 중...';
+  } else if (alreadyJoined && friend) {
+    $battleRoomStatus.textContent = '둘 다 준비됐어요. 시작하면 타이머가 돌아가요.';
+    $battleRoomStartBtn.hidden = false;
+  } else if (!alreadyJoined && friend) {
+    $battleRoomStatus.textContent = '이미 두 사람이 참여한 배틀이에요. 새 배틀을 만들어주세요.';
+    $battleRoomStatus.classList.add('error');
+  }
+}
+
+async function acceptBattle() {
+  if (!sb || !currentBattleId || !myNickname) return;
+  $battleRoomAcceptBtn.disabled = true;
+  $battleRoomStatus.textContent = '참여 등록 중...';
+
+  const { error } = await sb.from('battle_players').insert({
+    battle_id: currentBattleId,
+    nickname: myNickname,
+    is_creator: false,
+  });
+
+  $battleRoomAcceptBtn.disabled = false;
+  if (error) {
+    $battleRoomStatus.textContent = '참여 등록 실패: ' + error.message;
+    $battleRoomStatus.classList.add('error');
+    return;
+  }
+
+  await refreshBattleRoom();
+}
+
+function startBattleTimer() {
+  if (!currentBattleData) return;
+  const { battle } = currentBattleData;
+  // 메인 타이머에 배틀 작업 적용
+  let task = battle.task_common;
+  if (battle.mode === 'separate') {
+    task = '각자 가챠 모드 (개인 가챠 돌려서 작업 정해주세요)';
+  }
+  currentTask = task;
+  localStorage.setItem(STORAGE.currentTask, task);
+  showGachaResult(task, false);
+
+  // 시간 설정
+  timer.duration = battle.duration_sec;
+  timer.remaining = battle.duration_sec;
+  updateTimerDisplay();
+
+  closeBattleRoom();
+
+  // 타이머 시작 (기존 메인 타이머 사용)
+  startTimer();
+
+  // 메인 타이머 섹션으로 스크롤
+  document.querySelector('.timer-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function closeBattleRoom() {
+  if (typeof $battleRoomModal.close === 'function') $battleRoomModal.close();
+  else $battleRoomModal.removeAttribute('open');
+}
+
+$battleRoomCancelBtn.addEventListener('click', closeBattleRoom);
+$battleRoomAcceptBtn.addEventListener('click', acceptBattle);
+$battleRoomStartBtn.addEventListener('click', startBattleTimer);
+
+// 닉네임 저장 후 이벤트 (배틀 룸 열기 재시도용)
+function dispatchNickSaved() {
+  document.dispatchEvent(new CustomEvent('nick-saved'));
+}
+
+// 페이지 로드 시 닉네임 + 내 배틀 복원, ?battle=ID 있으면 배틀 룸 자동 열기
+window.addEventListener('load', () => {
+  loadNickname();
+  renderMyBattles();
+
+  // URL에 ?battle=ID 있으면 배틀 룸 모달 자동 열기
+  const params = new URLSearchParams(location.search);
+  const battleId = params.get('battle');
+  if (battleId) {
+    setTimeout(() => openBattleRoom(battleId), 400);
+  }
+});
 
 // 페이지 로드 시 한 번 자동 재생 + 클릭 시 다시 재생
 window.addEventListener('load', () => {
