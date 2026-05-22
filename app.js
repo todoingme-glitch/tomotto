@@ -102,9 +102,31 @@ const BATTLE_STORAGE = {
 
 let myNickname = '';
 
+// v0.1.17 — 배틀 결과 모달
+const $battleResultModal = document.getElementById('battleResultModal');
+const $battleResultSummary = document.getElementById('battleResultSummary');
+const $battleResultPlayers = document.getElementById('battleResultPlayers');
+const $battleResultCloseBtn = document.getElementById('battleResultCloseBtn');
+const $battleResultBtn = document.getElementById('battleResultBtn');
+
 // v0.1.11 — SVG 로고 + 하이파이브 애니메이션
 const $logoSvg = document.getElementById('tomottoLogo');
 const $logoWrap = document.getElementById('logoWrap');
+
+// v0.1.17 — 단일 얼굴 미니 SVG 생성 헬퍼
+function makeFaceSvg(faceEl, viewBox, size = '80px') {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', viewBox);
+  svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  svg.style.cssText = `width:${size};height:auto;flex-shrink:0;filter:drop-shadow(0 2px 8px rgba(217,78,58,0.35))`;
+  const defsEl = $logoSvg ? $logoSvg.querySelector('defs') : null;
+  if (defsEl) svg.appendChild(defsEl.cloneNode(true));
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  g.setAttribute('class', 'tomotto-svg');
+  g.appendChild(faceEl.cloneNode(true));
+  svg.appendChild(g);
+  return svg;
+}
 
 function playHifive() {
   if (!$logoSvg) return;
@@ -561,6 +583,7 @@ const $battleRoomStartBtn = document.getElementById('battleRoomStartBtn');
 
 let currentBattleId = null;
 let currentBattleData = null;
+let activeBattleId = null;   // v0.1.17 — 배틀 타이머 진행 중인 battle ID (인증샷 업로드용)
 
 // v0.1.15 — 배틀 초대 URL로 들어온 경우 타이머 잠금 (B안)
 let lockedBattleId = null;
@@ -729,11 +752,10 @@ async function acceptBattle() {
   renderMyBattles();  // 수락자 쪽 배틀카드 목록에도 추가
 }
 
-// v0.1.15 — 3·2·1 카운트다운 후 배틀 타이머 시작
+// v0.1.17 — 3·2·1 카운트다운 (얼굴 양 옆 배치)
 async function startBattleWithCountdown() {
   if (!currentBattleData) return;
 
-  // 버튼 숨기고 카운트다운 UI 표시
   $battleRoomStartBtn.hidden = true;
   $battleRoomCancelBtn.hidden = true;
   $battleRoomStatus.textContent = '';
@@ -742,38 +764,52 @@ async function startBattleWithCountdown() {
   countEl.className = 'battle-countdown';
   $battleRoomModal.querySelector('.modal-actions').before(countEl);
 
+  const mottoFaceEl = document.getElementById('motto-face');
+  const tomFaceEl = document.getElementById('tom-face');
+
+  // 모토(왼쪽) · 숫자 · 톰(오른쪽) 가로 배치
+  function renderCountRow(content) {
+    countEl.innerHTML = '';
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:10px;padding:4px 0';
+
+    if (mottoFaceEl) row.appendChild(makeFaceSvg(mottoFaceEl, '240 50 90 85', '80px'));
+
+    const mid = document.createElement('div');
+    mid.className = 'battle-countdown-num';
+    mid.innerHTML = content;
+    row.appendChild(mid);
+
+    if (tomFaceEl) row.appendChild(makeFaceSvg(tomFaceEl, '408 50 90 85', '80px'));
+
+    countEl.appendChild(row);
+  }
+
   for (let n = 3; n >= 1; n--) {
-    countEl.textContent = n;
+    renderCountRow(n);
     await new Promise(r => setTimeout(r, 900));
   }
 
-  // "시작!" — 미니 로고 클론 + 메인 로고 하이파이브 동시 실행
-  countEl.textContent = '';
-  const miniSvg = $logoSvg ? $logoSvg.cloneNode(true) : null;
-  if (miniSvg) {
-    miniSvg.removeAttribute('id');
-    miniSvg.classList.remove('play');
-    miniSvg.style.cssText = 'width:110px;height:auto;display:block;margin:0 auto 6px;filter:drop-shadow(0 2px 6px rgba(217,78,58,0.35))';
-    countEl.appendChild(miniSvg);
-    // 미니 로고도 하이파이브
-    requestAnimationFrame(() => requestAnimationFrame(() => miniSvg.classList.add('play')));
-  }
-  const startLabel = document.createElement('span');
-  startLabel.textContent = '시작!';
-  startLabel.style.cssText = 'display:block;font-size:1.5rem;font-weight:800;color:var(--accent);letter-spacing:0.05em';
-  countEl.appendChild(startLabel);
-  playHifive();  // 메인 로고도 동시에 하이파이브
+  // 시작! — 얼굴 양옆 + 가운데 🍅
+  renderCountRow('🍅');
+  playHifive();
 
   await new Promise(r => setTimeout(r, 750));
   countEl.remove();
 
-  startBattleTimer();  // 기존 로직 실행
+  startBattleTimer();
 }
 
 function startBattleTimer() {
   if (!currentBattleData) return;
   hideBattleLock();  // v0.1.15 — 배틀 시작 시 타이머 잠금 해제
   const { battle } = currentBattleData;
+  activeBattleId = battle.id;   // v0.1.17 — 인증샷 업로드용
+  localStorage.setItem('tomotto_activeBattleId', battle.id);
+  // URL에서 ?battle= 제거 — 새로고침 시 모달 재오픈 방지
+  if (location.search.includes('battle=')) {
+    history.replaceState({}, '', location.pathname);
+  }
   // 메인 타이머에 배틀 작업 적용
   // v0.1.15 — 따로 가챠 모드는 본인 가챠 결과 사용 (공통 작업은 task_common)
   let task = battle.mode === 'separate' ? currentTask : battle.task_common;
@@ -941,6 +977,9 @@ window.addEventListener('load', () => {
     showGachaResult(currentTask, false);
   }
 
+  // v0.1.17 — 배틀 ID 복원 (새로고침 후에도 인증샷 업로드 가능하게)
+  activeBattleId = localStorage.getItem('tomotto_activeBattleId') || null;
+
   // 타이머 상태 복원 (persistent timer)
   restoreTimerState();
 
@@ -1014,6 +1053,11 @@ function restoreTimerState() {
     $resetBtn.disabled = false;
     // v0.1.8 — 완료 후 페이지 다시 열렸을 때도 인증샷 첨부 가능
     $captureRow.hidden = false;
+    // v0.1.17 — 배틀 결과 버튼 복원 (새로고침 후에도 유지)
+    if (activeBattleId) {
+      $battleResultBtn.hidden = false;
+      $battleResultBtn.dataset.battleId = activeBattleId;
+    }
   }
   else {
     $startBtn.disabled = !currentTask;
@@ -1478,8 +1522,11 @@ function resetTimer() {
 
   // v0.1.8 — 인증샷 첨부 버튼 숨기기 (완료 후에만 보임)
   $captureRow.hidden = true;
+  $battleResultBtn.hidden = true;   // v0.1.17
 
   saveTimerState(null);
+  activeBattleId = null;   // v0.1.17 — 배틀 세션 종료
+  localStorage.removeItem('tomotto_activeBattleId');
 }
 
 // v0.1.9 — select·custom input(시·분) 종합해서 현재 적용 시간(초) 반환
@@ -1517,6 +1564,12 @@ function finishTimer() {
   localStorage.setItem(STORAGE.completedCount, String(completedCount));
   updateCompletedDisplay();
   $captureRow.hidden = false;
+
+  // v0.1.17 — 배틀 중이었으면 결과 보기 버튼 표시
+  if (activeBattleId) {
+    $battleResultBtn.hidden = false;
+    $battleResultBtn.dataset.battleId = activeBattleId;
+  }
 
   saveTimerState({
     status: 'finished',
@@ -1613,6 +1666,130 @@ $customMinutes.addEventListener('input', onCustomDurationChange);
 function updateCompletedDisplay() {
   $completedCount.textContent = String(completedCount);
 }
+
+// ====== v0.1.17 — 인증샷 Supabase Storage 업로드 ======
+
+// dataUrl → Blob 변환 헬퍼
+function dataUrlToBlob(dataUrl) {
+  const arr = dataUrl.split(',');
+  const mime = arr[0].match(/:(.*?);/)[1];
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) u8arr[n] = bstr.charCodeAt(n);
+  return new Blob([u8arr], { type: mime });
+}
+
+// Supabase Storage proofs 버킷에 업로드 → { ok, publicUrl, reason } 반환
+async function uploadProofToSupabase(dataUrl, battleId) {
+  if (!sb || !myNickname || !battleId) return { ok: false, reason: 'no-config' };
+  try {
+    const blob = dataUrlToBlob(dataUrl);
+    // 한글 등 특수문자 닉네임 → URL 인코딩 (Storage key 오류 방지)
+    const safeName = encodeURIComponent(myNickname);
+    const path = `${battleId}/${safeName}.jpg`;
+
+    // 1) Storage 업로드
+    const { error: uploadError } = await sb.storage
+      .from('proofs')
+      .upload(path, blob, { contentType: 'image/jpeg', upsert: true });
+    if (uploadError) {
+      console.error('Storage 업로드 실패:', uploadError);
+      return { ok: false, reason: 'storage', message: uploadError.message };
+    }
+
+    // 2) public URL 획득
+    const { data: { publicUrl } } = sb.storage.from('proofs').getPublicUrl(path);
+
+    // 3) battle_players 에 proof_url + 업로드 시각 저장
+    const { error: updateError } = await sb.from('battle_players')
+      .update({
+        proof_url: publicUrl,
+        proof_uploaded_at: new Date().toISOString(),
+      })
+      .eq('battle_id', battleId)
+      .eq('nickname', myNickname);
+    if (updateError) {
+      console.error('proof_url DB 저장 실패:', updateError);
+      return { ok: false, reason: 'db', message: updateError.message };
+    }
+
+    return { ok: true, publicUrl };
+  } catch (err) {
+    console.error('uploadProofToSupabase 오류:', err);
+    return { ok: false, reason: 'exception', message: err.message };
+  }
+}
+
+// ====== v0.1.17 — 배틀 결과 화면 ======
+
+async function openBattleResult(battleId) {
+  $battleResultSummary.textContent = '결과 불러오는 중...';
+  $battleResultPlayers.innerHTML = '';
+  if (typeof $battleResultModal.showModal === 'function') $battleResultModal.showModal();
+  else $battleResultModal.setAttribute('open', '');
+
+  if (!sb) {
+    $battleResultSummary.textContent = 'Supabase가 연결되지 않았어요.';
+    return;
+  }
+
+  const result = await fetchBattle(battleId);
+  if (!result) {
+    $battleResultSummary.textContent = '배틀 정보를 불러올 수 없어요.';
+    return;
+  }
+
+  const { battle, players } = result;
+  const minutes = Math.round(battle.duration_sec / 60);
+  const modeLabel = battle.mode === 'common' ? '공통 작업' : '따로 가챠';
+  $battleResultSummary.textContent = `${modeLabel} · ${minutes}분 · ${battle.task_common || '각자 가챠'}`;
+
+  const creator = players.find(p => p.is_creator);
+  const friend = players.find(p => !p.is_creator);
+
+  function playerCard(player) {
+    if (!player) {
+      return `<div class="battle-result-card empty">
+        <div class="battle-result-nick">—</div>
+        <div class="battle-result-role">아직 참여 안 함</div>
+        <div class="battle-result-proof empty-proof">—</div>
+      </div>`;
+    }
+    const isMe = player.nickname === myNickname;
+    const roleLabel = isMe ? '나' : '상대방';
+    const proofHtml = player.proof_url
+      ? `<img class="battle-result-img" src="${escapeHtml(player.proof_url)}" alt="인증샷">`
+      : `<div class="battle-result-proof empty-proof">인증샷 없음</div>`;
+    return `<div class="battle-result-card${isMe ? ' is-me' : ''}">
+      <div class="battle-result-nick">${escapeHtml(player.nickname)}</div>
+      <div class="battle-result-role">${roleLabel}</div>
+      ${proofHtml}
+      ${player.proof_uploaded_at ? `<div class="battle-result-time">${new Date(player.proof_uploaded_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</div>` : ''}
+    </div>`;
+  }
+
+  $battleResultPlayers.innerHTML = `
+    ${playerCard(creator)}
+    <div class="battle-vs">VS</div>
+    ${playerCard(friend)}
+  `;
+}
+
+$battleResultCloseBtn.addEventListener('click', () => {
+  if (typeof $battleResultModal.close === 'function') $battleResultModal.close();
+  else $battleResultModal.removeAttribute('open');
+});
+
+document.getElementById('battleResultRefreshBtn').addEventListener('click', () => {
+  const id = $battleResultBtn.dataset.battleId || activeBattleId;
+  if (id) openBattleResult(id);
+});
+
+$battleResultBtn.addEventListener('click', () => {
+  const id = $battleResultBtn.dataset.battleId || activeBattleId;
+  if (id) openBattleResult(id);
+});
 
 // ====== v0.1.8 — 인증샷 ======
 // v0.1.10: 인증샷 첨부 → 인앱 카메라 모달 우선. 모달 안에 갤러리 옵션도 있음.
@@ -1733,9 +1910,9 @@ function closeCameraModal() {
   }
 }
 
-// 압축 + localStorage 저장 (기존 인증샷 저장 로직 분리)
+// 압축 + localStorage 저장 + (배틀 중이면) Supabase Storage 업로드
 function saveCaptureToStorage(dataUrl) {
-  compressImage(dataUrl, 800, 0.7).then((compressedUrl) => {
+  compressImage(dataUrl, 800, 0.7).then(async (compressedUrl) => {
     $lastCaptureImg.src = compressedUrl;
     $lastCapture.hidden = false;
     try {
@@ -1745,6 +1922,25 @@ function saveCaptureToStorage(dataUrl) {
         $lastCaptureImg.src = smaller;
         try { localStorage.setItem(STORAGE.lastCapture, smaller); } catch {}
       });
+    }
+    // v0.1.17 — 배틀 중이면 Supabase Storage에도 업로드
+    if (activeBattleId && sb) {
+      $captureBtn.textContent = '📤 업로드 중...';
+      $captureBtn.disabled = true;
+      const result = await uploadProofToSupabase(compressedUrl, activeBattleId);
+      if (result.ok) {
+        $captureBtn.textContent = '✓ 업로드 완료! (결과창 새로고침하세요)';
+      } else if (result.reason === 'db') {
+        $captureBtn.textContent = '⚠ DB 저장 실패 — Supabase UPDATE 정책 확인';
+        $captureBtn.disabled = false;
+        console.warn('힌트: battle_players UPDATE 정책이 없을 수 있어요.', result.message);
+      } else if (result.reason === 'storage') {
+        $captureBtn.textContent = '⚠ 파일 업로드 실패 — Storage 정책 확인';
+        $captureBtn.disabled = false;
+      } else {
+        $captureBtn.textContent = '⚠ 업로드 실패 (콘솔 확인)';
+        $captureBtn.disabled = false;
+      }
     }
   });
 }

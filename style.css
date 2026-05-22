@@ -1382,15 +1382,19 @@ dialog.modal input[type="text"]:focus {
   margin: 2px 0 0 0;
 }
 
-/* v0.1.15 — 배틀 룸 모달: 3·2·1 카운트다운 */
+/* v0.1.17 — 배틀 룸 모달: 3·2·1 카운트다운 */
 .battle-countdown {
   text-align: center;
-  font-size: 72px;
+  padding: 8px 0 16px;
+}
+
+.battle-countdown-num {
+  font-size: 3.6rem;
   font-weight: 900;
   color: var(--accent);
   line-height: 1;
-  padding: 8px 0 16px;
-  letter-spacing: -2px;
+  min-width: 56px;
+  text-align: center;
   animation: countPop 0.25s ease-out;
 }
 
@@ -1555,4 +1559,98 @@ dialog.modal input[type="text"]:focus {
   .gacha-spinner {
     font-size: 22px;
   }
+}
+
+/* ====== v0.1.17 — 배틀 결과 화면 ====== */
+
+.btn-battle-result {
+  display: block;
+  width: 100%;
+  margin: 12px 0 0;
+  padding: 12px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-battle-result:hover { background: var(--accent-hover); }
+
+.modal-battle-result {
+  width: min(480px, 92vw);
+}
+
+.battle-result-players {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.battle-result-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 10px;
+}
+
+.battle-result-card.is-me {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.battle-result-card.empty {
+  opacity: 0.5;
+}
+
+.battle-result-nick {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  text-align: center;
+}
+
+.battle-result-role {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.battle-result-img {
+  width: 100%;
+  max-width: 160px;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+}
+
+.battle-result-proof.empty-proof {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 20px 0;
+  text-align: center;
+}
+
+.battle-result-time {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.modal-actions-spread {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.modal-actions-spread .btn-modal {
+  flex: 1;
+  text-align: center;
 }
