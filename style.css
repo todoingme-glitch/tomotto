@@ -1741,8 +1741,8 @@ dialog.modal input[type="text"]:focus {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  padding: 10px 4px 8px;
+  gap: 2px;
+  padding: 6px 4px 5px;
   background: none;
   border: none;
   border-top: 3px solid transparent;
@@ -1794,12 +1794,12 @@ dialog.modal input[type="text"]:focus {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 1px;
   height: 26px;
 }
 .tab-icon-sm {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
 }
 
 .tab-soon-badge {
@@ -2051,6 +2051,7 @@ dialog.modal input[type="text"]:focus {
   display: flex;
   flex-wrap: wrap;
   gap: 3px;
+  padding-top: 8px;
 }
 .log-strip-day {
   width: 24px;
@@ -2076,6 +2077,22 @@ dialog.modal input[type="text"]:focus {
 .log-strip-day.lv3 { background: var(--accent); color: #fff; }
 .log-strip-day.lvf  { opacity: 0.25; pointer-events: none; }
 .log-today { box-shadow: 0 0 0 2px var(--accent); }
+/* 완료 기록 있는 날 — 꼭지 (초록 Y자 SVG) */
+.log-strip-day.lv1::before,
+.log-strip-day.lv2::before,
+.log-strip-day.lv3::before {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 10px;
+  height: 7px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 7'%3E%3Cpath d='M5,7 L5,3 M5,4 L2,0.5 M5,4 L8,0.5' stroke='%236aa84f' stroke-width='2' stroke-linecap='round' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: contain;
+  pointer-events: none;
+}
 .log-strip-num { font-size: 0.58rem; line-height: 1; font-weight: 600; }
 .log-strip-dot {
   width: 2px; height: 2px;
