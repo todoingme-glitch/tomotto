@@ -526,68 +526,67 @@ function renderLogCalendar() {
   const countMap = {};
   logs.forEach(l => { if (l.date) countMap[l.date] = (countMap[l.date] || 0) + 1; });
 
-  const WEEKS = 20;
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const todayStr = formatDateStr(today);
 
-  // 시작일: WEEKS주 전 월요일
-  const start = new Date(today);
-  start.setDate(today.getDate() - WEEKS * 7 + 1);
-  const dow = (start.getDay() + 6) % 7; // 0=월
-  start.setDate(start.getDate() - dow);
-
-  // 주 데이터 빌드
-  const weeks = [];
-  const cur = new Date(start);
-  let lastMonth = -1;
-  for (let w = 0; w < WEEKS; w++) {
-    const days = [];
-    let monthLabel = null;
-    if (cur.getMonth() !== lastMonth) {
-      monthLabel = `${cur.getMonth() + 1}월`;
-      lastMonth = cur.getMonth();
-    }
-    for (let d = 0; d < 7; d++) {
-      const ds = formatDateStr(cur);
-      const future = cur > today;
-      const cnt = countMap[ds] || 0;
-      const level = future ? 'f' : cnt === 0 ? '0' : cnt === 1 ? '1' : cnt <= 3 ? '2' : '3';
-      days.push({ ds, level, cnt, isToday: ds === todayStr });
-      cur.setDate(cur.getDate() + 1);
-    }
-    weeks.push({ days, monthLabel });
+  // 최근 4개월 (현재 달 포함)
+  const MONTHS_COUNT = 4;
+  const months = [];
+  for (let i = MONTHS_COUNT - 1; i >= 0; i--) {
+    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    months.push({ year: d.getFullYear(), month: d.getMonth() });
   }
 
-  const dayNames = ['월', '', '수', '', '금', '', '일'];
+  const dayNames = ['월', '화', '수', '목', '금', '토', '일'];
+
+  const monthsHtml = months.map(({ year, month }) => {
+    const firstDay  = new Date(year, month, 1);
+    const lastDate  = new Date(year, month + 1, 0).getDate();
+    const startDow  = (firstDay.getDay() + 6) % 7; // 0=월
+
+    // 셀 배열: null=빈칸, 또는 날짜 데이터
+    const cells = Array(startDow).fill(null);
+    for (let d = 1; d <= lastDate; d++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const isFuture = new Date(year, month, d) > today;
+      const cnt   = countMap[dateStr] || 0;
+      const level = isFuture ? 'f' : cnt === 0 ? '0' : cnt === 1 ? '1' : cnt <= 3 ? '2' : '3';
+      cells.push({ d, dateStr, level, cnt, isToday: dateStr === todayStr, isFuture });
+    }
+    while (cells.length % 7 !== 0) cells.push(null);
+
+    let weeksHtml = '';
+    for (let i = 0; i < cells.length; i += 7) {
+      weeksHtml += `<div class="log-month-week">` +
+        cells.slice(i, i + 7).map(c => {
+          if (!c) return `<div class="log-month-day log-month-empty"></div>`;
+          const selClass = c.isFuture ? '' : ' clickable';
+          const todayCls = c.isToday ? ' log-today' : '';
+          const title    = `${String(month + 1)}/${c.d}${c.cnt > 0 ? ' · ' + c.cnt + '회 완료' : ''}`;
+          return `<div class="log-month-day lv${c.level}${selClass}${todayCls}"
+            data-date="${c.dateStr}" title="${title}">
+            <span class="log-day-num">${c.d}</span>
+            ${c.cnt > 0 ? '<span class="log-day-dot"></span>' : ''}
+          </div>`;
+        }).join('') +
+      `</div>`;
+    }
+
+    return `<div class="log-month-card">
+      <div class="log-month-header">${year}년 ${month + 1}월</div>
+      <div class="log-month-weekdays">${dayNames.map(n => `<div class="log-month-wday">${n}</div>`).join('')}</div>
+      <div class="log-month-grid">${weeksHtml}</div>
+    </div>`;
+  }).join('');
 
   $section.innerHTML = `
-    <div class="log-cal-wrap">
-      <div class="log-cal-inner">
-        <div class="log-cal-ylabels">
-          <div class="log-cal-yspacer"></div>
-          ${dayNames.map(n => `<div class="log-cal-ylabel">${n}</div>`).join('')}
-        </div>
-        <div class="log-cal-right">
-          <div class="log-cal-months-row">
-            ${weeks.map(w => `<div class="log-cal-mcell">${w.monthLabel || ''}</div>`).join('')}
-          </div>
-          <div class="log-cal-weeks">
-            ${weeks.map(w => `<div class="log-cal-week">
-              ${w.days.map(d => `<div class="log-cal-day lv${d.level}"
-                data-date="${d.ds}"
-                ${d.isToday ? 'data-today' : ''}
-                title="${d.ds.slice(5).replace('-', '/')}${d.cnt > 0 ? ' · ' + d.cnt + '회' : ''}"></div>`).join('')}
-            </div>`).join('')}
-          </div>
-        </div>
-      </div>
-      <p class="log-hint">날짜를 탭하면 그날의 기록을 볼 수 있어요</p>
-    </div>
+    <div class="log-months-wrap">${monthsHtml}</div>
+    <p class="log-hint">날짜를 탭하면 그날의 기록을 볼 수 있어요</p>
   `;
 
-  $section.querySelectorAll('.log-cal-day:not(.lvf)').forEach(cell => {
+  $section.querySelectorAll('.log-month-day.clickable').forEach(cell => {
     cell.addEventListener('click', () => {
-      $section.querySelectorAll('.log-cal-day').forEach(c => c.removeAttribute('data-sel'));
+      $section.querySelectorAll('.log-month-day').forEach(c => c.removeAttribute('data-sel'));
       cell.setAttribute('data-sel', '');
       renderLogDay(cell.dataset.date);
     });
@@ -699,7 +698,7 @@ async function renderMyBattles() {
       <div class="battle-card" data-id="${b.id}" data-idx="${idx}">
         <div class="battle-card-top">
           <span class="battle-card-mode">${modeLabel} · ${roleLabel}</span>
-          <span class="battle-card-status ${b.status}">${statusLabel}</span>
+          <span class="battle-card-status ${statusCls}">${statusLabel}</span>
         </div>
         <div class="battle-card-task">${taskLabel}</div>
         <div class="battle-card-meta">시간 ${minutes}분 · ID ${b.id}</div>
