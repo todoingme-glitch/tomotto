@@ -313,6 +313,163 @@ function initOnboarding() {
   setTimeout(() => tour.start(), 600);
 }
 
+// =====================================================
+// v0.1.34 — 툴팁 온보딩 (커스텀, 라이브러리 없음)
+// =====================================================
+const STORAGE_ONBOARDED_TT = 'tomotto_onboarded_tt';
+
+function initOnboardingTooltip() {
+  const tomFaceEl   = document.getElementById('tom-face');
+  const mottoFaceEl = document.getElementById('motto-face');
+  if (!tomFaceEl || !mottoFaceEl) return;
+  if (localStorage.getItem(STORAGE_ONBOARDED_TT)) return;
+
+  // 톰 = motto-face(왼쪽/안경), 모토 = tom-face(오른쪽)
+  const tomHtml  = _buildOnbFaceHtml(mottoFaceEl, '237 45 98 95', '48px');
+  const motoHtml = _buildOnbFaceHtml(tomFaceEl,   '405 45 98 95', '48px');
+
+  const STEPS = [
+    {
+      target: null,
+      speaker: 'both',
+      msg: '안녕! 나 <strong>톰</strong>이랑 <strong>모토</strong>야.<br>토마또 처음이지? 잠깐 구경시켜줄게!'
+    },
+    {
+      target: '.category-section',
+      speaker: 'tom', name: '🍅 톰',
+      msg: '먼저 <strong>카테고리</strong>를 추가해봐.<br>오늘 할 일의 종류를 여기서 설정해!',
+      pos: 'bottom'
+    },
+    {
+      target: '#gachaBtn',
+      speaker: 'moto', name: '🍅 모토',
+      msg: '카테고리 만들었으면 <strong>가챠</strong>!<br>오늘 뭐 할지 랜덤으로 뽑아줄게 🎰',
+      pos: 'top'
+    },
+    {
+      target: '.timer-section',
+      speaker: 'tom', name: '🍅 톰',
+      msg: '뽑힌 할 일로 <strong>뽀모도로 집중!</strong><br>기본 25분, 원하는 시간으로 조절 가능해 ⏱',
+      pos: 'top'
+    },
+    {
+      target: '#bottomTab',
+      speaker: 'moto', name: '🍅 모토',
+      msg: '<strong>소셜</strong>에서 배틀, <strong>기록</strong>에서 로그!<br>자, 이제 시작해봐 💪',
+      pos: 'top'
+    }
+  ];
+
+  // DOM 생성
+  const overlay   = document.createElement('div');
+  const highlight = document.createElement('div');
+  const ttEl      = document.createElement('div');
+  overlay.className   = 'onb-tt-overlay';
+  highlight.className = 'onb-tt-highlight';
+  highlight.style.display = 'none';
+  ttEl.className  = 'onb-tt';
+  document.body.append(overlay, highlight, ttEl);
+
+  function faceHtml(speaker) {
+    return speaker === 'tom' ? tomHtml : motoHtml;
+  }
+
+  function buildContent(step) {
+    if (step.speaker === 'both') {
+      return `<div class="onb-tt-welcome">
+        <div class="onb-tt-faces">
+          <div class="onb-tt-face-wrap">${tomHtml}</div>
+          <div class="onb-tt-face-wrap">${motoHtml}</div>
+        </div>
+        <p class="onb-tt-msg">${step.msg}</p>
+      </div>`;
+    }
+    return `<div class="onb-tt-body">
+      <div class="onb-tt-face">${faceHtml(step.speaker)}</div>
+      <div class="onb-tt-content">
+        <p class="onb-tt-name">${step.name}</p>
+        <p class="onb-tt-msg">${step.msg}</p>
+      </div>
+    </div>`;
+  }
+
+  function position(step) {
+    if (!step.target) {
+      highlight.style.display = 'none';
+      ttEl.style.top       = '50%';
+      ttEl.style.left      = '50%';
+      ttEl.style.transform = 'translate(-50%, -50%)';
+      ttEl.removeAttribute('data-pos');
+      return;
+    }
+    const el = document.querySelector(step.target);
+    if (!el) return;
+
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => {
+      const rect = el.getBoundingClientRect();
+      const PAD  = 4;
+      const GAP  = 14;
+      const TT_W = 272;
+
+      // 하이라이트
+      highlight.style.display  = 'block';
+      highlight.style.top      = (rect.top  - PAD) + 'px';
+      highlight.style.left     = (rect.left - PAD) + 'px';
+      highlight.style.width    = (rect.width  + PAD * 2) + 'px';
+      highlight.style.height   = (rect.height + PAD * 2) + 'px';
+
+      // 툴팁
+      ttEl.style.transform = 'none';
+      ttEl.setAttribute('data-pos', step.pos || 'bottom');
+      const ttH = ttEl.offsetHeight || 150;
+
+      let top = step.pos === 'top'
+        ? rect.top - ttH - GAP
+        : rect.bottom + GAP;
+      // 화면 밖으로 나가면 반대쪽
+      if (top < 8) top = rect.bottom + GAP;
+      if (top + ttH > window.innerHeight - 8) top = rect.top - ttH - GAP;
+
+      let left = rect.left + rect.width / 2 - TT_W / 2;
+      left = Math.max(8, Math.min(left, window.innerWidth - TT_W - 8));
+
+      ttEl.style.top  = top  + 'px';
+      ttEl.style.left = left + 'px';
+    }, 350);
+  }
+
+  function render(idx) {
+    const step   = STEPS[idx];
+    const isLast = idx === STEPS.length - 1;
+    const dots   = STEPS.map((_, i) =>
+      `<span class="onb-tt-dot${i === idx ? ' active' : ''}"></span>`
+    ).join('');
+
+    ttEl.innerHTML = `
+      ${buildContent(step)}
+      <div class="onb-tt-footer">
+        <button class="onb-tt-btn onb-tt-skip">건너뛰기</button>
+        <span class="onb-tt-dots">${dots}</span>
+        <button class="onb-tt-btn onb-tt-next">${isLast ? '완료! 🍅' : '다음 →'}</button>
+      </div>`;
+
+    ttEl.querySelector('.onb-tt-skip').onclick = finish;
+    ttEl.querySelector('.onb-tt-next').onclick = isLast ? finish : () => render(idx + 1);
+
+    position(step);
+  }
+
+  function finish() {
+    overlay.remove();
+    highlight.remove();
+    ttEl.remove();
+    localStorage.setItem(STORAGE_ONBOARDED_TT, '1');
+  }
+
+  setTimeout(() => render(0), 600);
+}
+
 function playHifive() {
   if (!$logoSvg) return;
   // SVG는 offsetWidth reflow가 안 먹힘 → 더블 rAF로 클래스 재트리거
@@ -1826,7 +1983,8 @@ window.addEventListener('load', () => {
 window.addEventListener('load', () => {
   setTimeout(playHifive, 400);  // 페이지 그리기 끝나고 살짝 후
   initTabIcons();               // v0.1.34 — 탭 아이콘에 실제 로고 얼굴 주입
-  initOnboarding();             // v0.1.34 — 첫 실행 온보딩 투어
+  // initOnboarding();          // v0.1.34 — Shepherd.js 버전 (보관)
+  initOnboardingTooltip();      // v0.1.34 — 툴팁 버전 (비교용)
 });
 if ($logoWrap) {
   $logoWrap.addEventListener('click', playHifive);

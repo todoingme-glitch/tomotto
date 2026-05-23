@@ -2545,3 +2545,159 @@ dialog.modal input[type="text"]:focus {
 .shepherd-theme-tomotto .shepherd-arrow::before {
   background: #fff;
 }
+
+/* =====================================================
+   v0.1.34 — 툴팁 온보딩 (커스텀, Shepherd 없음)
+   ===================================================== */
+
+/* 반투명 오버레이 (Shepherd보다 가볍게) */
+.onb-tt-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(60, 15, 15, 0.35);
+  z-index: 8900;
+  pointer-events: none;
+}
+
+/* 하이라이트: 타겟 주변 spotlight */
+.onb-tt-highlight {
+  position: fixed;
+  border-radius: 10px;
+  box-shadow: 0 0 0 9999px rgba(60, 15, 15, 0.35), 0 0 0 3px var(--accent);
+  z-index: 8950;
+  pointer-events: none;
+  transition: top 0.3s ease, left 0.3s ease, width 0.3s ease, height 0.3s ease;
+}
+
+/* 툴팁 카드 */
+.onb-tt {
+  position: fixed;
+  z-index: 9000;
+  width: 272px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(94, 28, 28, 0.2);
+  font-family: 'Pretendard', sans-serif;
+  transition: top 0.3s ease, left 0.3s ease;
+  overflow: visible;
+}
+
+/* 화살표 */
+.onb-tt::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 8px solid transparent;
+  pointer-events: none;
+}
+.onb-tt[data-pos="bottom"]::before {
+  top: -16px;
+  border-bottom-color: #fff;
+}
+.onb-tt[data-pos="top"]::before {
+  bottom: -16px;
+  border-top-color: #fff;
+}
+
+/* 웰컴 스텝 — 얼굴 나란히 */
+.onb-tt-welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 16px 8px;
+  text-align: center;
+}
+.onb-tt-faces {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.onb-tt-face-wrap svg {
+  width: 58px;
+  height: 58px;
+  display: block;
+}
+
+/* 일반 스텝 — 얼굴 + 말풍선 */
+.onb-tt-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px 14px 8px;
+}
+.onb-tt-face svg {
+  width: 48px;
+  height: 48px;
+  display: block;
+  flex-shrink: 0;
+}
+.onb-tt-content {
+  flex: 1;
+  padding-top: 2px;
+}
+.onb-tt-name {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin: 0 0 4px;
+  letter-spacing: 0.03em;
+}
+.onb-tt-msg {
+  font-size: 0.85rem;
+  color: var(--text);
+  line-height: 1.55;
+  margin: 0;
+}
+.onb-tt-msg strong { color: var(--accent-deep); }
+
+/* 하단 버튼/진행점 */
+.onb-tt-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px 14px;
+  border-top: 1px solid var(--border-soft);
+  margin-top: 6px;
+}
+.onb-tt-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'Pretendard', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.onb-tt-skip {
+  color: var(--text-muted);
+}
+.onb-tt-skip:hover { background: var(--border-soft); }
+.onb-tt-next {
+  background: var(--accent);
+  color: #fff;
+  padding: 6px 14px;
+}
+.onb-tt-next:hover { background: var(--accent-deep); }
+
+/* 진행 점 */
+.onb-tt-dots {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.onb-tt-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background 0.2s;
+}
+.onb-tt-dot.active {
+  background: var(--accent);
+  width: 8px;
+  height: 8px;
+}
