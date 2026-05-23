@@ -710,6 +710,17 @@ header {
 .timer-settings {
   font-size: 13px;
   color: var(--text-soft);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.timer-settings-label {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  white-space: nowrap;
 }
 
 .timer-settings select {
@@ -724,9 +735,8 @@ header {
   cursor: pointer;
 }
 
-/* 커스텀 시간 입력 — select에서 "직접 입력" 선택 시 */
+/* 커스텀 시간 입력 — select에서 "직접 입력" 선택 시 (인라인) */
 .custom-duration {
-  margin-top: 10px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -776,9 +786,19 @@ header {
 }
 
 .capture-row {
+  margin-top: 12px;
+}
+
+/* v0.1.27 — 완료 섹션 묶음 박스 */
+.completion-box {
+  border: 1.5px solid var(--accent-soft);
+  border-radius: 14px;
+  padding: 16px;
   display: flex;
-  justify-content: center;
-  margin-top: 8px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  background: var(--bg);
 }
 
 .btn-capture {
@@ -792,6 +812,7 @@ header {
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.15s;
+  align-self: center;
 }
 
 .btn-capture:hover {
@@ -803,12 +824,10 @@ header {
   font-size: 11px;
   color: var(--text-muted);
   text-align: center;
-  margin-top: 6px;
   line-height: 1.5;
 }
 
 .last-capture {
-  margin-top: 12px;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -1824,29 +1843,19 @@ dialog.modal input[type="text"]:focus {
   font-size: 14px;
   font-family: inherit;
   color: var(--text);
-  background: var(--bg);
+  background: var(--bg-card);
   resize: none;
-  margin-bottom: 10px;
+  margin-bottom: 0;
   line-height: 1.5;
   transition: border-color 0.2s;
 }
 .completion-note:focus {
   outline: none;
-  border-color: var(--tomato);
+  border-color: var(--accent);
 }
 .completion-note::placeholder {
   color: var(--text-muted);
   font-size: 13px;
-}
-
-/* v0.1.20 — 캡처 버튼 중앙정렬 */
-.capture-row {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.btn-capture {
-  align-self: center;
 }
 
 /* v0.1.20 — 인증샷 크게 보기 라이트박스 */

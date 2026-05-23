@@ -190,7 +190,7 @@
         <button id="resetBtn" class="btn-timer btn-reset" disabled>리셋</button>
       </div>
       <div class="timer-settings">
-        <label>
+        <label class="timer-settings-label">
           시간 설정:
           <select id="durationSelect">
             <option value="30">30초 (테스트)</option>
@@ -220,15 +220,17 @@
         <button id="battleResultBtn" class="btn-battle-result" hidden>🏆 배틀 결과 보기</button>
 
         <div class="capture-row" id="captureRow" hidden>
-          <textarea id="completionNote" class="completion-note" placeholder="소감 한 줄 (선택) — 작업 관련 메모, 나누고 싶은 말..." rows="2" maxlength="200"></textarea>
-          <button id="noteUploadBtn" class="btn-note-upload" hidden>💬 소감 저장</button>
-          <button id="captureBtn" class="btn-capture">📷 인증샷 첨부 (선택)</button>
-          <input type="file" id="captureInput" accept="image/*" hidden>
-        </div>
-        <div class="last-capture" id="lastCapture" hidden>
-          <span class="last-capture-label">마지막 인증샷</span>
-          <img id="lastCaptureImg" alt="마지막 인증샷">
-          <button id="removeCaptureBtn" class="btn-remove-capture" title="삭제">✕</button>
+          <div class="completion-box">
+            <button id="captureBtn" class="btn-capture">📷 인증샷 첨부 (선택)</button>
+            <input type="file" id="captureInput" accept="image/*" hidden>
+            <div class="last-capture" id="lastCapture" hidden>
+              <span class="last-capture-label">마지막 인증샷</span>
+              <img id="lastCaptureImg" alt="마지막 인증샷">
+              <button id="removeCaptureBtn" class="btn-remove-capture" title="삭제">✕</button>
+            </div>
+            <textarea id="completionNote" class="completion-note" placeholder="소감 한 줄 (선택) — 작업 관련 메모, 나누고 싶은 말..." rows="2" maxlength="200"></textarea>
+            <button id="noteUploadBtn" class="btn-note-upload" hidden>💬 소감 저장</button>
+          </div>
         </div>
       </div>
     </section>
@@ -273,7 +275,7 @@
     </div><!-- /tab-panel#tab-league -->
 
     <footer>
-      <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1.25 · 드래그순서변경 · 다중선택삭제</span></small>
+      <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1.27 · 레이아웃개선 · 배틀버그수정</span></small>
     </footer>
   </div>
 

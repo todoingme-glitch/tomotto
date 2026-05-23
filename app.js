@@ -105,15 +105,17 @@ const BATTLE_STORAGE = {
   nickname: 'tomotto_battle_nickname',
   myBattles: 'tomotto_battle_myBattles',  // 내가 만든 배틀 목록 (JSON 배열)
   completionNote: 'tomotto_completion_note', // v0.1.20 — 완료 소감
+  order: 'tomotto_battle_order',           // v0.1.26 — 사용자 정의 드래그 순서 (ID 배열)
 };
 
 let myNickname = '';
 
-// v0.1.25 — 배틀카드 편집 모드 (Pointer Events 드래그 + 다중선택 삭제)
+// v0.1.26 — 배틀카드 편집 모드 (Pointer Events 드래그 + Touch Events 드래그 + 다중선택 삭제)
 let battleEditMode = false;
 const selectedBattleIds = new Set();
-let cdDragging = null;   // 현재 드래그 중인 카드 element
+let cdDragging = null;   // 현재 드래그 중인 카드 element (Pointer Events용)
 let cdHandle  = null;    // 드래그 핸들 element (pointer capture용)
+let touchDragging = null; // 현재 드래그 중인 카드 element (Touch Events용)
 
 // v0.1.17 — 배틀 결과 모달
 const $battleResultModal = document.getElementById('battleResultModal');
@@ -363,9 +365,8 @@ $battleCreateConfirmBtn.addEventListener('click', async () => {
   openInviteModal(battle);
   await renderMyBattles();
 
-  // v0.1.18 — 배틀 생성 직후부터 친구 수락 감지 시작 (배틀 룸 안 열어도 알림)
-  currentBattleId = battle.id;
-  subscribeBattleRoom(battle.id);
+  // v0.1.27 — watchChannel로 교체: 다른 배틀 룸을 열어도 이 구독이 유지됨
+  subscribeWatchBattle(battle.id);
 });
 
 // v0.1.14 — Supabase 배틀 저장 + 생성자를 battle_players에도 등록
@@ -446,10 +447,12 @@ async function loadMyBattles() {
         .in('id', battleIds)
         .order('created_at', { ascending: false });
       if (e2) throw e2;
-      return (battles || []).map((b) => {
+      const mapped = (battles || []).map((b) => {
         const myRow = myPlayerRows.find((r) => r.battle_id === b.id);
         return { ...b, _isCreator: myRow ? myRow.is_creator : false };
       });
+      // v0.1.26 — 저장된 드래그 순서 적용
+      return applyBattleOrder(mapped);
     } catch (err) {
       console.error('내 배틀 fetch 실패:', err);
       // 실패 시 localStorage fallback
@@ -459,6 +462,21 @@ async function loadMyBattles() {
   }
   try { return JSON.parse(localStorage.getItem(BATTLE_STORAGE.myBattles) || '[]'); }
   catch { return []; }
+}
+
+// v0.1.26 — 저장된 드래그 순서(ID 배열)로 배틀 목록 정렬. 순서에 없는 신규 배틀은 앞에 추가.
+function applyBattleOrder(battles) {
+  let savedOrder = [];
+  try { savedOrder = JSON.parse(localStorage.getItem(BATTLE_STORAGE.order) || '[]'); } catch {}
+  if (savedOrder.length === 0) return battles;
+
+  const orderMap = {};
+  savedOrder.forEach((id, i) => { orderMap[id] = i; });
+
+  const inOrder   = battles.filter(b =>  orderMap[b.id] !== undefined)
+                           .sort((a, b) => orderMap[a.id] - orderMap[b.id]);
+  const newBattles = battles.filter(b => orderMap[b.id] === undefined);
+  return [...newBattles, ...inOrder];
 }
 
 async function renderMyBattles() {
@@ -474,20 +492,26 @@ async function renderMyBattles() {
   const existIds = new Set(list.map(b => b.id));
   for (const id of selectedBattleIds) { if (!existIds.has(id)) selectedBattleIds.delete(id); }
 
-  const hasDeletable = list.some(b => b._isCreator);
+  // v0.1.27 — 창조자 여부 무관하게 배틀이 하나라도 있으면 편집 버튼 표시
   const selCount = selectedBattleIds.size;
+  // 선택된 항목 중 창조자/비창조자 구분 (일괄 액션 레이블 결정용)
+  const selHasCreator = selCount > 0 && [...selectedBattleIds].some(id => list.find(b => b.id === id)?._isCreator);
+  const selHasGuest   = selCount > 0 && [...selectedBattleIds].some(id => !list.find(b => b.id === id)?._isCreator);
+  const bulkLabel = selHasCreator && selHasGuest ? '삭제 / 나가기'
+                  : selHasGuest ? '🚪 나가기'
+                  : `🗑 ${selCount}개 삭제`;
 
-  // 툴바: 편집 토글 + 다중삭제 버튼
-  const toolbarHtml = hasDeletable ? `
+  // 툴바: 편집 토글 + 일괄 액션 버튼
+  const toolbarHtml = `
     <div class="battle-list-toolbar">
       <button class="btn-mini btn-edit-toggle" id="battleEditToggle">
         ${battleEditMode ? '완료' : '편집'}
       </button>
       ${battleEditMode && selCount > 0
-        ? `<button class="btn-mini btn-danger-mini" id="battleSelectDeleteBtn">🗑 ${selCount}개 삭제</button>`
+        ? `<button class="btn-mini btn-danger-mini" id="battleSelectDeleteBtn">${bulkLabel}</button>`
         : ''}
     </div>
-  ` : '';
+  `;
 
   $battleList.innerHTML = toolbarHtml + list.map((b, idx) => {
     const modeLabel  = b.mode === 'common' ? '🍅 TOM MODE' : '🎲 MOTO MODE';
@@ -498,10 +522,8 @@ async function renderMyBattles() {
     const isSelected = selectedBattleIds.has(b.id);
 
     if (battleEditMode) {
-      // 편집 모드: [드래그핸들] [카드내용] [체크박스(생성자만)]
-      const checkbox = b._isCreator
-        ? `<input type="checkbox" class="battle-select-cb" data-id="${b.id}" ${isSelected ? 'checked' : ''}>`
-        : '';
+      // 편집 모드: [드래그핸들] [카드내용] [체크박스(창조자=삭제, 비창조자=나가기)]
+      const checkbox = `<input type="checkbox" class="battle-select-cb" data-id="${b.id}" data-creator="${b._isCreator ? '1' : '0'}" ${isSelected ? 'checked' : ''}>`;
       return `
         <div class="battle-card draggable${isSelected ? ' selected' : ''}" data-id="${b.id}" data-idx="${idx}">
           <span class="drag-handle" aria-hidden="true">⠿</span>
@@ -537,12 +559,36 @@ async function renderMyBattles() {
       </div>`;
   }).join('');
 
-  // 편집 모드: 드래그 핸들에 Pointer Events 연결 (마우스 + 터치 모두 지원)
+  // 편집 모드: 드래그 핸들에 이벤트 연결
+  // — 마우스: Pointer Events (cdStart에서 touch는 제외)
+  // — 터치: Touch Events (iOS Safari Pointer Events 불안정 대응)
   if (battleEditMode) {
     $battleList.querySelectorAll('.drag-handle').forEach(handle => {
       handle.addEventListener('pointerdown', cdStart, { passive: false });
+      handle.addEventListener('touchstart',  cdTouchStart, { passive: false });
     });
   }
+}
+
+// v0.1.27 — 배틀 나가기 (비창조자 전용: 내 battle_players 행만 삭제)
+async function leaveBattleSilent(battleId) {
+  if (sb && myNickname) {
+    const { error } = await sb.from('battle_players')
+      .delete()
+      .eq('battle_id', battleId)
+      .eq('nickname', myNickname);
+    if (error) { console.error('나가기 실패:', error); return false; }
+  }
+  // localStorage + order 에서도 제거
+  let cached = [];
+  try { cached = JSON.parse(localStorage.getItem(BATTLE_STORAGE.myBattles) || '[]'); } catch {}
+  cached = cached.filter(b => b.id !== battleId);
+  localStorage.setItem(BATTLE_STORAGE.myBattles, JSON.stringify(cached));
+  let order = [];
+  try { order = JSON.parse(localStorage.getItem(BATTLE_STORAGE.order) || '[]'); } catch {}
+  order = order.filter(id => id !== battleId);
+  localStorage.setItem(BATTLE_STORAGE.order, JSON.stringify(order));
+  return true;
 }
 
 // 배틀 삭제 내부 로직 (confirm 없음 — 단일/일괄 삭제 공유)
@@ -557,6 +603,11 @@ async function deleteBattleSilent(battleId) {
   try { cached = JSON.parse(localStorage.getItem(BATTLE_STORAGE.myBattles) || '[]'); } catch {}
   cached = cached.filter((b) => b.id !== battleId);
   localStorage.setItem(BATTLE_STORAGE.myBattles, JSON.stringify(cached));
+  // v0.1.26 — 드래그 순서에서도 제거
+  let order = [];
+  try { order = JSON.parse(localStorage.getItem(BATTLE_STORAGE.order) || '[]'); } catch {}
+  order = order.filter(id => id !== battleId);
+  localStorage.setItem(BATTLE_STORAGE.order, JSON.stringify(order));
   return true;
 }
 
@@ -576,14 +627,27 @@ $battleList.addEventListener('click', async (e) => {
     await renderMyBattles();
     return;
   }
-  // 다중선택 삭제
+  // 다중선택 삭제/나가기 (v0.1.27 — 창조자=삭제, 비창조자=나가기)
   if (e.target.id === 'battleSelectDeleteBtn') {
     if (selectedBattleIds.size === 0) return;
-    if (!confirm(`선택한 ${selectedBattleIds.size}개 배틀을 삭제할까요?`)) return;
+    const currentList = await loadMyBattles();
     const ids = [...selectedBattleIds];
+    const hasGuest = ids.some(id => !currentList.find(b => b.id === id)?._isCreator);
+    const hasCreator = ids.some(id => currentList.find(b => b.id === id)?._isCreator);
+    const confirmMsg = hasCreator && hasGuest
+      ? `선택한 ${ids.length}개 중 내가 만든 배틀은 삭제, 초대받은 배틀은 나가기 처리됩니다. 계속할까요?`
+      : hasGuest
+      ? `선택한 배틀에서 나가시겠어요? 배틀 자체는 삭제되지 않아요.`
+      : `선택한 ${ids.length}개 배틀을 삭제할까요? 되돌릴 수 없어요.`;
+    if (!confirm(confirmMsg)) return;
     selectedBattleIds.clear();
     battleEditMode = false;
-    for (const id of ids) await deleteBattleSilent(id);
+    for (const id of ids) {
+      const b = currentList.find(b => b.id === id);
+      if (!b) continue;
+      if (b._isCreator) await deleteBattleSilent(id);
+      else await leaveBattleSilent(id);
+    }
     await renderMyBattles();
     return;
   }
@@ -612,8 +676,16 @@ $battleList.addEventListener('click', async (e) => {
   }
 });
 
-// ====== v0.1.25 — Pointer Events 드래그 (마우스 + 터치 공통) ======
+// ====== v0.1.26 — 드래그 헬퍼: 현재 DOM 순서를 order 키로 저장 ======
+function saveBattleOrderFromDOM() {
+  const ids = [...$battleList.querySelectorAll('.battle-card[data-id]')].map(c => c.dataset.id);
+  localStorage.setItem(BATTLE_STORAGE.order, JSON.stringify(ids));
+}
+
+// ====== v0.1.26 — Pointer Events 드래그 (마우스/펜 전용, touch는 Touch Events로 처리) ======
 function cdStart(e) {
+  // 터치 입력은 cdTouchStart에서 처리
+  if (e.pointerType === 'touch') return;
   // 체크박스는 드래그 안 함
   if (e.target.closest('.battle-select-cb')) return;
   e.preventDefault();
@@ -626,7 +698,7 @@ function cdStart(e) {
   card.classList.add('dragging');
 
   // 포인터 캡처: 핸들 밖으로 나가도 pointermove/up 수신
-  handle.setPointerCapture(e.pointerId);
+  try { handle.setPointerCapture(e.pointerId); } catch {}
   handle.addEventListener('pointermove', cdMove, { passive: false });
   handle.addEventListener('pointerup',   cdEnd);
   handle.addEventListener('pointercancel', cdEnd);
@@ -635,19 +707,7 @@ function cdStart(e) {
 function cdMove(e) {
   if (!cdDragging) return;
   e.preventDefault();
-  const y = e.clientY;
-
-  // 드래그 중인 카드 제외한 나머지에서 Y위치 기준 타깃 찾기
-  const others = [...$battleList.querySelectorAll('.battle-card.draggable')]
-    .filter(c => c !== cdDragging);
-
-  $battleList.querySelectorAll('.drag-over')
-    .forEach(el => el.classList.remove('drag-over'));
-
-  for (const c of others) {
-    const r = c.getBoundingClientRect();
-    if (y >= r.top && y < r.bottom) { c.classList.add('drag-over'); break; }
-  }
+  cdHighlight(e.clientY, cdDragging);
 }
 
 async function cdEnd(e) {
@@ -658,23 +718,80 @@ async function cdEnd(e) {
   handle.removeEventListener('pointercancel', cdEnd);
   try { handle.releasePointerCapture(e.pointerId); } catch {}
 
-  const srcIdx = parseInt(cdDragging.dataset.idx, 10);
-  const overCard = $battleList.querySelector('.battle-card.drag-over');
-  const tgtIdx   = overCard ? parseInt(overCard.dataset.idx, 10) : srcIdx;
-
+  const srcId = cdDragging.dataset.id;
   cdDragging.classList.remove('dragging');
-  $battleList.querySelectorAll('.drag-over')
-    .forEach(el => el.classList.remove('drag-over'));
   cdDragging = null;
   cdHandle   = null;
 
-  if (tgtIdx !== srcIdx) {
-    let cached = [];
-    try { cached = JSON.parse(localStorage.getItem(BATTLE_STORAGE.myBattles) || '[]'); } catch {}
-    const [item] = cached.splice(srcIdx, 1);
-    cached.splice(tgtIdx, 0, item);
-    localStorage.setItem(BATTLE_STORAGE.myBattles, JSON.stringify(cached));
+  cdCommitOrder(srcId); // drag-over 제거 + 순서 저장
+  await renderMyBattles();
+}
+
+// ====== v0.1.26 — 공통: Y좌표로 drag-over 카드 하이라이트 ======
+function cdHighlight(y, draggingCard) {
+  const others = [...$battleList.querySelectorAll('.battle-card.draggable')]
+    .filter(c => c !== draggingCard);
+  $battleList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+  for (const c of others) {
+    const r = c.getBoundingClientRect();
+    if (y >= r.top && y < r.bottom) { c.classList.add('drag-over'); break; }
   }
+}
+
+// ====== v0.1.26 — 공통: 드래그 종료 시 순서 저장 ======
+function cdCommitOrder(srcId) {
+  const overCard = $battleList.querySelector('.battle-card.drag-over');
+  const tgtId = overCard ? overCard.dataset.id : null;
+  $battleList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+
+  if (tgtId && tgtId !== srcId) {
+    const currentOrder = [...$battleList.querySelectorAll('.battle-card[data-id]')].map(c => c.dataset.id);
+    const si = currentOrder.indexOf(srcId);
+    const ti = currentOrder.indexOf(tgtId);
+    if (si >= 0 && ti >= 0) {
+      currentOrder.splice(si, 1);
+      currentOrder.splice(ti, 0, srcId);
+      localStorage.setItem(BATTLE_STORAGE.order, JSON.stringify(currentOrder));
+      return true;
+    }
+  }
+  return false;
+}
+
+// ====== v0.1.26 — Touch Events 드래그 (모바일 전용) ======
+function cdTouchStart(e) {
+  if (e.target.closest('.battle-select-cb')) return;
+  e.preventDefault(); // 스크롤 방지
+  const handle = e.currentTarget;
+  const card = handle.closest('.battle-card.draggable');
+  if (!card) return;
+
+  touchDragging = card;
+  card.classList.add('dragging');
+
+  document.addEventListener('touchmove', cdTouchMove, { passive: false });
+  document.addEventListener('touchend',  cdTouchEnd);
+  document.addEventListener('touchcancel', cdTouchEnd);
+}
+
+function cdTouchMove(e) {
+  if (!touchDragging) return;
+  e.preventDefault();
+  const touch = e.touches[0];
+  cdHighlight(touch.clientY, touchDragging);
+}
+
+async function cdTouchEnd() {
+  if (!touchDragging) return;
+  document.removeEventListener('touchmove', cdTouchMove);
+  document.removeEventListener('touchend',  cdTouchEnd);
+  document.removeEventListener('touchcancel', cdTouchEnd);
+
+  const srcId = touchDragging.dataset.id;
+  touchDragging.classList.remove('dragging');
+  touchDragging = null;
+
+  cdCommitOrder(srcId);
   await renderMyBattles();
 }
 
@@ -749,9 +866,11 @@ const $battleRoomStartBtn = document.getElementById('battleRoomStartBtn');
 let currentBattleId = null;
 let currentBattleData = null;
 let activeBattleId = null;   // v0.1.17 — 배틀 타이머 진행 중인 battle ID (인증샷 업로드용)
-let realtimeChannel = null;    // v0.1.18 — battle_players INSERT 구독 채널
+let realtimeChannel = null;    // v0.1.18 — battle_players INSERT 구독 채널 (룸 뷰용)
 let battleStartChannel = null; // v0.1.19 — battles UPDATE 구독 채널 (친구 쪽 동시 시작용)
 let isStartingBattle = false;  // v0.1.19 — 중복 시작 방지 플래그
+let watchChannel = null;       // v0.1.27 — 배틀 생성 후 친구 수락 대기 전용 채널 (룸 뷰 채널과 독립)
+let watchBattleId = null;      // v0.1.27 — watchChannel이 감시 중인 battleId
 
 // v0.1.15 — 배틀 초대 URL로 들어온 경우 타이머 잠금 (B안)
 let lockedBattleId = null;
@@ -791,6 +910,7 @@ async function openBattleRoom(battleId) {
   $battleRoomTask.className = 'battle-room-task empty';
   $battleRoomStatus.textContent = '';
   $battleRoomStatus.classList.remove('error');
+  $battleRoomCancelBtn.hidden = false; // v0.1.27 — 카운트다운 후 hidden 상태 복원
   $battleRoomAcceptBtn.hidden = true;
   $battleRoomStartBtn.hidden = true;
 
@@ -1047,6 +1167,7 @@ function startBattleTimer() {
 
   unsubscribeBattleRoom();   // v0.1.18 — battle_players 구독 해제
   unsubscribeBattleStart();  // v0.1.19 — battles UPDATE 구독 해제
+  unsubscribeWatchBattle();  // v0.1.27 — 친구 수락 대기 채널 해제
   isStartingBattle = false;  // v0.1.19 — 플래그 초기화
 
   // v0.1.17 — 배틀 시작 시 개인 탭으로 자동 전환 + 타이머 섹션으로 스크롤
@@ -1133,6 +1254,36 @@ function unsubscribeBattleRoom() {
   }
 }
 
+// v0.1.27 — 배틀 생성 후 친구 수락 대기 전용 채널 (룸 뷰 채널과 독립)
+// openBattleRoom 호출 시 realtimeChannel이 교체돼도 이 채널은 유지됨
+function subscribeWatchBattle(battleId) {
+  if (!sb || !battleId) return;
+  if (watchChannel && sb) { sb.removeChannel(watchChannel); watchChannel = null; }
+  watchBattleId = battleId;
+  watchChannel = sb.channel(`battle-watch-${battleId}`)
+    .on('postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'battle_players', filter: `battle_id=eq.${battleId}` },
+      async (payload) => {
+        console.log('[Watch] 친구 수락 감지:', payload);
+        renderMyBattles();
+        if (!$battleRoomModal.open) {
+          currentBattleId = battleId;
+          await openBattleRoom(battleId);
+        } else if (currentBattleId === battleId) {
+          await refreshBattleRoom();
+        }
+      }
+    )
+    .subscribe((status) => {
+      console.log('[Watch] 구독 상태:', status, '/ battleId:', battleId);
+    });
+}
+
+function unsubscribeWatchBattle() {
+  if (watchChannel && sb) { sb.removeChannel(watchChannel); watchChannel = null; }
+  watchBattleId = null;
+}
+
 // 배틀 룸 상태 메시지에 LIVE 표시 업데이트
 function updateRealtimeStatusDot(isLive) {
   const dot = $battleRoomStatus.querySelector('.live-dot');
@@ -1186,7 +1337,7 @@ function unsubscribeBattleStart() {
   }
 }
 
-// v0.1.22 — 소감 저장 버튼
+// v0.1.27 — 소감 저장 버튼 (재저장 가능, 솔로/배틀 메시지 분기)
 if ($noteUploadBtn) {
   $noteUploadBtn.addEventListener('click', async () => {
     const note = $completionNote?.value?.trim();
@@ -1207,7 +1358,16 @@ if ($noteUploadBtn) {
       }
     }
     localStorage.setItem(BATTLE_STORAGE.completionNote, note);
-    $noteUploadBtn.textContent = '✓ 소감 저장됨! (결과창에서 확인하세요)';
+    // v0.1.27 — 솔로 모드는 "결과창" 안내 없이, 배틀 모드만 안내
+    const doneMsg = activeBattleId
+      ? '✓ 저장됨! (배틀 결과창에서 확인하세요)'
+      : '✓ 소감 저장됨!';
+    $noteUploadBtn.textContent = doneMsg;
+    // v0.1.27 — 2초 뒤 재활성화 → 수정·재저장 가능
+    setTimeout(() => {
+      $noteUploadBtn.disabled = false;
+      $noteUploadBtn.textContent = '💬 소감 수정';
+    }, 2000);
   });
 }
 
@@ -1390,10 +1550,12 @@ window.addEventListener('load', () => {
   updateCompletedDisplay();
 
   // v0.1.8 — 마지막 인증샷 복원
+  // v0.1.27 — lastCapture가 captureRow 안으로 이동했으므로 captureRow도 같이 표시
   const savedCapture = localStorage.getItem(STORAGE.lastCapture);
   if (savedCapture) {
     $lastCaptureImg.src = savedCapture;
     $lastCapture.hidden = false;
+    $captureRow.hidden = false;
   }
 
   // 마지막 작업 복원
