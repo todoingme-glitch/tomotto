@@ -554,7 +554,9 @@ function renderLogCalendar() {
   const year      = logViewYear;
   const month     = logViewMonth;   // 0-indexed
   const lastDate  = new Date(year, month + 1, 0).getDate();
-  const isCurMonth = year === today.getFullYear() && month === today.getMonth();
+  // 올해 12월까지는 다음 달로 이동 가능
+  const isCurMonth    = year === today.getFullYear() && month === today.getMonth();
+  const isLastAllowed = year === today.getFullYear() && month === 11; // 12월
 
   // 날짜 셀 배열
   const days = [];
@@ -571,7 +573,7 @@ function renderLogCalendar() {
       <div class="log-strip-nav">
         <button class="log-nav-btn" id="logPrevBtn" title="이전 달">‹</button>
         <span class="log-strip-title">${year}년 ${month + 1}월</span>
-        <button class="log-nav-btn" id="logNextBtn" title="다음 달" ${isCurMonth ? 'disabled' : ''}>›</button>
+        <button class="log-nav-btn" id="logNextBtn" title="다음 달" ${isLastAllowed ? 'disabled' : ''}>›</button>
       </div>
       <div class="log-strip">
         ${days.map(d => `
@@ -592,7 +594,7 @@ function renderLogCalendar() {
     renderLogCalendar();
   });
   const $nextBtn = document.getElementById('logNextBtn');
-  if ($nextBtn && !isCurMonth) {
+  if ($nextBtn && !isLastAllowed) {
     $nextBtn.addEventListener('click', () => {
       if (logViewMonth === 11) { logViewYear++; logViewMonth = 0; } else { logViewMonth++; }
       renderLogCalendar();
@@ -646,8 +648,8 @@ function renderLogDay(dateStr) {
           <span class="log-item-meta">${mins}분${partnerText}</span>
           <span class="log-item-time">${timeStr}</span>
         </div>
-        ${noteHtml}
         ${captureHtml}
+        ${noteHtml}
       </div>`;
     }).join('');
   }
