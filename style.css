@@ -1979,29 +1979,48 @@ dialog.modal input[type="text"]:focus {
   border: 1.5px solid var(--border);
   color: var(--text-secondary, #555);
 }
-/* 편집 모드일 때 카드 스타일 */
+/* v0.1.25 — 편집 모드: 카드를 flex row로 */
 .battle-card.draggable {
-  cursor: grab;
-  padding-left: 36px;
-  position: relative;
-  transition: opacity 0.15s, box-shadow 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  user-select: none;
 }
-.battle-card.draggable:active {
-  cursor: grabbing;
-}
-/* 드래그 중인 카드 */
-.battle-card.dragging {
-  opacity: 0.45;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
-}
-/* 드롭 대상 카드 (위에 올라왔을 때) */
-.battle-card.drag-over {
-  border-color: var(--tomato);
-  background: rgba(238, 90, 60, 0.06);
+.battle-card.draggable .battle-card-body {
+  flex: 1;
+  min-width: 0;
 }
 /* 드래그 핸들 */
 .drag-handle {
-  position: absolute;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
+  font-size: 20px;
+  color: var(--text-muted);
+  cursor: grab;
+  touch-action: none;   /* 터치 스크롤 방지 → 드래그 허용 */
+  user-select: none;
+  flex-shrink: 0;
+  line-height: 1;
+  padding: 4px 2px;
+}
+.drag-handle:active { cursor: grabbing; }
+/* 드래그 중인 카드 */
+.battle-card.dragging {
+  opacity: 0.4;
+}
+/* 드롭 대상 카드 */
+.battle-card.drag-over {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+/* 선택된 카드 (체크박스) */
+.battle-card.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+/* 편집 모드 체크박스 */
+.battle-select-cb {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}

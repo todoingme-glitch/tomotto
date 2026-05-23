@@ -109,9 +109,11 @@ const BATTLE_STORAGE = {
 
 let myNickname = '';
 
-// v0.1.23 — 배틀카드 드래그 순서변경 편집 모드
+// v0.1.25 — 배틀카드 편집 모드 (Pointer Events 드래그 + 다중선택 삭제)
 let battleEditMode = false;
-let dragSrcIndex = null;
+const selectedBattleIds = new Set();
+let cdDragging = null;   // 현재 드래그 중인 카드 element
+let cdHandle  = null;    // 드래그 핸들 element (pointer capture용)
 
 // v0.1.17 — 배틀 결과 모달
 const $battleResultModal = document.getElementById('battleResultModal');
@@ -463,42 +465,64 @@ async function renderMyBattles() {
   const list = await loadMyBattles();
   if (list.length === 0) {
     battleEditMode = false;
+    selectedBattleIds.clear();
     $battleList.innerHTML = '<p class="battle-empty">아직 참여한 배틀이 없어요.</p>';
     return;
   }
 
-  const hasDeletable = list.some(b => b._isCreator);
+  // 없어진 배틀 ID 선택 해제
+  const existIds = new Set(list.map(b => b.id));
+  for (const id of selectedBattleIds) { if (!existIds.has(id)) selectedBattleIds.delete(id); }
 
-  // 툴바: 편집(드래그 순서변경) 모드 토글
+  const hasDeletable = list.some(b => b._isCreator);
+  const selCount = selectedBattleIds.size;
+
+  // 툴바: 편집 토글 + 다중삭제 버튼
   const toolbarHtml = hasDeletable ? `
     <div class="battle-list-toolbar">
       <button class="btn-mini btn-edit-toggle" id="battleEditToggle">
         ${battleEditMode ? '완료' : '편집'}
       </button>
+      ${battleEditMode && selCount > 0
+        ? `<button class="btn-mini btn-danger-mini" id="battleSelectDeleteBtn">🗑 ${selCount}개 삭제</button>`
+        : ''}
     </div>
   ` : '';
 
   $battleList.innerHTML = toolbarHtml + list.map((b, idx) => {
-    const modeLabel = b.mode === 'common' ? '🍅 TOM MODE' : '🎲 MOTO MODE';
+    const modeLabel  = b.mode === 'common' ? '🍅 TOM MODE' : '🎲 MOTO MODE';
     const statusLabel = b.status === 'waiting' ? '친구 대기 중' : (b.status === 'active' ? '진행 중' : '완료');
-    const taskLabel = b.mode === 'common' ? escapeHtml(b.task_common || '') : '각자 랜덤 가챠';
-    const minutes = Math.round(b.duration_sec / 60);
-    const roleLabel = b._isCreator ? '내가 만듦' : '초대받음';
+    const taskLabel  = b.mode === 'common' ? escapeHtml(b.task_common || '') : '각자 랜덤 가챠';
+    const minutes    = Math.round(b.duration_sec / 60);
+    const roleLabel  = b._isCreator ? '내가 만듦' : '초대받음';
+    const isSelected = selectedBattleIds.has(b.id);
 
-    // 편집 모드: 드래그 핸들 표시
-    const dragHandle = battleEditMode
-      ? `<span class="drag-handle" aria-hidden="true">⠿</span>`
-      : '';
+    if (battleEditMode) {
+      // 편집 모드: [드래그핸들] [카드내용] [체크박스(생성자만)]
+      const checkbox = b._isCreator
+        ? `<input type="checkbox" class="battle-select-cb" data-id="${b.id}" ${isSelected ? 'checked' : ''}>`
+        : '';
+      return `
+        <div class="battle-card draggable${isSelected ? ' selected' : ''}" data-id="${b.id}" data-idx="${idx}">
+          <span class="drag-handle" aria-hidden="true">⠿</span>
+          <div class="battle-card-body">
+            <div class="battle-card-top">
+              <span class="battle-card-mode">${modeLabel} · ${roleLabel}</span>
+              <span class="battle-card-status ${b.status}">${statusLabel}</span>
+            </div>
+            <div class="battle-card-task">${taskLabel}</div>
+            <div class="battle-card-meta">시간 ${minutes}분 · ID ${b.id}</div>
+          </div>
+          ${checkbox}
+        </div>`;
+    }
 
-    // 삭제 버튼은 항상 생성자 카드에 표시
+    // 일반 모드
     const deleteBtn = b._isCreator
       ? `<button class="btn-mini btn-danger-mini" data-action="delete" data-id="${b.id}">🗑 삭제</button>`
       : '';
-
-    const isDraggable = battleEditMode;
     return `
-      <div class="battle-card${isDraggable ? ' draggable' : ''}" data-id="${b.id}" data-idx="${idx}" ${isDraggable ? 'draggable="true"' : ''}>
-        ${dragHandle}
+      <div class="battle-card" data-id="${b.id}" data-idx="${idx}">
         <div class="battle-card-top">
           <span class="battle-card-mode">${modeLabel} · ${roleLabel}</span>
           <span class="battle-card-status ${b.status}">${statusLabel}</span>
@@ -506,13 +530,19 @@ async function renderMyBattles() {
         <div class="battle-card-task">${taskLabel}</div>
         <div class="battle-card-meta">시간 ${minutes}분 · ID ${b.id}</div>
         <div class="battle-card-actions">
-          ${battleEditMode ? '' : `<button class="btn-mini" data-action="open" data-id="${b.id}">열기</button>
-          <button class="btn-mini" data-action="invite" data-id="${b.id}">초대 링크</button>`}
+          <button class="btn-mini" data-action="open" data-id="${b.id}">열기</button>
+          <button class="btn-mini" data-action="invite" data-id="${b.id}">초대 링크</button>
           ${deleteBtn}
         </div>
-      </div>
-    `;
+      </div>`;
   }).join('');
+
+  // 편집 모드: 드래그 핸들에 Pointer Events 연결 (마우스 + 터치 모두 지원)
+  if (battleEditMode) {
+    $battleList.querySelectorAll('.drag-handle').forEach(handle => {
+      handle.addEventListener('pointerdown', cdStart, { passive: false });
+    });
+  }
 }
 
 // 배틀 삭제 내부 로직 (confirm 없음 — 단일/일괄 삭제 공유)
@@ -539,21 +569,38 @@ async function deleteBattle(battleId) {
 }
 
 $battleList.addEventListener('click', async (e) => {
-  // 편집 모드 토글 버튼
+  // 편집 토글
   if (e.target.id === 'battleEditToggle') {
     battleEditMode = !battleEditMode;
-    dragSrcIndex = null;
+    if (!battleEditMode) selectedBattleIds.clear();
     await renderMyBattles();
     return;
   }
-
-  // 편집 모드에서는 열기/초대 링크 버튼 숨겨지므로 삭제만 처리
+  // 다중선택 삭제
+  if (e.target.id === 'battleSelectDeleteBtn') {
+    if (selectedBattleIds.size === 0) return;
+    if (!confirm(`선택한 ${selectedBattleIds.size}개 배틀을 삭제할까요?`)) return;
+    const ids = [...selectedBattleIds];
+    selectedBattleIds.clear();
+    battleEditMode = false;
+    for (const id of ids) await deleteBattleSilent(id);
+    await renderMyBattles();
+    return;
+  }
+  // 체크박스
+  const cb = e.target.closest('.battle-select-cb');
+  if (cb) {
+    const id = cb.dataset.id;
+    cb.checked ? selectedBattleIds.add(id) : selectedBattleIds.delete(id);
+    await renderMyBattles();
+    return;
+  }
+  // 일반 액션 버튼
   const btn = e.target.closest('[data-action]');
   if (!btn) return;
   const action = btn.dataset.action;
   const id = btn.dataset.id;
   if (!action || !id) return;
-
   if (action === 'invite') {
     const list = await loadMyBattles();
     const battle = list.find((b) => b.id === id);
@@ -565,55 +612,71 @@ $battleList.addEventListener('click', async (e) => {
   }
 });
 
-// ====== v0.1.23 — 드래그 순서변경 ======
-$battleList.addEventListener('dragstart', (e) => {
-  const card = e.target.closest('.battle-card.draggable');
-  if (!card) return;
-  dragSrcIndex = parseInt(card.dataset.idx, 10);
-  e.dataTransfer.effectAllowed = 'move';
-  e.dataTransfer.setData('text/plain', String(dragSrcIndex));
-  // 브라우저가 ghost 이미지 만들 시간 주고 나서 스타일 적용
-  setTimeout(() => card.classList.add('dragging'), 0);
-});
-
-$battleList.addEventListener('dragend', () => {
-  dragSrcIndex = null;
-  $battleList.querySelectorAll('.battle-card.dragging, .battle-card.drag-over')
-    .forEach(el => el.classList.remove('dragging', 'drag-over'));
-});
-
-$battleList.addEventListener('dragenter', (e) => {
+// ====== v0.1.25 — Pointer Events 드래그 (마우스 + 터치 공통) ======
+function cdStart(e) {
+  // 체크박스는 드래그 안 함
+  if (e.target.closest('.battle-select-cb')) return;
   e.preventDefault();
-  const card = e.target.closest('.battle-card.draggable');
+  const handle = e.currentTarget;
+  const card = handle.closest('.battle-card.draggable');
   if (!card) return;
-  const tgtIdx = parseInt(card.dataset.idx, 10);
-  if (tgtIdx === dragSrcIndex) return;
-  $battleList.querySelectorAll('.battle-card.drag-over')
+
+  cdHandle   = handle;
+  cdDragging = card;
+  card.classList.add('dragging');
+
+  // 포인터 캡처: 핸들 밖으로 나가도 pointermove/up 수신
+  handle.setPointerCapture(e.pointerId);
+  handle.addEventListener('pointermove', cdMove, { passive: false });
+  handle.addEventListener('pointerup',   cdEnd);
+  handle.addEventListener('pointercancel', cdEnd);
+}
+
+function cdMove(e) {
+  if (!cdDragging) return;
+  e.preventDefault();
+  const y = e.clientY;
+
+  // 드래그 중인 카드 제외한 나머지에서 Y위치 기준 타깃 찾기
+  const others = [...$battleList.querySelectorAll('.battle-card.draggable')]
+    .filter(c => c !== cdDragging);
+
+  $battleList.querySelectorAll('.drag-over')
     .forEach(el => el.classList.remove('drag-over'));
-  card.classList.add('drag-over');
-});
 
-$battleList.addEventListener('dragover', (e) => {
-  if (dragSrcIndex !== null) e.preventDefault();
-});
+  for (const c of others) {
+    const r = c.getBoundingClientRect();
+    if (y >= r.top && y < r.bottom) { c.classList.add('drag-over'); break; }
+  }
+}
 
-$battleList.addEventListener('drop', async (e) => {
-  e.preventDefault();
-  const card = e.target.closest('.battle-card.draggable');
-  if (!card || dragSrcIndex === null) return;
-  const tgtIdx = parseInt(card.dataset.idx, 10);
-  if (tgtIdx === dragSrcIndex) return;
+async function cdEnd(e) {
+  if (!cdDragging) return;
+  const handle = cdHandle;
+  handle.removeEventListener('pointermove', cdMove);
+  handle.removeEventListener('pointerup',   cdEnd);
+  handle.removeEventListener('pointercancel', cdEnd);
+  try { handle.releasePointerCapture(e.pointerId); } catch {}
 
-  // localStorage 배열에서 순서 변경
-  let cached = [];
-  try { cached = JSON.parse(localStorage.getItem(BATTLE_STORAGE.myBattles) || '[]'); } catch {}
-  const [item] = cached.splice(dragSrcIndex, 1);
-  cached.splice(tgtIdx, 0, item);
-  localStorage.setItem(BATTLE_STORAGE.myBattles, JSON.stringify(cached));
+  const srcIdx = parseInt(cdDragging.dataset.idx, 10);
+  const overCard = $battleList.querySelector('.battle-card.drag-over');
+  const tgtIdx   = overCard ? parseInt(overCard.dataset.idx, 10) : srcIdx;
 
-  dragSrcIndex = null;
+  cdDragging.classList.remove('dragging');
+  $battleList.querySelectorAll('.drag-over')
+    .forEach(el => el.classList.remove('drag-over'));
+  cdDragging = null;
+  cdHandle   = null;
+
+  if (tgtIdx !== srcIdx) {
+    let cached = [];
+    try { cached = JSON.parse(localStorage.getItem(BATTLE_STORAGE.myBattles) || '[]'); } catch {}
+    const [item] = cached.splice(srcIdx, 1);
+    cached.splice(tgtIdx, 0, item);
+    localStorage.setItem(BATTLE_STORAGE.myBattles, JSON.stringify(cached));
+  }
   await renderMyBattles();
-});
+}
 
 // 초대 링크 모달
 function openInviteModal(battle) {
@@ -2432,4 +2495,7 @@ function compressImage(dataUrl, maxDim, quality) {
       ctx.drawImage(img, 0, 0, width, height);
       resolve(canvas.toDataURL('image/jpeg', quality));
     };
-    img.onerror = () => resolve(
+    img.onerror = () => resolve(dataUrl);  // 실패 시 원본
+    img.src = dataUrl;
+  });
+}
