@@ -1264,8 +1264,10 @@ dialog.modal input[type="text"]:focus {
   color: var(--text-muted);
 }
 
-.battle-card-status.waiting { color: var(--accent); }
-.battle-card-status.active { color: var(--basil-deep); }
+.battle-card-status.waiting { color: var(--text-muted); }
+/* v0.1.31 — running: 내 타이머가 실제로 돌아가는 상태 */
+.battle-card-status.running { color: var(--basil-deep); font-weight: 600; }
+.battle-card-status.done { color: var(--text-muted); }
 
 .battle-card-task {
   font-size: 14px;

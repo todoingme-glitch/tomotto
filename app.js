@@ -479,6 +479,16 @@ function applyBattleOrder(battles) {
   return [...newBattles, ...inOrder];
 }
 
+// v0.1.31 — 배틀카드 상태 표시 재정의
+// '진행 중' = 내 로컬 타이머가 이 배틀로 실제로 돌아가는 상태
+// '완료'   = battles.status === 'done'
+// '친구 대기 중' = 나머지 전부 (waiting / active-but-not-my-timer)
+function getBattleDisplayStatus(b) {
+  if (b.status === 'done') return { label: '완료', cls: 'done' };
+  if (timer.isRunning && activeBattleId === b.id) return { label: '진행 중', cls: 'running' };
+  return { label: '친구 대기 중', cls: 'waiting' };
+}
+
 async function renderMyBattles() {
   const list = await loadMyBattles();
   if (list.length === 0) {
@@ -515,7 +525,7 @@ async function renderMyBattles() {
 
   $battleList.innerHTML = toolbarHtml + list.map((b, idx) => {
     const modeLabel  = b.mode === 'common' ? '🍅 TOM MODE' : '🎲 MOTO MODE';
-    const statusLabel = b.status === 'waiting' ? '친구 대기 중' : (b.status === 'active' ? '진행 중' : '완료');
+    const { label: statusLabel, cls: statusCls } = getBattleDisplayStatus(b);
     const taskLabel  = b.mode === 'common' ? escapeHtml(b.task_common || '') : '각자 랜덤 가챠';
     const minutes    = Math.round(b.duration_sec / 60);
     const roleLabel  = b._isCreator ? '내가 만듦' : '초대받음';
@@ -530,7 +540,7 @@ async function renderMyBattles() {
           <div class="battle-card-body">
             <div class="battle-card-top">
               <span class="battle-card-mode">${modeLabel} · ${roleLabel}</span>
-              <span class="battle-card-status ${b.status}">${statusLabel}</span>
+              <span class="battle-card-status ${statusCls}">${statusLabel}</span>
             </div>
             <div class="battle-card-task">${taskLabel}</div>
             <div class="battle-card-meta">시간 ${minutes}분 · ID ${b.id}</div>
@@ -981,7 +991,8 @@ function renderBattleRoom() {
   const { battle, players } = currentBattleData;
   const minutes = Math.round(battle.duration_sec / 60);
   const modeLabel = battle.mode === 'common' ? '🍅 TOM MODE' : '🎲 MOTO MODE';
-  const statusLabel = battle.status === 'waiting' ? '친구 대기 중' : (battle.status === 'active' ? '진행 중' : '완료');
+  // v0.1.31 — 로컬 타이머 상태 기준
+  const { label: statusLabel } = getBattleDisplayStatus(battle);
 
   $battleRoomSummary.textContent = `${modeLabel} · ${minutes}분 · ${statusLabel}`;
 
