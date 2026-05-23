@@ -199,7 +199,7 @@
             <option value="1500" selected>25분 (기본)</option>
             <option value="2700">45분</option>
             <option value="3600">60분</option>
-            <option value="custom">⚙ 직접 입력...</option>
+            <option value="custom">직접 입력...</option>
           </select>
         </label>
         <div class="custom-duration" id="customDurationWrap" hidden>
@@ -221,15 +221,17 @@
 
         <div class="capture-row" id="captureRow" hidden>
           <div class="completion-box">
-            <button id="captureBtn" class="btn-capture">📷 인증샷 첨부 (선택)</button>
+            <button id="captureBtn" class="btn-capture">📷 인증샷 첨부</button>
             <input type="file" id="captureInput" accept="image/*" hidden>
             <div class="last-capture" id="lastCapture" hidden>
               <span class="last-capture-label">마지막 인증샷</span>
               <img id="lastCaptureImg" alt="마지막 인증샷">
               <button id="removeCaptureBtn" class="btn-remove-capture" title="삭제">✕</button>
             </div>
-            <textarea id="completionNote" class="completion-note" placeholder="소감 한 줄 (선택) — 작업 관련 메모, 나누고 싶은 말..." rows="2" maxlength="200"></textarea>
-            <button id="noteUploadBtn" class="btn-note-upload" hidden>💬 소감 저장</button>
+            <div class="note-wrap">
+              <textarea id="completionNote" class="completion-note" placeholder="소감 한 줄 — 작업 메모, 나누고 싶은 말..." rows="2" maxlength="200"></textarea>
+              <button id="noteUploadBtn" class="btn-note-upload" hidden>저장</button>
+            </div>
           </div>
         </div>
       </div>
@@ -275,7 +277,7 @@
     </div><!-- /tab-panel#tab-league -->
 
     <footer>
-      <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1.27 · 레이아웃개선 · 배틀버그수정</span></small>
+      <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1.28 · UI개선 · 배틀문구수정</span></small>
     </footer>
   </div>
 
@@ -335,7 +337,7 @@
           <option value="1500" selected>25분 (기본)</option>
           <option value="2700">45분</option>
           <option value="3600">60분</option>
-          <option value="custom">⚙ 직접 입력</option>
+          <option value="custom">직접 입력</option>
         </select>
         <div class="custom-duration" id="battleCustomWrap" hidden>
           <input type="number" id="battleCustomHours" min="0" max="23" placeholder="0" value="0">
@@ -458,7 +460,10 @@
       <span class="tab-label">개인</span>
     </button>
     <button class="tab-btn" data-tab="social" type="button" aria-pressed="false">
-      <span class="tab-icon tab-icon-motto" aria-hidden="true"></span>
+      <span class="tab-icon-duo" aria-hidden="true">
+        <span class="tab-icon tab-icon-motto tab-icon-sm"></span>
+        <span class="tab-icon tab-icon-tom tab-icon-sm"></span>
+      </span>
       <span class="tab-label">소셜</span>
     </button>
     <button class="tab-btn tab-btn-soon" data-tab="league" type="button" aria-pressed="false" disabled>

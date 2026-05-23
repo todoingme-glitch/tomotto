@@ -1031,15 +1031,16 @@ function renderBattleRoom() {
         $battleRoomStatus.textContent = '둘 다 준비됐어요. 시작하면 친구도 동시에 시작돼요.';
       }
     } else {
-      // v0.1.19 — 친구: 창조자가 시작하면 자동 카운트다운 (subscribeBattleRoom 내 battles UPDATE로 처리)
+      // v0.1.28 — 친구: 창조자 닉네임 표시 + TOM MODE는 창조자와 동일한 버튼
       if (battle.mode === 'separate' && !currentTask) {
         $battleRoomGachaBtn.hidden = false;
         $battleRoomStatus.textContent = '가챠를 먼저 돌려서 내 작업을 정해주세요!';
       } else {
-        $battleRoomStatus.innerHTML = '창조자가 시작하면 자동으로 카운트다운이 시작돼요! <span class="live-dot">●</span>';
-        // 창조자가 안 누를 경우 대비한 수동 시작 버튼도 표시
+        const creatorNick = escapeHtml(creator?.nickname || '상대방');
+        $battleRoomStatus.innerHTML = `${creatorNick}님이 시작하면 자동으로 카운트다운이 시작돼요! <span class="live-dot">●</span>`;
         $battleRoomStartBtn.hidden = false;
-        $battleRoomStartBtn.textContent = '내가 먼저 시작하기';
+        // TOM MODE: 창조자와 동일한 버튼 텍스트 / MOTO MODE: 먼저 시작 가능 표시
+        $battleRoomStartBtn.textContent = battle.mode === 'common' ? '▶ 타이머 시작' : '내가 먼저 시작하기';
       }
     }
   } else if (!alreadyJoined && friend) {
@@ -2078,6 +2079,24 @@ function startTimer() {
   $timerStatus.textContent = `"${currentTask}" 작업 중...`;
   $timerStatus.classList.remove('success', 'resumed');
 
+  // v0.1.28 — 완료 후 새 타이머 시작 시 소감·인증샷 초기화 (captureRow가 보이는 상태 = 완료 직후)
+  if (!$captureRow.hidden) {
+    $captureRow.hidden = true;
+    if ($completionNote) {
+      $completionNote.value = '';
+      localStorage.removeItem(BATTLE_STORAGE.completionNote);
+    }
+    if ($noteUploadBtn) {
+      $noteUploadBtn.hidden = true;
+      $noteUploadBtn.disabled = false;
+      $noteUploadBtn.textContent = '저장';
+    }
+    $lastCaptureImg.src = '';
+    $lastCapture.hidden = true;
+    localStorage.removeItem(STORAGE.lastCapture);
+    lastCapturedDataUrl = null;
+  }
+
   // v0.1.17 — 새 타이머 시작 시 배틀 결과 버튼 숨김 (이전 배틀 결과 클리어)
   $battleResultBtn.hidden = true;
   $battleResultBtn.dataset.battleId = '';
@@ -2120,8 +2139,8 @@ function resetTimer() {
   $timerStatus.textContent = '';
   $timerStatus.classList.remove('success', 'resumed');
 
-  // v0.1.8 — 인증샷 첨부 버튼 숨기기 (완료 후에만 보임)
-  $captureRow.hidden = true;
+  // v0.1.28 — 리셋 시 소감/인증샷 유지 (시작 버튼 누를 때까지 보존)
+  // $captureRow.hidden = true; ← 제거됨
   // v0.1.17 — 배틀 결과 버튼은 리셋 시 숨기지 않음 (새 배틀 시작 전까지 유지)
 
   saveTimerState(null);
@@ -2159,11 +2178,8 @@ function finishTimer() {
   const battlePartner = getBattlePartnerInfo();
   if (battlePartner) {
     const who = escapeHtml(battlePartner.partnerNick);
-    if (battlePartner.mode === 'common') {
-      $timerStatus.textContent = `✓ ${who}님이 함께한 "${currentTask}" 완료! 수고하셨어요`;
-    } else {
-      $timerStatus.textContent = `✓ ${who}님과 함께한 "${currentTask}" 완료! 수고하셨어요`;
-    }
+    // v0.1.28 — 두 모드 모두 '님과' 통일
+    $timerStatus.textContent = `✓ ${who}님과 함께한 "${currentTask}" 완료! 수고하셨어요`;
   } else {
     $timerStatus.textContent = `✓ "${currentTask}" 완료! 수고하셨어요`;
   }

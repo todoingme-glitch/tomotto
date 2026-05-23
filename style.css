@@ -735,7 +735,7 @@ header {
   cursor: pointer;
 }
 
-/* 커스텀 시간 입력 — select에서 "직접 입력" 선택 시 (인라인) */
+/* 커스텀 시간 입력 — select에서 "직접 입력" 선택 시 (인라인, 약간 띄움) */
 .custom-duration {
   display: flex;
   align-items: center;
@@ -743,6 +743,9 @@ header {
   font-size: 13px;
   color: var(--text-soft);
   flex-wrap: wrap;
+  margin-left: 6px;
+  padding-left: 10px;
+  border-left: 1.5px solid var(--border);
 }
 
 .custom-duration input {
@@ -959,8 +962,8 @@ dialog.modal {
   padding: 24px;
   background: var(--bg-card);
   box-shadow: 0 12px 40px rgba(80, 40, 40, 0.18);
-  width: 90%;
-  max-width: 380px;
+  width: 92%;
+  max-width: 480px;
   color: var(--text);
   font-family: inherit;
 
@@ -1442,11 +1445,11 @@ dialog.modal input[type="text"]:focus {
 }
 
 .battle-countdown-num {
-  font-size: 3.6rem;
+  font-size: 2.2rem;
   font-weight: 900;
   color: var(--accent);
   line-height: 1;
-  min-width: 56px;
+  min-width: 48px;
   text-align: center;
   animation: countPop 0.25s ease-out;
 }
@@ -1784,6 +1787,19 @@ dialog.modal input[type="text"]:focus {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 60'%3E%3Ccircle cx='30' cy='32' r='24' fill='%23ee5a3c'/%3E%3Cellipse cx='19' cy='29' rx='7' ry='7' fill='%23fff'/%3E%3Cellipse cx='41' cy='29' rx='7' ry='7' fill='%23fff'/%3E%3Ccircle cx='19' cy='30' r='3.5' fill='%235a1010'/%3E%3Ccircle cx='41' cy='30' r='3.5' fill='%235a1010'/%3E%3Cpath d='M13 22 q5 -4 12 -2' fill='none' stroke='%235a1010' stroke-width='2' stroke-linecap='round'/%3E%3Cpath d='M35 20 q7 -2 12 2' fill='none' stroke='%235a1010' stroke-width='2' stroke-linecap='round'/%3E%3Cpath d='M22 42 q8 5 16 0' fill='none' stroke='%235a1010' stroke-width='2.5' stroke-linecap='round'/%3E%3Crect x='26' y='8' width='4' height='10' rx='2' fill='%236aa84f' transform='rotate(-10 28 13)'/%3E%3C/svg%3E");
 }
 
+/* v0.1.28 — 소셜 탭 듀얼 아이콘 (Tom + Moto 나란히) */
+.tab-icon-duo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 26px;
+}
+.tab-icon-sm {
+  width: 16px;
+  height: 16px;
+}
+
 .tab-soon-badge {
   position: absolute;
   top: 6px;
@@ -1833,13 +1849,18 @@ dialog.modal input[type="text"]:focus {
   line-height: 1.6;
 }
 
+/* v0.1.27 — 소감 텍스트 + 저장 버튼 오버레이 래퍼 */
+.note-wrap {
+  position: relative;
+}
+
 /* v0.1.20 — 소감 textarea */
 .completion-note {
   width: 100%;
   box-sizing: border-box;
   border: 1.5px solid var(--border);
   border-radius: 10px;
-  padding: 10px 12px;
+  padding: 10px 12px 36px;
   font-size: 14px;
   font-family: inherit;
   color: var(--text);
@@ -1956,19 +1977,22 @@ dialog.modal input[type="text"]:focus {
   word-break: break-word;
 }
 
-/* v0.1.22 — 소감 저장 버튼 */
+/* v0.1.28 — 소감 저장 버튼 (textarea 오른쪽 하단 오버레이) */
 .btn-note-upload {
-  align-self: flex-start;
+  position: absolute;
+  bottom: 7px;
+  right: 8px;
   background: var(--accent);
   color: #fff;
   border: none;
-  border-radius: 20px;
-  padding: 7px 16px;
-  font-size: 13px;
+  border-radius: 12px;
+  padding: 4px 12px;
+  font-size: 12px;
   font-weight: 600;
+  font-family: inherit;
   cursor: pointer;
-  margin-bottom: 8px;
   transition: opacity 0.2s;
+  line-height: 1.6;
 }
 .btn-note-upload:disabled {
   opacity: 0.55;
