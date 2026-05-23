@@ -349,6 +349,10 @@ $battleCreateConfirmBtn.addEventListener('click', async () => {
   closeBattleCreateModal();
   openInviteModal(battle);
   await renderMyBattles();
+
+  // v0.1.18 — 배틀 생성 직후부터 친구 수락 감지 시작 (배틀 룸 안 열어도 알림)
+  currentBattleId = battle.id;
+  subscribeBattleRoom(battle.id);
 });
 
 // v0.1.14 — Supabase 배틀 저장 + 생성자를 battle_players에도 등록
@@ -599,7 +603,9 @@ const $battleRoomStartBtn = document.getElementById('battleRoomStartBtn');
 let currentBattleId = null;
 let currentBattleData = null;
 let activeBattleId = null;   // v0.1.17 — 배틀 타이머 진행 중인 battle ID (인증샷 업로드용)
-let realtimeChannel = null;  // v0.1.18 — Supabase Realtime 구독 채널
+let realtimeChannel = null;    // v0.1.18 — battle_players INSERT 구독 채널
+let battleStartChannel = null; // v0.1.19 — battles UPDATE 구독 채널 (친구 쪽 동시 시작용)
+let isStartingBattle = false;  // v0.1.19 — 중복 시작 방지 플래그
 
 // v0.1.15 — 배틀 초대 URL로 들어온 경우 타이머 잠금 (B안)
 let lockedBattleId = null;
@@ -739,13 +745,30 @@ function renderBattleRoom() {
     // v0.1.18 — LIVE dot: 새로고침 불필요하다는 시각적 표시
     $battleRoomStatus.innerHTML = '친구가 링크를 열고 수락하길 기다리는 중... <span class="live-dot" title="자동 새로고침 중">●</span>';
   } else if (alreadyJoined && friend) {
-    // v0.1.15 — 따로 가챠 모드인데 본인 가챠 결과가 없으면 → 가챠 유도
     if (battle.mode === 'separate' && !currentTask) {
+      // MOTO MODE: 내 가챠 결과 없음 → 가챠 유도
       $battleRoomGachaBtn.hidden = false;
       $battleRoomStatus.textContent = '가챠를 먼저 돌려서 내 작업을 정해주세요!';
-    } else {
+    } else if (meIsCreator) {
+      // 창조자: 시작 버튼 표시 (창조자가 시작하면 친구 자동 시작)
       $battleRoomStartBtn.hidden = false;
-      $battleRoomStatus.textContent = '둘 다 준비됐어요. 시작하면 타이머가 돌아가요.';
+      if (battle.mode === 'separate') {
+        $battleRoomStatus.innerHTML = '내 가챠 준비 완료! 시작하면 친구도 자동으로 카운트다운돼요. <span class="live-dot">●</span>';
+      } else {
+        $battleRoomStatus.textContent = '둘 다 준비됐어요. 시작하면 친구도 동시에 시작돼요.';
+      }
+    } else {
+      // v0.1.19 — 친구: 창조자가 시작하길 기다림 + battles UPDATE 구독
+      subscribeBattleStart(battle.id);
+      if (battle.mode === 'separate' && !currentTask) {
+        $battleRoomGachaBtn.hidden = false;
+        $battleRoomStatus.textContent = '가챠를 먼저 돌려서 내 작업을 정해주세요!';
+      } else {
+        $battleRoomStatus.innerHTML = '창조자가 시작하면 자동으로 카운트다운이 시작돼요! <span class="live-dot">●</span>';
+        // 창조자가 안 누를 경우 대비한 수동 시작 버튼도 표시
+        $battleRoomStartBtn.hidden = false;
+        $battleRoomStartBtn.textContent = '내가 먼저 시작하기';
+      }
     }
   } else if (!alreadyJoined && friend) {
     $battleRoomStatus.textContent = '이미 두 사람이 참여한 배틀이에요. 새 배틀을 만들어주세요.';
@@ -782,7 +805,16 @@ async function acceptBattle() {
 
 // v0.1.17 — 3·2·1 카운트다운 (얼굴 양 옆 배치)
 async function startBattleWithCountdown() {
-  if (!currentBattleData) return;
+  if (!currentBattleData || isStartingBattle || timer.running) return;
+  isStartingBattle = true;
+
+  // v0.1.19 — battles 상태 'active'로 업데이트 → 상대방 Realtime 트리거
+  if (sb && currentBattleId) {
+    const { error } = await sb.from('battles')
+      .update({ status: 'active' })
+      .eq('id', currentBattleId);
+    if (error) console.warn('[Supabase] battles UPDATE 실패:', error.message);
+  }
 
   $battleRoomStartBtn.hidden = true;
   $battleRoomCancelBtn.hidden = true;
@@ -861,13 +893,17 @@ function startBattleTimer() {
   // 타이머 시작 (기존 메인 타이머 사용)
   startTimer();
 
+  unsubscribeBattleRoom();   // v0.1.18 — battle_players 구독 해제
+  unsubscribeBattleStart();  // v0.1.19 — battles UPDATE 구독 해제
+  isStartingBattle = false;  // v0.1.19 — 플래그 초기화
+
   // v0.1.17 — 배틀 시작 시 개인 탭으로 자동 전환 + 타이머 섹션으로 스크롤
   switchTab('personal');
   document.querySelector('.timer-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function closeBattleRoom() {
-  unsubscribeBattleRoom();  // v0.1.18 — 모달 닫을 때 Realtime 구독 해제
+  // v0.1.18 — 모달만 닫고 구독은 유지 (배틀 시작 전까지 친구 수락 감지 계속)
   if (typeof $battleRoomModal.close === 'function') $battleRoomModal.close();
   else $battleRoomModal.removeAttribute('open');
 }
@@ -892,10 +928,15 @@ function subscribeBattleRoom(battleId) {
       },
       async (payload) => {
         console.log('[Realtime] INSERT 감지:', payload);
-        // 친구 수락 감지 → 배틀 룸 자동 갱신
-        if (currentBattleId === battleId) {
+        renderMyBattles();  // 소셜 탭 배틀 카드 갱신
+
+        if ($battleRoomModal.open && currentBattleId === battleId) {
+          // 배틀 룸 모달이 열려있으면 → 내부 갱신
           await refreshBattleRoom();
-          renderMyBattles();  // 소셜 탭 배틀 카드도 갱신
+        } else {
+          // 모달 닫혀있으면 → 자동으로 배틀 룸 열기
+          currentBattleId = battleId;
+          await openBattleRoom(battleId);
         }
       }
     )
@@ -924,6 +965,51 @@ function updateRealtimeStatusDot(isLive) {
   if (!dot) return;
   dot.style.opacity = isLive ? '1' : '0.3';
   dot.title = isLive ? '자동 새로고침 중' : '연결 중...';
+}
+
+// v0.1.19 — battles UPDATE 구독: 창조자 시작 시 친구 자동 카운트다운
+function subscribeBattleStart(battleId) {
+  if (!sb || !battleId) return;
+  unsubscribeBattleStart();
+
+  battleStartChannel = sb.channel(`battle-start-${battleId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'battles',
+        filter: `id=eq.${battleId}`,
+      },
+      async (payload) => {
+        console.log('[Realtime] battles UPDATE 감지:', payload);
+        if (payload.new?.status !== 'active') return;
+        if (isStartingBattle || timer.running) return;  // 이미 시작 중이면 무시
+
+        // 구독 즉시 해제 (중복 트리거 방지)
+        unsubscribeBattleStart();
+
+        // 배틀 룸 모달이 닫혀있으면 열기
+        if (!$battleRoomModal.open) {
+          currentBattleId = battleId;
+          const result = await fetchBattle(battleId);
+          if (result?.battle) currentBattleData = result;
+          if (typeof $battleRoomModal.showModal === 'function') $battleRoomModal.showModal();
+          else $battleRoomModal.setAttribute('open', '');
+        }
+
+        // 카운트다운 시작 (isStartingBattle은 startBattleWithCountdown 안에서 세팅)
+        await startBattleWithCountdown();
+      }
+    )
+    .subscribe((s) => console.log('[Realtime] battle-start 구독 상태:', s, '/ battleId:', battleId));
+}
+
+function unsubscribeBattleStart() {
+  if (battleStartChannel && sb) {
+    sb.removeChannel(battleStartChannel);
+    battleStartChannel = null;
+  }
 }
 
 $battleRoomCancelBtn.addEventListener('click', closeBattleRoom);
