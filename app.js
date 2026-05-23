@@ -173,10 +173,11 @@ function initTabIcons() {
     return svg;
   }
 
+  // 로고 기준: motto-face=왼쪽(톰/안경), tom-face=오른쪽(모토)
   const $tabPersonal = document.getElementById('tabIconPersonal');
   if ($tabPersonal) {
     $tabPersonal.innerHTML = '';
-    $tabPersonal.appendChild(makeTabFace(tomFaceEl, '405 45 98 95', '26px'));
+    $tabPersonal.appendChild(makeTabFace(mottoFaceEl, '237 45 98 95', '26px'));
   }
 
   const $tabMotto = document.getElementById('tabIconMotto');
@@ -190,6 +191,126 @@ function initTabIcons() {
     $tabTom.innerHTML = '';
     $tabTom.appendChild(makeTabFace(tomFaceEl, '405 45 98 95', '20px'));
   }
+}
+
+// =====================================================
+// v0.1.34 — Shepherd.js 온보딩 투어
+// =====================================================
+const STORAGE_ONBOARDED = 'tomotto_onboarded';
+
+// 얼굴 SVG HTML 문자열 (투어 팝오버용)
+let _onbTomHtml = '';
+let _onbMotoHtml = '';
+
+function _buildOnbFaceHtml(faceEl, viewBox, size) {
+  const svg = makeFaceSvg(faceEl, viewBox, size);
+  svg.style.filter = 'none';
+  svg.style.display = 'block';
+  svg.style.width = size;
+  svg.style.height = size;
+  return svg.outerHTML;
+}
+
+function _onbStep(faceName, msg) {
+  const face = faceName === 'tom' ? _onbTomHtml : _onbMotoHtml;
+  const name = faceName === 'tom' ? '🍅 톰' : '🍅 모토';
+  return `
+    <div class="onb-body">
+      <div class="onb-face">${face}</div>
+      <div class="onb-speech">
+        <p class="onb-name">${name}</p>
+        <p class="onb-msg">${msg}</p>
+      </div>
+    </div>`;
+}
+
+function initOnboarding() {
+  if (!window.Shepherd) return;
+  if (localStorage.getItem(STORAGE_ONBOARDED)) return;
+
+  // 얼굴 HTML 생성 (initTabIcons 이후에 호출되므로 요소 존재 확인)
+  const tomFaceEl  = document.getElementById('tom-face');    // 오른쪽/모토 SVG
+  const mottoFaceEl = document.getElementById('motto-face'); // 왼쪽/톰(안경) SVG
+  if (tomFaceEl && mottoFaceEl) {
+    _onbTomHtml  = _buildOnbFaceHtml(mottoFaceEl, '237 45 98 95', '54px'); // 톰 = motto-face
+    _onbMotoHtml = _buildOnbFaceHtml(tomFaceEl,   '405 45 98 95', '54px'); // 모토 = tom-face
+  }
+
+  const tour = new Shepherd.Tour({
+    useModalOverlay: true,
+    defaultStepOptions: {
+      classes: 'shepherd-theme-tomotto',
+      cancelIcon: { enabled: true },
+      scrollTo: { behavior: 'smooth', block: 'center' },
+      buttons: [
+        {
+          text: '건너뛰기',
+          classes: 'onb-btn-skip',
+          action() { tour.cancel(); }
+        },
+        {
+          text: '다음 →',
+          action() { tour.next(); }
+        }
+      ]
+    }
+  });
+
+  // Step 1 — 웰컴 (no attach)
+  tour.addStep({
+    id: 'welcome',
+    text: `
+      <div class="onb-welcome">
+        <div class="onb-welcome-faces">
+          ${_onbTomHtml}
+          ${_onbMotoHtml}
+        </div>
+        <p class="onb-welcome-title">토마또에 온 걸 환영해! 🍅</p>
+        <p class="onb-welcome-sub">우리는 <strong>톰</strong>이랑 <strong>모토</strong>야.<br>같이 집중해보자, 잠깐만 설명할게!</p>
+      </div>`,
+    buttons: [
+      { text: '건너뛰기', classes: 'onb-btn-skip', action() { tour.cancel(); } },
+      { text: '시작! →', action() { tour.next(); } }
+    ]
+  });
+
+  // Step 2 — 카테고리
+  tour.addStep({
+    id: 'category',
+    text: _onbStep('tom', '먼저 <strong>오늘 할 일의 카테고리</strong>를 추가해봐.<br>예: \'공부\', \'운동\', \'디자인\' 같은 것들!'),
+    attachTo: { element: '.category-section', on: 'bottom' }
+  });
+
+  // Step 3 — 가챠
+  tour.addStep({
+    id: 'gacha',
+    text: _onbStep('moto', '카테고리를 만들었으면 <strong>가챠</strong>를 돌려봐!<br>오늘 뭐 할지 랜덤으로 뽑아줄게 🎰'),
+    attachTo: { element: '#gachaBtn', on: 'top' }
+  });
+
+  // Step 4 — 타이머
+  tour.addStep({
+    id: 'timer',
+    text: _onbStep('tom', '뽑힌 할 일, 이제 집중 시작!<br><strong>뽀모도로 타이머</strong>로 25분 달려봐 ⏱'),
+    attachTo: { element: '.timer-section', on: 'top' }
+  });
+
+  // Step 5 — 탭 소개
+  tour.addStep({
+    id: 'tabs',
+    text: _onbStep('moto', '<strong>소셜 탭</strong>에서 친구랑 배틀,<br><strong>기록 탭</strong>에서 인증샷 & 로그 확인!<br>다 여기서 할 수 있어 👊📸'),
+    attachTo: { element: '#bottomTab', on: 'top' },
+    buttons: [
+      { text: '건너뛰기', classes: 'onb-btn-skip', action() { tour.cancel(); } },
+      { text: '완료! 🍅', action() { tour.complete(); } }
+    ]
+  });
+
+  tour.on('complete', () => localStorage.setItem(STORAGE_ONBOARDED, '1'));
+  tour.on('cancel',   () => localStorage.setItem(STORAGE_ONBOARDED, '1'));
+
+  // 살짝 딜레이 후 시작 (페이지 렌더 완료 대기)
+  setTimeout(() => tour.start(), 600);
 }
 
 function playHifive() {
@@ -1705,6 +1826,7 @@ window.addEventListener('load', () => {
 window.addEventListener('load', () => {
   setTimeout(playHifive, 400);  // 페이지 그리기 끝나고 살짝 후
   initTabIcons();               // v0.1.34 — 탭 아이콘에 실제 로고 얼굴 주입
+  initOnboarding();             // v0.1.34 — 첫 실행 온보딩 투어
 });
 if ($logoWrap) {
   $logoWrap.addEventListener('click', playHifive);
