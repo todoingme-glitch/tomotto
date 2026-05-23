@@ -158,6 +158,40 @@ function makeFaceSvg(faceEl, viewBox, size = '80px') {
   return svg;
 }
 
+// v0.1.34 — 탭 아이콘에 실제 로고 얼굴 주입
+function initTabIcons() {
+  const tomFaceEl = document.getElementById('tom-face');
+  const mottoFaceEl = document.getElementById('motto-face');
+  if (!tomFaceEl || !mottoFaceEl) return;
+
+  function makeTabFace(faceEl, viewBox, size) {
+    const svg = makeFaceSvg(faceEl, viewBox, size);
+    svg.style.filter = 'none';
+    svg.style.display = 'block';
+    svg.style.width = size;
+    svg.style.height = size;
+    return svg;
+  }
+
+  const $tabPersonal = document.getElementById('tabIconPersonal');
+  if ($tabPersonal) {
+    $tabPersonal.innerHTML = '';
+    $tabPersonal.appendChild(makeTabFace(tomFaceEl, '405 45 98 95', '26px'));
+  }
+
+  const $tabMotto = document.getElementById('tabIconMotto');
+  if ($tabMotto) {
+    $tabMotto.innerHTML = '';
+    $tabMotto.appendChild(makeTabFace(mottoFaceEl, '237 45 98 95', '20px'));
+  }
+
+  const $tabTom = document.getElementById('tabIconTom');
+  if ($tabTom) {
+    $tabTom.innerHTML = '';
+    $tabTom.appendChild(makeTabFace(tomFaceEl, '405 45 98 95', '20px'));
+  }
+}
+
 function playHifive() {
   if (!$logoSvg) return;
   // SVG는 offsetWidth reflow가 안 먹힘 → 더블 rAF로 클래스 재트리거
@@ -1670,6 +1704,7 @@ window.addEventListener('load', () => {
 // 페이지 로드 시 한 번 자동 재생 + 클릭 시 다시 재생
 window.addEventListener('load', () => {
   setTimeout(playHifive, 400);  // 페이지 그리기 끝나고 살짝 후
+  initTabIcons();               // v0.1.34 — 탭 아이콘에 실제 로고 얼굴 주입
 });
 if ($logoWrap) {
   $logoWrap.addEventListener('click', playHifive);

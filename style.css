@@ -2079,15 +2079,16 @@ dialog.modal input[type="text"]:focus {
 .log-strip-day.lv3 { background: var(--accent); color: #fff; }
 .log-strip-day.lvf  { opacity: 0.25; pointer-events: none; }
 .log-today { box-shadow: 0 0 0 2px var(--accent); }
-/* 완료 기록 있는 날 — 토마토 꼭지 (짧은 꼭지 + 아래로 퍼지는 꽃받침) */
+/* 완료 기록 있는 날 — 토마토 꼭지 (짧은 꼭지 위 + 꽃받침 아래로 퍼짐) */
 .log-strip-day.lv1::before,
 .log-strip-day.lv2::before,
 .log-strip-day.lv3::before {
   content: '';
   position: absolute;
   top: -4px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  margin: 0 auto;
   width: 12px;
   height: 10px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M5,0 L5,3 M5,3 L1,8 M5,3 L5,9 M5,3 L9,8' stroke='%236aa84f' stroke-width='1.8' stroke-linecap='round' fill='none'/%3E%3C/svg%3E");
@@ -2095,18 +2096,11 @@ dialog.modal input[type="text"]:focus {
   background-size: contain;
   pointer-events: none;
 }
-/* 선택된 날 — 토마토 테두리만, 배경은 레벨 색상 유지 */
+/* 선택된 날 — 토마토 테두리 하나만, 배경은 레벨 색상 유지 */
 .log-strip-day[data-sel] { box-shadow: 0 0 0 2px var(--accent) !important; outline: none; }
 .log-strip-num { font-size: 0.58rem; line-height: 1; font-weight: 600; }
-.log-strip-dot {
-  width: 2px; height: 2px;
-  border-radius: 50%;
-  background: currentColor;
-  position: absolute;
-  bottom: 2px;
-  opacity: 0.7;
-}
-.log-strip-day[data-sel] { outline: 2px solid var(--accent-deep); outline-offset: 1px; }
+/* 로그 있는 날은 원 색상으로 충분 — 점 숨김 */
+.log-strip-dot { display: none; }
 
 /* 인증샷 */
 .log-item-capture {
