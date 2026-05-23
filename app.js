@@ -491,6 +491,11 @@ function getBattleDisplayStatus(b) {
 
 // ====== v0.1.33 — 기록 탭 ======
 
+// 현재 보고 있는 달 (초기값: 오늘)
+const _logToday = new Date();
+let logViewYear  = _logToday.getFullYear();
+let logViewMonth = _logToday.getMonth();   // 0-indexed
+
 function formatDateStr(date) {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -518,6 +523,24 @@ function updateLatestLogNote(note) {
   }
 }
 
+// v0.1.34 — 인증샷 찍으면 가장 최신 로그에 사진 연결
+function updateLatestLogCapture(dataUrl) {
+  const logs = getLogsFromStorage();
+  if (logs.length === 0) return;
+  const latestId = String(logs[0].id);
+  let captures = {};
+  try { captures = JSON.parse(localStorage.getItem(STORAGE.logCaptures) || '{}'); } catch {}
+  captures[latestId] = dataUrl;
+  // 최대 20개 유지 (오래된 것부터 삭제)
+  const keys = Object.keys(captures).sort((a, b) => Number(a) - Number(b));
+  if (keys.length > 20) keys.slice(0, keys.length - 20).forEach(k => delete captures[k]);
+  try {
+    localStorage.setItem(STORAGE.logCaptures, JSON.stringify(captures));
+  } catch (e) {
+    console.warn('인증샷 로그 저장 실패 (용량 부족):', e);
+  }
+}
+
 function renderLogCalendar() {
   const $section = document.getElementById('logCalendarSection');
   if (!$section) return;
@@ -527,66 +550,59 @@ function renderLogCalendar() {
   logs.forEach(l => { if (l.date) countMap[l.date] = (countMap[l.date] || 0) + 1; });
 
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const todayStr = formatDateStr(today);
+  const todayStr  = formatDateStr(today);
+  const year      = logViewYear;
+  const month     = logViewMonth;   // 0-indexed
+  const lastDate  = new Date(year, month + 1, 0).getDate();
+  const isCurMonth = year === today.getFullYear() && month === today.getMonth();
 
-  // 최근 4개월 (현재 달 포함)
-  const MONTHS_COUNT = 4;
-  const months = [];
-  for (let i = MONTHS_COUNT - 1; i >= 0; i--) {
-    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-    months.push({ year: d.getFullYear(), month: d.getMonth() });
+  // 날짜 셀 배열
+  const days = [];
+  for (let d = 1; d <= lastDate; d++) {
+    const dateStr  = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const isFuture = new Date(year, month, d) > today;
+    const cnt      = countMap[dateStr] || 0;
+    const level    = isFuture ? 'f' : cnt === 0 ? '0' : cnt === 1 ? '1' : cnt <= 3 ? '2' : '3';
+    days.push({ d, dateStr, level, cnt, isToday: dateStr === todayStr, isFuture });
   }
 
-  const dayNames = ['월', '화', '수', '목', '금', '토', '일'];
-
-  const monthsHtml = months.map(({ year, month }) => {
-    const firstDay  = new Date(year, month, 1);
-    const lastDate  = new Date(year, month + 1, 0).getDate();
-    const startDow  = (firstDay.getDay() + 6) % 7; // 0=월
-
-    // 셀 배열: null=빈칸, 또는 날짜 데이터
-    const cells = Array(startDow).fill(null);
-    for (let d = 1; d <= lastDate; d++) {
-      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      const isFuture = new Date(year, month, d) > today;
-      const cnt   = countMap[dateStr] || 0;
-      const level = isFuture ? 'f' : cnt === 0 ? '0' : cnt === 1 ? '1' : cnt <= 3 ? '2' : '3';
-      cells.push({ d, dateStr, level, cnt, isToday: dateStr === todayStr, isFuture });
-    }
-    while (cells.length % 7 !== 0) cells.push(null);
-
-    let weeksHtml = '';
-    for (let i = 0; i < cells.length; i += 7) {
-      weeksHtml += `<div class="log-month-week">` +
-        cells.slice(i, i + 7).map(c => {
-          if (!c) return `<div class="log-month-day log-month-empty"></div>`;
-          const selClass = c.isFuture ? '' : ' clickable';
-          const todayCls = c.isToday ? ' log-today' : '';
-          const title    = `${String(month + 1)}/${c.d}${c.cnt > 0 ? ' · ' + c.cnt + '회 완료' : ''}`;
-          return `<div class="log-month-day lv${c.level}${selClass}${todayCls}"
-            data-date="${c.dateStr}" title="${title}">
-            <span class="log-day-num">${c.d}</span>
-            ${c.cnt > 0 ? '<span class="log-day-dot"></span>' : ''}
-          </div>`;
-        }).join('') +
-      `</div>`;
-    }
-
-    return `<div class="log-month-card">
-      <div class="log-month-header">${year}년 ${month + 1}월</div>
-      <div class="log-month-weekdays">${dayNames.map(n => `<div class="log-month-wday">${n}</div>`).join('')}</div>
-      <div class="log-month-grid">${weeksHtml}</div>
-    </div>`;
-  }).join('');
-
   $section.innerHTML = `
-    <div class="log-months-wrap">${monthsHtml}</div>
+    <div class="log-strip-wrap">
+      <div class="log-strip-nav">
+        <button class="log-nav-btn" id="logPrevBtn" title="이전 달">‹</button>
+        <span class="log-strip-title">${year}년 ${month + 1}월</span>
+        <button class="log-nav-btn" id="logNextBtn" title="다음 달" ${isCurMonth ? 'disabled' : ''}>›</button>
+      </div>
+      <div class="log-strip">
+        ${days.map(d => `
+          <div class="log-strip-day lv${d.level}${d.isToday ? ' log-today' : ''}${d.isFuture ? '' : ' clickable'}"
+               data-date="${d.dateStr}"
+               title="${month + 1}/${d.d}${d.cnt > 0 ? ' · ' + d.cnt + '회 완료' : ''}">
+            <span class="log-strip-num">${d.d}</span>
+            ${d.cnt > 0 ? '<span class="log-strip-dot"></span>' : ''}
+          </div>`).join('')}
+      </div>
+    </div>
     <p class="log-hint">날짜를 탭하면 그날의 기록을 볼 수 있어요</p>
   `;
 
-  $section.querySelectorAll('.log-month-day.clickable').forEach(cell => {
+  // 이전/다음 달 버튼
+  document.getElementById('logPrevBtn').addEventListener('click', () => {
+    if (logViewMonth === 0) { logViewYear--; logViewMonth = 11; } else { logViewMonth--; }
+    renderLogCalendar();
+  });
+  const $nextBtn = document.getElementById('logNextBtn');
+  if ($nextBtn && !isCurMonth) {
+    $nextBtn.addEventListener('click', () => {
+      if (logViewMonth === 11) { logViewYear++; logViewMonth = 0; } else { logViewMonth++; }
+      renderLogCalendar();
+    });
+  }
+
+  // 날짜 클릭
+  $section.querySelectorAll('.log-strip-day.clickable').forEach(cell => {
     cell.addEventListener('click', () => {
-      $section.querySelectorAll('.log-month-day').forEach(c => c.removeAttribute('data-sel'));
+      $section.querySelectorAll('.log-strip-day').forEach(c => c.removeAttribute('data-sel'));
       cell.setAttribute('data-sel', '');
       renderLogDay(cell.dataset.date);
     });
@@ -603,6 +619,10 @@ function renderLogDay(dateStr) {
   const [, m, d] = dateStr.split('-');
   $title.textContent = `${parseInt(m)}월 ${parseInt(d)}일 · ${dayLogs.length}회 완료`;
 
+  // v0.1.34 — 인증샷 맵 로드
+  let captures = {};
+  try { captures = JSON.parse(localStorage.getItem(STORAGE.logCaptures) || '{}'); } catch {}
+
   if (dayLogs.length === 0) {
     $list.innerHTML = '<p class="log-empty-day">이 날은 기록이 없어요.</p>';
   } else {
@@ -615,6 +635,10 @@ function renderLogDay(dateStr) {
       const timeStr = log.completedAt
         ? new Date(log.completedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
         : '';
+      const captureUrl = captures[String(log.id)];
+      const captureHtml = captureUrl
+        ? `<img class="log-item-capture" src="${captureUrl}" alt="인증샷">`
+        : '';
       return `<div class="log-item">
         <div class="log-item-row">
           <span class="log-item-icon">${icon}</span>
@@ -623,6 +647,7 @@ function renderLogDay(dateStr) {
           <span class="log-item-time">${timeStr}</span>
         </div>
         ${noteHtml}
+        ${captureHtml}
       </div>`;
     }).join('');
   }
@@ -1673,6 +1698,7 @@ const STORAGE = {
   completedCount: 'tomotto_completedCount',  // v0.1.8 — 누적 완료 횟수
   lastCapture: 'tomotto_lastCapture',        // v0.1.8 — 마지막 인증샷 (data URL, 작게 압축)
   logs: 'tomotto_logs',                      // v0.1.33 — 완료 로그 (기록 탭)
+  logCaptures: 'tomotto_log_captures',       // v0.1.34 — 로그ID → 인증샷 data URL 맵
 };
 
 // ====== localStorage 마이그레이션 (pomocha_* → tomotto_*) ======
@@ -2801,6 +2827,7 @@ function saveCaptureToStorage(dataUrl) {
     $lastCapture.hidden = false;
     try {
       localStorage.setItem(STORAGE.lastCapture, compressedUrl);
+      updateLatestLogCapture(compressedUrl);  // v0.1.34 — 기록 탭 로그에 연결
     } catch (err) {
       compressImage(dataUrl, 480, 0.5).then((smaller) => {
         $lastCaptureImg.src = smaller;
