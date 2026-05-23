@@ -109,9 +109,9 @@ const BATTLE_STORAGE = {
 
 let myNickname = '';
 
-// v0.1.22 — 배틀카드 다중선택 삭제
-let battleSelectMode = false;
-const selectedBattleIds = new Set();
+// v0.1.23 — 배틀카드 드래그 순서변경 편집 모드
+let battleEditMode = false;
+let dragSrcIndex = null;
 
 // v0.1.17 — 배틀 결과 모달
 const $battleResultModal = document.getElementById('battleResultModal');
@@ -462,53 +462,43 @@ async function loadMyBattles() {
 async function renderMyBattles() {
   const list = await loadMyBattles();
   if (list.length === 0) {
-    battleSelectMode = false;
-    selectedBattleIds.clear();
+    battleEditMode = false;
     $battleList.innerHTML = '<p class="battle-empty">아직 참여한 배틀이 없어요.</p>';
     return;
   }
 
-  // 선택 모드에서 존재하지 않는 ID 정리
-  if (battleSelectMode) {
-    const ids = new Set(list.map(b => b.id));
-    for (const id of selectedBattleIds) {
-      if (!ids.has(id)) selectedBattleIds.delete(id);
-    }
-  }
-
   const hasDeletable = list.some(b => b._isCreator);
 
-  // 툴바
+  // 툴바: 편집(드래그 순서변경) 모드 토글
   const toolbarHtml = hasDeletable ? `
     <div class="battle-list-toolbar">
-      <button class="btn-mini btn-select-toggle" id="battleSelectToggle">
-        ${battleSelectMode ? '완료' : '편집'}
+      <button class="btn-mini btn-edit-toggle" id="battleEditToggle">
+        ${battleEditMode ? '완료' : '편집'}
       </button>
-      ${battleSelectMode ? `<button class="btn-mini btn-danger-mini" id="battleSelectDeleteBtn" ${selectedBattleIds.size === 0 ? 'disabled' : ''}>🗑 ${selectedBattleIds.size > 0 ? selectedBattleIds.size + '개 ' : ''}삭제</button>` : ''}
     </div>
   ` : '';
 
-  $battleList.innerHTML = toolbarHtml + list.map((b) => {
+  $battleList.innerHTML = toolbarHtml + list.map((b, idx) => {
     const modeLabel = b.mode === 'common' ? '🍅 TOM MODE' : '🎲 MOTO MODE';
     const statusLabel = b.status === 'waiting' ? '친구 대기 중' : (b.status === 'active' ? '진행 중' : '완료');
     const taskLabel = b.mode === 'common' ? escapeHtml(b.task_common || '') : '각자 랜덤 가챠';
     const minutes = Math.round(b.duration_sec / 60);
     const roleLabel = b._isCreator ? '내가 만듦' : '초대받음';
 
-    // 선택 모드: 생성자 카드에 체크박스
-    const checkboxHtml = (battleSelectMode && b._isCreator)
-      ? `<input type="checkbox" class="battle-select-cb" data-id="${b.id}" ${selectedBattleIds.has(b.id) ? 'checked' : ''}>`
+    // 편집 모드: 드래그 핸들 표시
+    const dragHandle = battleEditMode
+      ? `<span class="drag-handle" aria-hidden="true">⠿</span>`
       : '';
 
-    // 일반 모드에서만 개별 삭제 버튼 표시
-    const deleteBtn = (!battleSelectMode && b._isCreator)
+    // 삭제 버튼은 항상 생성자 카드에 표시
+    const deleteBtn = b._isCreator
       ? `<button class="btn-mini btn-danger-mini" data-action="delete" data-id="${b.id}">🗑 삭제</button>`
       : '';
 
-    const isSelected = battleSelectMode && b._isCreator && selectedBattleIds.has(b.id);
+    const isDraggable = battleEditMode;
     return `
-      <div class="battle-card${battleSelectMode && b._isCreator ? ' selectable' : ''}${isSelected ? ' selected' : ''}" data-id="${b.id}">
-        ${checkboxHtml}
+      <div class="battle-card${isDraggable ? ' draggable' : ''}" data-id="${b.id}" data-idx="${idx}" ${isDraggable ? 'draggable="true"' : ''}>
+        ${dragHandle}
         <div class="battle-card-top">
           <span class="battle-card-mode">${modeLabel} · ${roleLabel}</span>
           <span class="battle-card-status ${b.status}">${statusLabel}</span>
@@ -516,7 +506,7 @@ async function renderMyBattles() {
         <div class="battle-card-task">${taskLabel}</div>
         <div class="battle-card-meta">시간 ${minutes}분 · ID ${b.id}</div>
         <div class="battle-card-actions">
-          ${battleSelectMode ? '' : `<button class="btn-mini" data-action="open" data-id="${b.id}">열기</button>
+          ${battleEditMode ? '' : `<button class="btn-mini" data-action="open" data-id="${b.id}">열기</button>
           <button class="btn-mini" data-action="invite" data-id="${b.id}">초대 링크</button>`}
           ${deleteBtn}
         </div>
@@ -549,51 +539,15 @@ async function deleteBattle(battleId) {
 }
 
 $battleList.addEventListener('click', async (e) => {
-  // 편집 토글 버튼
-  if (e.target.id === 'battleSelectToggle') {
-    battleSelectMode = !battleSelectMode;
-    selectedBattleIds.clear();
+  // 편집 모드 토글 버튼
+  if (e.target.id === 'battleEditToggle') {
+    battleEditMode = !battleEditMode;
+    dragSrcIndex = null;
     await renderMyBattles();
     return;
   }
 
-  // 선택 삭제 버튼
-  if (e.target.id === 'battleSelectDeleteBtn') {
-    if (selectedBattleIds.size === 0) return;
-    if (!confirm(`선택한 ${selectedBattleIds.size}개 배틀을 삭제할까요? 되돌릴 수 없어요.`)) return;
-    const ids = [...selectedBattleIds];
-    selectedBattleIds.clear();
-    battleSelectMode = false;
-    for (const id of ids) {
-      await deleteBattleSilent(id);
-    }
-    await renderMyBattles();
-    return;
-  }
-
-  // 체크박스 클릭
-  const cb = e.target.closest('.battle-select-cb');
-  if (cb) {
-    const id = cb.dataset.id;
-    if (cb.checked) selectedBattleIds.add(id);
-    else selectedBattleIds.delete(id);
-    await renderMyBattles();
-    return;
-  }
-
-  // 선택 모드에서 카드 클릭 → 체크 토글 (생성자 카드만)
-  if (battleSelectMode) {
-    const card = e.target.closest('.battle-card.selectable');
-    if (card) {
-      const id = card.dataset.id;
-      if (selectedBattleIds.has(id)) selectedBattleIds.delete(id);
-      else selectedBattleIds.add(id);
-      await renderMyBattles();
-    }
-    return;
-  }
-
-  // closest로 버튼 내부 요소 클릭도 안전하게 처리
+  // 편집 모드에서는 열기/초대 링크 버튼 숨겨지므로 삭제만 처리
   const btn = e.target.closest('[data-action]');
   if (!btn) return;
   const action = btn.dataset.action;
@@ -609,6 +563,56 @@ $battleList.addEventListener('click', async (e) => {
   } else if (action === 'delete') {
     deleteBattle(id);
   }
+});
+
+// ====== v0.1.23 — 드래그 순서변경 ======
+$battleList.addEventListener('dragstart', (e) => {
+  const card = e.target.closest('.battle-card.draggable');
+  if (!card) return;
+  dragSrcIndex = parseInt(card.dataset.idx, 10);
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', String(dragSrcIndex));
+  // 브라우저가 ghost 이미지 만들 시간 주고 나서 스타일 적용
+  setTimeout(() => card.classList.add('dragging'), 0);
+});
+
+$battleList.addEventListener('dragend', () => {
+  dragSrcIndex = null;
+  $battleList.querySelectorAll('.battle-card.dragging, .battle-card.drag-over')
+    .forEach(el => el.classList.remove('dragging', 'drag-over'));
+});
+
+$battleList.addEventListener('dragenter', (e) => {
+  e.preventDefault();
+  const card = e.target.closest('.battle-card.draggable');
+  if (!card) return;
+  const tgtIdx = parseInt(card.dataset.idx, 10);
+  if (tgtIdx === dragSrcIndex) return;
+  $battleList.querySelectorAll('.battle-card.drag-over')
+    .forEach(el => el.classList.remove('drag-over'));
+  card.classList.add('drag-over');
+});
+
+$battleList.addEventListener('dragover', (e) => {
+  if (dragSrcIndex !== null) e.preventDefault();
+});
+
+$battleList.addEventListener('drop', async (e) => {
+  e.preventDefault();
+  const card = e.target.closest('.battle-card.draggable');
+  if (!card || dragSrcIndex === null) return;
+  const tgtIdx = parseInt(card.dataset.idx, 10);
+  if (tgtIdx === dragSrcIndex) return;
+
+  // localStorage 배열에서 순서 변경
+  let cached = [];
+  try { cached = JSON.parse(localStorage.getItem(BATTLE_STORAGE.myBattles) || '[]'); } catch {}
+  const [item] = cached.splice(dragSrcIndex, 1);
+  cached.splice(tgtIdx, 0, item);
+  localStorage.setItem(BATTLE_STORAGE.myBattles, JSON.stringify(cached));
+
+  dragSrcIndex = null;
+  await renderMyBattles();
 });
 
 // 초대 링크 모달
@@ -1139,7 +1143,7 @@ if ($noteUploadBtn) {
         return;
       }
     }
-    localStorage.setItem(STORAGE.completionNote, note);
+    localStorage.setItem(BATTLE_STORAGE.completionNote, note);
     $noteUploadBtn.textContent = '✓ 소감 저장됨! (결과창에서 확인하세요)';
   });
 }
@@ -1948,9 +1952,9 @@ function finishTimer() {
   $captureRow.hidden = false;
   // v0.1.20 — 소감란 복원 + 자동 저장
   if ($completionNote) {
-    $completionNote.value = localStorage.getItem(STORAGE.completionNote) || '';
+    $completionNote.value = localStorage.getItem(BATTLE_STORAGE.completionNote) || '';
     $completionNote.oninput = () => {
-      localStorage.setItem(STORAGE.completionNote, $completionNote.value);
+      localStorage.setItem(BATTLE_STORAGE.completionNote, $completionNote.value);
       // v0.1.22 — 텍스트 있을 때만 저장 버튼 표시
       if ($noteUploadBtn) $noteUploadBtn.hidden = !$completionNote.value.trim();
     };

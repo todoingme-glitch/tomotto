@@ -145,23 +145,6 @@
       <p class="tagline">뭐부터 할지 모르겠을 때, 가챠로 결정하자</p>
     </header>
 
-    <!-- v0.1.17 — 하단 탭 네비게이션 -->
-    <nav class="bottom-tab" id="bottomTab" aria-label="메인 탭 메뉴">
-      <button class="tab-btn active" data-tab="personal" type="button" aria-pressed="true">
-        <span class="tab-icon tab-icon-tom" aria-hidden="true"></span>
-        <span class="tab-label">개인</span>
-      </button>
-      <button class="tab-btn" data-tab="social" type="button" aria-pressed="false">
-        <span class="tab-icon tab-icon-motto" aria-hidden="true"></span>
-        <span class="tab-label">소셜</span>
-      </button>
-      <button class="tab-btn tab-btn-soon" data-tab="league" type="button" aria-pressed="false" disabled>
-        <span class="tab-icon">🏆</span>
-        <span class="tab-label">리그</span>
-        <span class="tab-soon-badge">준비 중</span>
-      </button>
-    </nav>
-
     <!-- 탭 패널 : 개인 -->
     <div class="tab-panel" id="tab-personal">
 
@@ -290,7 +273,7 @@
     </div><!-- /tab-panel#tab-league -->
 
     <footer>
-      <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1.22 · 라이트박스 · 소감저장 · 다중선택삭제</span></small>
+      <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1.23 · 하단탭 · 소감저장 · 드래그순서변경</span></small>
     </footer>
   </div>
 
@@ -466,7 +449,22 @@
     <img id="imgLightboxImg" alt="인증샷 크게 보기">
   </dialog>
 
-  <!-- v0.1.22 — 배틀카드 다중선택 삭제 컨트롤 (JS로 show/hide) -->
+  <!-- v0.1.23 — 하단 고정 탭 네비게이션 (position:fixed) -->
+  <nav class="bottom-tab" id="bottomTab" aria-label="메인 탭 메뉴">
+    <button class="tab-btn active" data-tab="personal" type="button" aria-pressed="true">
+      <span class="tab-icon tab-icon-tom" aria-hidden="true"></span>
+      <span class="tab-label">개인</span>
+    </button>
+    <button class="tab-btn" data-tab="social" type="button" aria-pressed="false">
+      <span class="tab-icon tab-icon-motto" aria-hidden="true"></span>
+      <span class="tab-label">소셜</span>
+    </button>
+    <button class="tab-btn tab-btn-soon" data-tab="league" type="button" aria-pressed="false" disabled>
+      <span class="tab-icon">🏆</span>
+      <span class="tab-label">리그</span>
+      <span class="tab-soon-badge">준비 중</span>
+    </button>
+  </nav>
 
   <!-- Supabase JS SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
