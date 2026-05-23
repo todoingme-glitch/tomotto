@@ -482,11 +482,11 @@ function applyBattleOrder(battles) {
 // v0.1.31 — 배틀카드 상태 표시 재정의
 // '진행 중' = 내 로컬 타이머가 이 배틀로 실제로 돌아가는 상태
 // '완료'   = battles.status === 'done'
-// '친구 대기 중' = 나머지 전부 (waiting / active-but-not-my-timer)
+// '대기 중' = 나머지 전부 (waiting / active-but-not-my-timer)
 function getBattleDisplayStatus(b) {
   if (b.status === 'done') return { label: '완료', cls: 'done' };
   if (timer.isRunning && activeBattleId === b.id) return { label: '진행 중', cls: 'running' };
-  return { label: '친구 대기 중', cls: 'waiting' };
+  return { label: '대기 중', cls: 'waiting' };
 }
 
 async function renderMyBattles() {
@@ -904,24 +904,10 @@ function updateBattleLockReady() {
   $battleLockOpenBtn.textContent = '배틀 시작 ▶';
 }
 
-// v0.1.29 — MOTO MODE: 가챠 완료 후 "배틀 시작 ▶" 클릭 시 솜솜 쪽 카운트다운 즉시 트리거
+// v0.1.32 — 잠금 배너 버튼: 항상 배틀 룸 모달만 열기
+// (가챠 완료 상태면 renderBattleRoom이 '▶ 타이머 시작' 버튼을 표시)
 $battleLockOpenBtn.addEventListener('click', async () => {
-  if (!lockedBattleId) return;
-  const isReadyToStart = $battleLockOpenBtn.textContent.trim() === '배틀 시작 ▶';
-  if (isReadyToStart && currentTask) {
-    // 가챠 완료된 MOTO MODE: 배틀 룸 데이터 로드 후 카운트다운 시작
-    currentBattleId = lockedBattleId;
-    const result = await fetchBattle(lockedBattleId);
-    if (result?.battle) currentBattleData = result;
-    if (!$battleRoomModal.open) {
-      if (typeof $battleRoomModal.showModal === 'function') $battleRoomModal.showModal();
-      else $battleRoomModal.setAttribute('open', '');
-    }
-    hideBattleLock();
-    await startBattleWithCountdown();
-  } else {
-    openBattleRoom(lockedBattleId);
-  }
+  if (lockedBattleId) await openBattleRoom(lockedBattleId);
 });
 
 $battleLockDismissBtn.addEventListener('click', () => {
@@ -1469,6 +1455,8 @@ let switchTab = () => {};
       panel.classList.toggle('tab-panel-hidden', panel.id !== `tab-${tabId}`);
     });
     localStorage.setItem(TAB_STORAGE_KEY, tabId);
+    // v0.1.32 — 소셜 탭으로 전환 시 배틀카드 상태 즉시 갱신 (timer.isRunning 반영)
+    if (tabId === 'social') renderMyBattles();
   };
 
   tabBtns.forEach(btn => {
