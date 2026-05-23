@@ -489,6 +489,148 @@ function getBattleDisplayStatus(b) {
   return { label: '대기 중', cls: 'waiting' };
 }
 
+// ====== v0.1.33 — 기록 탭 ======
+
+function formatDateStr(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function getLogsFromStorage() {
+  try { return JSON.parse(localStorage.getItem(STORAGE.logs) || '[]'); } catch { return []; }
+}
+
+function saveLog(entry) {
+  const logs = getLogsFromStorage();
+  logs.unshift(entry);
+  if (logs.length > 500) logs.splice(500);
+  localStorage.setItem(STORAGE.logs, JSON.stringify(logs));
+}
+
+// 소감 저장 시 가장 최신 로그 항목에 note 업데이트
+function updateLatestLogNote(note) {
+  const logs = getLogsFromStorage();
+  if (logs.length > 0) {
+    logs[0].note = note;
+    localStorage.setItem(STORAGE.logs, JSON.stringify(logs));
+  }
+}
+
+function renderLogCalendar() {
+  const $section = document.getElementById('logCalendarSection');
+  if (!$section) return;
+
+  const logs = getLogsFromStorage();
+  const countMap = {};
+  logs.forEach(l => { if (l.date) countMap[l.date] = (countMap[l.date] || 0) + 1; });
+
+  const WEEKS = 20;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const todayStr = formatDateStr(today);
+
+  // 시작일: WEEKS주 전 월요일
+  const start = new Date(today);
+  start.setDate(today.getDate() - WEEKS * 7 + 1);
+  const dow = (start.getDay() + 6) % 7; // 0=월
+  start.setDate(start.getDate() - dow);
+
+  // 주 데이터 빌드
+  const weeks = [];
+  const cur = new Date(start);
+  let lastMonth = -1;
+  for (let w = 0; w < WEEKS; w++) {
+    const days = [];
+    let monthLabel = null;
+    if (cur.getMonth() !== lastMonth) {
+      monthLabel = `${cur.getMonth() + 1}월`;
+      lastMonth = cur.getMonth();
+    }
+    for (let d = 0; d < 7; d++) {
+      const ds = formatDateStr(cur);
+      const future = cur > today;
+      const cnt = countMap[ds] || 0;
+      const level = future ? 'f' : cnt === 0 ? '0' : cnt === 1 ? '1' : cnt <= 3 ? '2' : '3';
+      days.push({ ds, level, cnt, isToday: ds === todayStr });
+      cur.setDate(cur.getDate() + 1);
+    }
+    weeks.push({ days, monthLabel });
+  }
+
+  const dayNames = ['월', '', '수', '', '금', '', '일'];
+
+  $section.innerHTML = `
+    <div class="log-cal-wrap">
+      <div class="log-cal-inner">
+        <div class="log-cal-ylabels">
+          <div class="log-cal-yspacer"></div>
+          ${dayNames.map(n => `<div class="log-cal-ylabel">${n}</div>`).join('')}
+        </div>
+        <div class="log-cal-right">
+          <div class="log-cal-months-row">
+            ${weeks.map(w => `<div class="log-cal-mcell">${w.monthLabel || ''}</div>`).join('')}
+          </div>
+          <div class="log-cal-weeks">
+            ${weeks.map(w => `<div class="log-cal-week">
+              ${w.days.map(d => `<div class="log-cal-day lv${d.level}"
+                data-date="${d.ds}"
+                ${d.isToday ? 'data-today' : ''}
+                title="${d.ds.slice(5).replace('-', '/')}${d.cnt > 0 ? ' · ' + d.cnt + '회' : ''}"></div>`).join('')}
+            </div>`).join('')}
+          </div>
+        </div>
+      </div>
+      <p class="log-hint">날짜를 탭하면 그날의 기록을 볼 수 있어요</p>
+    </div>
+  `;
+
+  $section.querySelectorAll('.log-cal-day:not(.lvf)').forEach(cell => {
+    cell.addEventListener('click', () => {
+      $section.querySelectorAll('.log-cal-day').forEach(c => c.removeAttribute('data-sel'));
+      cell.setAttribute('data-sel', '');
+      renderLogDay(cell.dataset.date);
+    });
+  });
+}
+
+function renderLogDay(dateStr) {
+  const $detail = document.getElementById('logDayDetail');
+  const $title  = document.getElementById('logDayTitle');
+  const $list   = document.getElementById('logDayList');
+  if (!$detail || !$title || !$list) return;
+
+  const dayLogs = getLogsFromStorage().filter(l => l.date === dateStr);
+  const [, m, d] = dateStr.split('-');
+  $title.textContent = `${parseInt(m)}월 ${parseInt(d)}일 · ${dayLogs.length}회 완료`;
+
+  if (dayLogs.length === 0) {
+    $list.innerHTML = '<p class="log-empty-day">이 날은 기록이 없어요.</p>';
+  } else {
+    $list.innerHTML = dayLogs.map(log => {
+      const mins = Math.round((log.durationSec || 0) / 60);
+      const icon = log.type === 'battle' ? '⚔️' : '🍅';
+      const partnerText = log.partner ? ` · ${escapeHtml(log.partner)}님과` : '';
+      const noteHtml = log.note
+        ? `<div class="log-item-note">"${escapeHtml(log.note)}"</div>` : '';
+      const timeStr = log.completedAt
+        ? new Date(log.completedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+        : '';
+      return `<div class="log-item">
+        <div class="log-item-row">
+          <span class="log-item-icon">${icon}</span>
+          <span class="log-item-task">${escapeHtml(log.task || '무제')}</span>
+          <span class="log-item-meta">${mins}분${partnerText}</span>
+          <span class="log-item-time">${timeStr}</span>
+        </div>
+        ${noteHtml}
+      </div>`;
+    }).join('');
+  }
+
+  $detail.hidden = false;
+}
+
 async function renderMyBattles() {
   const list = await loadMyBattles();
   if (list.length === 0) {
@@ -1402,6 +1544,7 @@ if ($noteUploadBtn) {
       }
     }
     localStorage.setItem(BATTLE_STORAGE.completionNote, note);
+    updateLatestLogNote(note);  // v0.1.33 — 기록 탭 로그에도 소감 반영
     // v0.1.29 — 저장 완료: textarea 잠금 + 수정 버튼으로 전환 (딜레이 없음)
     if ($completionNote) $completionNote.disabled = true;
     $noteUploadBtn.disabled = false;
@@ -1421,6 +1564,12 @@ function getBattlePartnerInfo() {
 }
 
 $battleRoomCancelBtn.addEventListener('click', closeBattleRoom);
+// v0.1.33 — 기록 탭 일별 상세 닫기
+document.getElementById('logDayClose')?.addEventListener('click', () => {
+  const $detail = document.getElementById('logDayDetail');
+  if ($detail) $detail.hidden = true;
+  document.querySelectorAll('.log-cal-day[data-sel]').forEach(c => c.removeAttribute('data-sel'));
+});
 $battleRoomAcceptBtn.addEventListener('click', acceptBattle);
 // v0.1.15 — 가챠 유도: 모달 닫고 개인 탭 → 가챠 섹션으로 이동
 $battleRoomGachaBtn.addEventListener('click', () => {
@@ -1457,6 +1606,8 @@ let switchTab = () => {};
     localStorage.setItem(TAB_STORAGE_KEY, tabId);
     // v0.1.32 — 소셜 탭으로 전환 시 배틀카드 상태 즉시 갱신 (timer.isRunning 반영)
     if (tabId === 'social') renderMyBattles();
+    // v0.1.33 — 기록 탭으로 전환 시 캘린더 갱신
+    if (tabId === 'log') renderLogCalendar();
   };
 
   tabBtns.forEach(btn => {
@@ -1522,6 +1673,7 @@ const STORAGE = {
   timerState: 'tomotto_timerState',
   completedCount: 'tomotto_completedCount',  // v0.1.8 — 누적 완료 횟수
   lastCapture: 'tomotto_lastCapture',        // v0.1.8 — 마지막 인증샷 (data URL, 작게 압축)
+  logs: 'tomotto_logs',                      // v0.1.33 — 완료 로그 (기록 탭)
 };
 
 // ====== localStorage 마이그레이션 (pomocha_* → tomotto_*) ======
@@ -2231,6 +2383,20 @@ function finishTimer() {
   localStorage.setItem(STORAGE.completedCount, String(completedCount));
   updateCompletedDisplay();
   $captureRow.hidden = false;
+
+  // v0.1.33 — 기록 탭 로그 저장
+  const _now = Date.now();
+  saveLog({
+    id: _now,
+    date: formatDateStr(new Date(_now)),
+    task: currentTask || '',
+    durationSec: timer.duration,
+    type: activeBattleId ? 'battle' : 'solo',
+    battleMode: currentBattleData?.battle?.mode || null,
+    partner: battlePartner?.partnerNick || null,
+    note: null,   // 소감은 저장 버튼 클릭 시 updateLatestLogNote()로 채워짐
+    completedAt: _now,
+  });
   // v0.1.29 — 소감란: 항상 빈 상태로 시작 (이전 소감 미복원), textarea 활성화
   if ($completionNote) {
     $completionNote.value = '';

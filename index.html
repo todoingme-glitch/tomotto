@@ -267,6 +267,23 @@
 
     </div><!-- /tab-panel#tab-social -->
 
+    <!-- 탭 패널 : 기록 (v0.1.33~) -->
+    <div class="tab-panel tab-panel-hidden" id="tab-log">
+      <section class="card log-section">
+        <h3 class="section-title">기록</h3>
+        <div id="logCalendarSection">
+          <!-- renderLogCalendar()로 채워짐 -->
+        </div>
+        <div id="logDayDetail" class="log-day-detail" hidden>
+          <div class="log-day-header">
+            <span id="logDayTitle" class="log-day-title"></span>
+            <button id="logDayClose" class="btn-remove-capture" title="닫기">✕</button>
+          </div>
+          <div id="logDayList" class="log-day-list"></div>
+        </div>
+      </section>
+    </div><!-- /tab-panel#tab-log -->
+
     <!-- 탭 패널 : 리그 (준비 중) -->
     <div class="tab-panel tab-panel-hidden" id="tab-league">
       <div class="tab-coming-soon">
@@ -277,7 +294,7 @@
     </div><!-- /tab-panel#tab-league -->
 
     <footer>
-      <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1.32 · 탭전환갱신 · 대기중문구 · 배틀시작플로우</span></small>
+      <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1.33 · 기록탭추가 · 캘린더히트맵 · 로그저장</span></small>
     </footer>
   </div>
 
@@ -465,6 +482,10 @@
         <span class="tab-icon tab-icon-tom tab-icon-sm"></span>
       </span>
       <span class="tab-label">소셜</span>
+    </button>
+    <button class="tab-btn" data-tab="log" type="button" aria-pressed="false">
+      <span class="tab-icon" aria-hidden="true">📋</span>
+      <span class="tab-label">기록</span>
     </button>
     <button class="tab-btn tab-btn-soon" data-tab="league" type="button" aria-pressed="false" disabled>
       <span class="tab-icon">🏆</span>
