@@ -859,7 +859,13 @@ function renderLogCalendar() {
 
   const logs = getLogsFromStorage();
   const countMap = {};
-  logs.forEach(l => { if (l.date) countMap[l.date] = (countMap[l.date] || 0) + 1; });
+  const battleDates = new Set();
+  logs.forEach(l => {
+    if (l.date) {
+      countMap[l.date] = (countMap[l.date] || 0) + 1;
+      if (l.type === 'battle') battleDates.add(l.date);
+    }
+  });
 
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const todayStr  = formatDateStr(today);
@@ -877,7 +883,8 @@ function renderLogCalendar() {
     const isFuture = new Date(year, month, d) > today;
     const cnt      = countMap[dateStr] || 0;
     const level    = isFuture ? 'f' : cnt === 0 ? '0' : cnt === 1 ? '1' : cnt <= 3 ? '2' : '3';
-    days.push({ d, dateStr, level, cnt, isToday: dateStr === todayStr, isFuture });
+    const hasBattle = battleDates.has(dateStr);
+    days.push({ d, dateStr, level, cnt, isToday: dateStr === todayStr, isFuture, hasBattle });
   }
 
   $section.innerHTML = `
@@ -889,11 +896,10 @@ function renderLogCalendar() {
       </div>
       <div class="log-strip">
         ${days.map(d => `
-          <div class="log-strip-day lv${d.level}${d.isToday ? ' log-today' : ''}${d.isFuture ? '' : ' clickable'}"
+          <div class="log-strip-day lv${d.level}${d.isToday ? ' log-today' : ''}${d.isFuture ? '' : ' clickable'}${d.hasBattle ? ' has-battle' : ''}"
                data-date="${d.dateStr}"
-               title="${month + 1}/${d.d}${d.cnt > 0 ? ' · ' + d.cnt + '회 완료' : ''}">
+               title="${month + 1}/${d.d}${d.cnt > 0 ? ' · ' + d.cnt + '회 완료' : ''}${d.hasBattle ? ' ⚔️' : ''}">
             <span class="log-strip-num">${d.d}</span>
-            ${d.cnt > 0 ? '<span class="log-strip-dot"></span>' : ''}
           </div>`).join('')}
       </div>
     </div>
@@ -921,6 +927,15 @@ function renderLogCalendar() {
       renderLogDay(cell.dataset.date);
     });
   });
+
+  // v0.1.35 — 현재 달 보고 있으면 오늘 자동 선택
+  if (isCurMonth) {
+    const todayCell = $section.querySelector(`.log-strip-day[data-date="${todayStr}"]`);
+    if (todayCell) {
+      todayCell.setAttribute('data-sel', '');
+      renderLogDay(todayStr);
+    }
+  }
 }
 
 function renderLogDay(dateStr) {
@@ -953,7 +968,7 @@ function renderLogDay(dateStr) {
       const captureHtml = captureUrl
         ? `<img class="log-item-capture" src="${captureUrl}" alt="인증샷">`
         : '';
-      return `<div class="log-item">
+      return `<div class="log-item${log.type === 'battle' ? ' log-item--battle' : ''}">
         <div class="log-item-row">
           <span class="log-item-icon">${icon}</span>
           <span class="log-item-task">${escapeHtml(log.task || '무제')}</span>
