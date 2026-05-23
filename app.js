@@ -33,6 +33,11 @@ const $completedCount = document.getElementById('completedCount');
 const $captureRow = document.getElementById('captureRow');
 const $captureBtn = document.getElementById('captureBtn');
 const $completionNote = document.getElementById('completionNote'); // v0.1.20 — 소감
+const $noteUploadBtn  = document.getElementById('noteUploadBtn');  // v0.1.22 — 소감 저장
+// v0.1.22 — 라이트박스 dialog
+const $imgLightboxDialog = document.getElementById('imgLightboxDialog');
+const $imgLightboxImg    = document.getElementById('imgLightboxImg');
+const $imgLightboxClose  = document.getElementById('imgLightboxClose');
 const $captureInput = document.getElementById('captureInput');
 const $lastCapture = document.getElementById('lastCapture');
 const $lastCaptureImg = document.getElementById('lastCaptureImg');
@@ -103,6 +108,10 @@ const BATTLE_STORAGE = {
 };
 
 let myNickname = '';
+
+// v0.1.22 — 배틀카드 다중선택 삭제
+let battleSelectMode = false;
+const selectedBattleIds = new Set();
 
 // v0.1.17 — 배틀 결과 모달
 const $battleResultModal = document.getElementById('battleResultModal');
@@ -367,11 +376,12 @@ async function saveBattle(battle) {
       alert('배틀 저장 실패: ' + e1.message);
       throw e1;
     }
-    // battle_players에 생성자 등록
+    // battle_players에 생성자 등록 (MOTO MODE면 가챠 task도 함께)
     const { error: e2 } = await sb.from('battle_players').insert({
       battle_id: battle.id,
       nickname: battle.creator_nickname,
       is_creator: true,
+      task: battle.mode === 'separate' ? (currentTask || null) : null, // v0.1.22
     });
     if (e2) {
       console.error('플레이어 등록 실패:', e2);
@@ -452,21 +462,53 @@ async function loadMyBattles() {
 async function renderMyBattles() {
   const list = await loadMyBattles();
   if (list.length === 0) {
+    battleSelectMode = false;
+    selectedBattleIds.clear();
     $battleList.innerHTML = '<p class="battle-empty">아직 참여한 배틀이 없어요.</p>';
     return;
   }
-  $battleList.innerHTML = list.map((b) => {
+
+  // 선택 모드에서 존재하지 않는 ID 정리
+  if (battleSelectMode) {
+    const ids = new Set(list.map(b => b.id));
+    for (const id of selectedBattleIds) {
+      if (!ids.has(id)) selectedBattleIds.delete(id);
+    }
+  }
+
+  const hasDeletable = list.some(b => b._isCreator);
+
+  // 툴바
+  const toolbarHtml = hasDeletable ? `
+    <div class="battle-list-toolbar">
+      <button class="btn-mini btn-select-toggle" id="battleSelectToggle">
+        ${battleSelectMode ? '완료' : '편집'}
+      </button>
+      ${battleSelectMode ? `<button class="btn-mini btn-danger-mini" id="battleSelectDeleteBtn" ${selectedBattleIds.size === 0 ? 'disabled' : ''}>🗑 ${selectedBattleIds.size > 0 ? selectedBattleIds.size + '개 ' : ''}삭제</button>` : ''}
+    </div>
+  ` : '';
+
+  $battleList.innerHTML = toolbarHtml + list.map((b) => {
     const modeLabel = b.mode === 'common' ? '🍅 TOM MODE' : '🎲 MOTO MODE';
     const statusLabel = b.status === 'waiting' ? '친구 대기 중' : (b.status === 'active' ? '진행 중' : '완료');
     const taskLabel = b.mode === 'common' ? escapeHtml(b.task_common || '') : '각자 랜덤 가챠';
     const minutes = Math.round(b.duration_sec / 60);
     const roleLabel = b._isCreator ? '내가 만듦' : '초대받음';
-    // 삭제 버튼은 생성자만
-    const deleteBtn = b._isCreator
+
+    // 선택 모드: 생성자 카드에 체크박스
+    const checkboxHtml = (battleSelectMode && b._isCreator)
+      ? `<input type="checkbox" class="battle-select-cb" data-id="${b.id}" ${selectedBattleIds.has(b.id) ? 'checked' : ''}>`
+      : '';
+
+    // 일반 모드에서만 개별 삭제 버튼 표시
+    const deleteBtn = (!battleSelectMode && b._isCreator)
       ? `<button class="btn-mini btn-danger-mini" data-action="delete" data-id="${b.id}">🗑 삭제</button>`
       : '';
+
+    const isSelected = battleSelectMode && b._isCreator && selectedBattleIds.has(b.id);
     return `
-      <div class="battle-card" data-id="${b.id}">
+      <div class="battle-card${battleSelectMode && b._isCreator ? ' selectable' : ''}${isSelected ? ' selected' : ''}" data-id="${b.id}">
+        ${checkboxHtml}
         <div class="battle-card-top">
           <span class="battle-card-mode">${modeLabel} · ${roleLabel}</span>
           <span class="battle-card-status ${b.status}">${statusLabel}</span>
@@ -474,8 +516,8 @@ async function renderMyBattles() {
         <div class="battle-card-task">${taskLabel}</div>
         <div class="battle-card-meta">시간 ${minutes}분 · ID ${b.id}</div>
         <div class="battle-card-actions">
-          <button class="btn-mini" data-action="open" data-id="${b.id}">열기</button>
-          <button class="btn-mini" data-action="invite" data-id="${b.id}">초대 링크</button>
+          ${battleSelectMode ? '' : `<button class="btn-mini" data-action="open" data-id="${b.id}">열기</button>
+          <button class="btn-mini" data-action="invite" data-id="${b.id}">초대 링크</button>`}
           ${deleteBtn}
         </div>
       </div>
@@ -483,39 +525,74 @@ async function renderMyBattles() {
   }).join('');
 }
 
-// 배틀 삭제 (생성자만)
-async function deleteBattle(battleId) {
-  if (!confirm('이 배틀을 삭제할까요? 되돌릴 수 없어요.')) return;
-
-  // 1. Supabase에서 삭제 — battle_players 먼저, 그 다음 battles
+// 배틀 삭제 내부 로직 (confirm 없음 — 단일/일괄 삭제 공유)
+async function deleteBattleSilent(battleId) {
   if (sb) {
-    // 1-a. 참여자 행 먼저 삭제 (외래 키 제약 해제)
     const { error: playersError } = await sb.from('battle_players').delete().eq('battle_id', battleId);
-    if (playersError) {
-      console.error('battle_players 삭제 실패:', playersError);
-      alert('삭제 실패: ' + playersError.message);
-      return;
-    }
-    // 1-b. 배틀 본체 삭제
+    if (playersError) { console.error('battle_players 삭제 실패:', playersError); return false; }
     const { error } = await sb.from('battles').delete().eq('id', battleId);
-    if (error) {
-      console.error('battles 삭제 실패:', error);
-      alert('삭제 실패: ' + error.message);
-      return;
-    }
+    if (error) { console.error('battles 삭제 실패:', error); return false; }
   }
-
-  // 2. DB 삭제 성공(또는 Supabase 미연결) 후 localStorage 캐시도 제거
   let cached = [];
   try { cached = JSON.parse(localStorage.getItem(BATTLE_STORAGE.myBattles) || '[]'); } catch {}
   cached = cached.filter((b) => b.id !== battleId);
   localStorage.setItem(BATTLE_STORAGE.myBattles, JSON.stringify(cached));
+  return true;
+}
 
-  // 3. 이제 re-render (Supabase에서도 사라졌으므로 카드가 다시 뜨지 않음)
+// 배틀 삭제 (생성자만 — 단일, confirm 포함)
+async function deleteBattle(battleId) {
+  if (!confirm('이 배틀을 삭제할까요? 되돌릴 수 없어요.')) return;
+  const ok = await deleteBattleSilent(battleId);
+  if (!ok) { alert('삭제 중 오류가 발생했어요. 다시 시도해주세요.'); return; }
   await renderMyBattles();
 }
 
 $battleList.addEventListener('click', async (e) => {
+  // 편집 토글 버튼
+  if (e.target.id === 'battleSelectToggle') {
+    battleSelectMode = !battleSelectMode;
+    selectedBattleIds.clear();
+    await renderMyBattles();
+    return;
+  }
+
+  // 선택 삭제 버튼
+  if (e.target.id === 'battleSelectDeleteBtn') {
+    if (selectedBattleIds.size === 0) return;
+    if (!confirm(`선택한 ${selectedBattleIds.size}개 배틀을 삭제할까요? 되돌릴 수 없어요.`)) return;
+    const ids = [...selectedBattleIds];
+    selectedBattleIds.clear();
+    battleSelectMode = false;
+    for (const id of ids) {
+      await deleteBattleSilent(id);
+    }
+    await renderMyBattles();
+    return;
+  }
+
+  // 체크박스 클릭
+  const cb = e.target.closest('.battle-select-cb');
+  if (cb) {
+    const id = cb.dataset.id;
+    if (cb.checked) selectedBattleIds.add(id);
+    else selectedBattleIds.delete(id);
+    await renderMyBattles();
+    return;
+  }
+
+  // 선택 모드에서 카드 클릭 → 체크 토글 (생성자 카드만)
+  if (battleSelectMode) {
+    const card = e.target.closest('.battle-card.selectable');
+    if (card) {
+      const id = card.dataset.id;
+      if (selectedBattleIds.has(id)) selectedBattleIds.delete(id);
+      else selectedBattleIds.add(id);
+      await renderMyBattles();
+    }
+    return;
+  }
+
   // closest로 버튼 내부 요소 클릭도 안전하게 처리
   const btn = e.target.closest('[data-action]');
   if (!btn) return;
@@ -752,11 +829,18 @@ function renderBattleRoom() {
       $battleRoomGachaBtn.hidden = false;
       $battleRoomStatus.textContent = '가챠를 먼저 돌려서 내 작업을 정해주세요!';
     } else if (meIsCreator) {
-      // 창조자: 시작 버튼 표시 (창조자가 시작하면 친구 자동 시작)
-      $battleRoomStartBtn.hidden = false;
+      // 창조자: TOM MODE이거나 MOTO MODE에서 친구도 가챠 완료했을 때만 시작 가능
       if (battle.mode === 'separate') {
-        $battleRoomStatus.innerHTML = '내 가챠 준비 완료! 시작하면 친구도 자동으로 카운트다운돼요. <span class="live-dot">●</span>';
+        const friendHasTask = !!(friend?.task);  // v0.1.22 — 친구 가챠 완료 여부
+        if (!friendHasTask) {
+          $battleRoomStatus.innerHTML = '친구가 가챠를 돌리길 기다리는 중... <span class="live-dot">●</span>';
+          // 시작 버튼 숨김 유지
+        } else {
+          $battleRoomStartBtn.hidden = false;
+          $battleRoomStatus.innerHTML = '둘 다 준비됐어요! 시작하면 친구도 동시에 카운트다운돼요. <span class="live-dot">●</span>';
+        }
       } else {
+        $battleRoomStartBtn.hidden = false;
         $battleRoomStatus.textContent = '둘 다 준비됐어요. 시작하면 친구도 동시에 시작돼요.';
       }
     } else {
@@ -934,7 +1018,17 @@ function subscribeBattleRoom(battleId) {
         }
       }
     )
-    // ② 누가 먼저 시작하든 상대방 자동 카운트다운 (battles UPDATE) — v0.1.19 양방향
+    // ② 친구 task 저장 감지 (battle_players UPDATE) — MOTO MODE 준비 상태 동기화
+    .on('postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'battle_players', filter: `battle_id=eq.${battleId}` },
+      async (payload) => {
+        console.log('[Realtime] battle_players UPDATE 감지 (task/note):', payload);
+        if ($battleRoomModal.open && currentBattleId === battleId) {
+          await refreshBattleRoom();  // 친구 task 반영 → 시작 버튼 표시 여부 갱신
+        }
+      }
+    )
+    // ③ 누가 먼저 시작하든 상대방 자동 카운트다운 (battles UPDATE) — v0.1.19 양방향
     .on('postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'battles', filter: `id=eq.${battleId}` },
       async (payload) => {
@@ -1023,6 +1117,31 @@ function unsubscribeBattleStart() {
     sb.removeChannel(battleStartChannel);
     battleStartChannel = null;
   }
+}
+
+// v0.1.22 — 소감 저장 버튼
+if ($noteUploadBtn) {
+  $noteUploadBtn.addEventListener('click', async () => {
+    const note = $completionNote?.value?.trim();
+    if (!note) return;
+    $noteUploadBtn.disabled = true;
+    $noteUploadBtn.textContent = '저장 중...';
+
+    if (activeBattleId && sb && myNickname) {
+      const { error } = await sb.from('battle_players')
+        .update({ note })
+        .eq('battle_id', activeBattleId)
+        .eq('nickname', myNickname);
+      if (error) {
+        console.warn('[Supabase] note 저장 실패:', error.message);
+        $noteUploadBtn.textContent = '⚠ 저장 실패';
+        $noteUploadBtn.disabled = false;
+        return;
+      }
+    }
+    localStorage.setItem(STORAGE.completionNote, note);
+    $noteUploadBtn.textContent = '✓ 소감 저장됨! (결과창에서 확인하세요)';
+  });
 }
 
 // v0.1.20 — 배틀 파트너 닉네임 + 모드 반환
@@ -1487,6 +1606,15 @@ function showGachaResult(task, animate = true) {
     spawnConfetti();
     // v0.1.15 — 배틀 초대 링크로 들어온 사람이 가챠 완료 시 배너 상태 전환
     if (lockedBattleId) updateBattleLockReady();
+    // v0.1.22 — MOTO MODE 친구: 가챠 완료 시 task를 Supabase에 저장 (창조자가 준비 상태 감지용)
+    const battleIdForTask = lockedBattleId || currentBattleId;
+    if (battleIdForTask && sb && myNickname) {
+      sb.from('battle_players')
+        .update({ task })
+        .eq('battle_id', battleIdForTask)
+        .eq('nickname', myNickname)
+        .then(({ error }) => { if (error) console.warn('[Supabase] task 저장 실패:', error.message); });
+    }
   }
 }
 
@@ -1821,7 +1949,12 @@ function finishTimer() {
   // v0.1.20 — 소감란 복원 + 자동 저장
   if ($completionNote) {
     $completionNote.value = localStorage.getItem(STORAGE.completionNote) || '';
-    $completionNote.oninput = () => localStorage.setItem(STORAGE.completionNote, $completionNote.value);
+    $completionNote.oninput = () => {
+      localStorage.setItem(STORAGE.completionNote, $completionNote.value);
+      // v0.1.22 — 텍스트 있을 때만 저장 버튼 표시
+      if ($noteUploadBtn) $noteUploadBtn.hidden = !$completionNote.value.trim();
+    };
+    if ($noteUploadBtn) $noteUploadBtn.hidden = !$completionNote.value.trim();
   }
 
   // v0.1.17 — 배틀 중이었으면 결과 보기 버튼 표시
@@ -2021,10 +2154,14 @@ async function openBattleResult(battleId) {
     const proofHtml = player.proof_url
       ? `<img class="battle-result-img" src="${escapeHtml(player.proof_url)}" alt="인증샷">`
       : `<div class="battle-result-proof empty-proof">인증샷 없음</div>`;
+    const noteHtml = player.note
+      ? `<div class="battle-result-note">${escapeHtml(player.note)}</div>`
+      : '';
     return `<div class="battle-result-card${isMe ? ' is-me' : ''}">
       <div class="battle-result-nick">${escapeHtml(player.nickname)}</div>
       <div class="battle-result-role">${roleLabel}</div>
       ${proofHtml}
+      ${noteHtml}
       ${player.proof_uploaded_at ? `<div class="battle-result-time">${new Date(player.proof_uploaded_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</div>` : ''}
     </div>`;
   }
@@ -2041,17 +2178,26 @@ $battleResultCloseBtn.addEventListener('click', () => {
   else $battleResultModal.removeAttribute('open');
 });
 
-// v0.1.20 — 배틀 결과 인증샷 탭 → 라이트박스
+// v0.1.22 — 배틀 결과 인증샷 탭 → 라이트박스 (dialog 기반, top layer)
 $battleResultPlayers.addEventListener('click', (e) => {
   const img = e.target.closest('.battle-result-img');
   if (!img) return;
-  const overlay = document.createElement('div');
-  overlay.className = 'img-lightbox';
-  overlay.innerHTML = `<img src="${img.src}" alt="인증샷 크게 보기"><button class="lightbox-close" aria-label="닫기">✕</button>`;
-  document.body.appendChild(overlay);
-  overlay.addEventListener('click', () => overlay.remove());
-  overlay.querySelector('.lightbox-close').addEventListener('click', (ev) => { ev.stopPropagation(); overlay.remove(); });
+  if ($imgLightboxDialog.open) {
+    $imgLightboxDialog.close();
+    return;
+  }
+  $imgLightboxImg.src = img.src;
+  if (typeof $imgLightboxDialog.showModal === 'function') $imgLightboxDialog.showModal();
+  else $imgLightboxDialog.setAttribute('open', '');
 });
+// 배경(dialog 자체) 클릭 → 닫기
+$imgLightboxDialog.addEventListener('click', (e) => {
+  if (e.target === $imgLightboxDialog) $imgLightboxDialog.close();
+});
+// ✕ 버튼 클릭 → 닫기
+if ($imgLightboxClose) {
+  $imgLightboxClose.addEventListener('click', () => $imgLightboxDialog.close());
+}
 
 document.getElementById('battleResultRefreshBtn').addEventListener('click', () => {
   const id = $battleResultBtn.dataset.battleId || activeBattleId;

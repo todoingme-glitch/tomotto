@@ -238,6 +238,7 @@
 
         <div class="capture-row" id="captureRow" hidden>
           <textarea id="completionNote" class="completion-note" placeholder="소감 한 줄 (선택) — 작업 관련 메모, 나누고 싶은 말..." rows="2" maxlength="200"></textarea>
+          <button id="noteUploadBtn" class="btn-note-upload" hidden>💬 소감 저장</button>
           <button id="captureBtn" class="btn-capture">📷 인증샷 첨부 (선택)</button>
           <input type="file" id="captureInput" accept="image/*" hidden>
         </div>
@@ -289,7 +290,7 @@
     </div><!-- /tab-panel#tab-league -->
 
     <footer>
-      <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1.21 · 양방향 동시시작 · 소감</span></small>
+      <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1.22 · 라이트박스 · 소감저장 · 다중선택삭제</span></small>
     </footer>
   </div>
 
@@ -458,6 +459,14 @@
       <button id="battleResultCloseBtn" class="btn-modal btn-modal-primary" type="button">닫기</button>
     </div>
   </dialog>
+
+  <!-- v0.1.22 — 인증샷 라이트박스 (dialog → top layer에서 모달 위로 뜸) -->
+  <dialog id="imgLightboxDialog" class="img-lightbox-dialog">
+    <button id="imgLightboxClose" class="lightbox-close" aria-label="닫기">✕</button>
+    <img id="imgLightboxImg" alt="인증샷 크게 보기">
+  </dialog>
+
+  <!-- v0.1.22 — 배틀카드 다중선택 삭제 컨트롤 (JS로 show/hide) -->
 
   <!-- Supabase JS SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
