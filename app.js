@@ -894,8 +894,24 @@ function updateBattleLockReady() {
   $battleLockOpenBtn.textContent = '배틀 시작 ▶';
 }
 
-$battleLockOpenBtn.addEventListener('click', () => {
-  if (lockedBattleId) openBattleRoom(lockedBattleId);
+// v0.1.29 — MOTO MODE: 가챠 완료 후 "배틀 시작 ▶" 클릭 시 솜솜 쪽 카운트다운 즉시 트리거
+$battleLockOpenBtn.addEventListener('click', async () => {
+  if (!lockedBattleId) return;
+  const isReadyToStart = $battleLockOpenBtn.textContent.trim() === '배틀 시작 ▶';
+  if (isReadyToStart && currentTask) {
+    // 가챠 완료된 MOTO MODE: 배틀 룸 데이터 로드 후 카운트다운 시작
+    currentBattleId = lockedBattleId;
+    const result = await fetchBattle(lockedBattleId);
+    if (result?.battle) currentBattleData = result;
+    if (!$battleRoomModal.open) {
+      if (typeof $battleRoomModal.showModal === 'function') $battleRoomModal.showModal();
+      else $battleRoomModal.setAttribute('open', '');
+    }
+    hideBattleLock();
+    await startBattleWithCountdown();
+  } else {
+    openBattleRoom(lockedBattleId);
+  }
 });
 
 $battleLockDismissBtn.addEventListener('click', () => {
@@ -1036,8 +1052,10 @@ function renderBattleRoom() {
         $battleRoomGachaBtn.hidden = false;
         $battleRoomStatus.textContent = '가챠를 먼저 돌려서 내 작업을 정해주세요!';
       } else {
-        const creatorNick = escapeHtml(creator?.nickname || '상대방');
-        $battleRoomStatus.innerHTML = `${creatorNick}님이 시작하면 자동으로 카운트다운이 시작돼요! <span class="live-dot">●</span>`;
+        // v0.1.29 — TOM MODE: 창조자와 동일한 문구로 통일
+        $battleRoomStatus.innerHTML = battle.mode === 'common'
+          ? '둘 다 준비됐어요. 시작하면 친구도 동시에 시작돼요. <span class="live-dot">●</span>'
+          : `${escapeHtml(creator?.nickname || '상대방')}님이 시작하면 자동으로 카운트다운이 시작돼요! <span class="live-dot">●</span>`;
         $battleRoomStartBtn.hidden = false;
         // TOM MODE: 창조자와 동일한 버튼 텍스트 / MOTO MODE: 먼저 시작 가능 표시
         $battleRoomStartBtn.textContent = battle.mode === 'common' ? '▶ 타이머 시작' : '내가 먼저 시작하기';
@@ -1275,6 +1293,26 @@ function subscribeWatchBattle(battleId) {
         }
       }
     )
+    // v0.1.29 — MOTO MODE: 나나가 배틀 시작 버튼 누르면 솜솜 쪽 자동 카운트다운
+    .on('postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'battles', filter: `id=eq.${battleId}` },
+      async (payload) => {
+        console.log('[Watch] battles UPDATE 감지:', payload);
+        if (payload.new?.status !== 'active') return;
+        if (isStartingBattle || timer.running) return;
+
+        unsubscribeWatchBattle();  // 중복 트리거 방지
+
+        if (!$battleRoomModal.open) {
+          currentBattleId = battleId;
+          const result = await fetchBattle(battleId);
+          if (result?.battle) currentBattleData = result;
+          if (typeof $battleRoomModal.showModal === 'function') $battleRoomModal.showModal();
+          else $battleRoomModal.setAttribute('open', '');
+        }
+        await startBattleWithCountdown();
+      }
+    )
     .subscribe((status) => {
       console.log('[Watch] 구독 상태:', status, '/ battleId:', battleId);
     });
@@ -1338,9 +1376,17 @@ function unsubscribeBattleStart() {
   }
 }
 
-// v0.1.27 — 소감 저장 버튼 (재저장 가능, 솔로/배틀 메시지 분기)
+// v0.1.29 — 소감 저장 버튼 (저장 후 textarea 잠금, 수정 버튼으로 전환)
 if ($noteUploadBtn) {
   $noteUploadBtn.addEventListener('click', async () => {
+    // v0.1.29 — 수정 모드: textarea가 비활성화 상태면 다시 활성화
+    if ($completionNote?.disabled) {
+      $completionNote.disabled = false;
+      $completionNote.focus();
+      $noteUploadBtn.textContent = '저장';
+      return;
+    }
+
     const note = $completionNote?.value?.trim();
     if (!note) return;
     $noteUploadBtn.disabled = true;
@@ -1359,16 +1405,10 @@ if ($noteUploadBtn) {
       }
     }
     localStorage.setItem(BATTLE_STORAGE.completionNote, note);
-    // v0.1.27 — 솔로 모드는 "결과창" 안내 없이, 배틀 모드만 안내
-    const doneMsg = activeBattleId
-      ? '✓ 저장됨! (배틀 결과창에서 확인하세요)'
-      : '✓ 소감 저장됨!';
-    $noteUploadBtn.textContent = doneMsg;
-    // v0.1.27 — 2초 뒤 재활성화 → 수정·재저장 가능
-    setTimeout(() => {
-      $noteUploadBtn.disabled = false;
-      $noteUploadBtn.textContent = '💬 소감 수정';
-    }, 2000);
+    // v0.1.29 — 저장 완료: textarea 잠금 + 수정 버튼으로 전환 (딜레이 없음)
+    if ($completionNote) $completionNote.disabled = true;
+    $noteUploadBtn.disabled = false;
+    $noteUploadBtn.textContent = '✏ 수정';
   });
 }
 
@@ -2084,6 +2124,7 @@ function startTimer() {
     $captureRow.hidden = true;
     if ($completionNote) {
       $completionNote.value = '';
+      $completionNote.disabled = false;  // v0.1.29 — 잠금 해제
       localStorage.removeItem(BATTLE_STORAGE.completionNote);
     }
     if ($noteUploadBtn) {
@@ -2191,21 +2232,36 @@ function finishTimer() {
   localStorage.setItem(STORAGE.completedCount, String(completedCount));
   updateCompletedDisplay();
   $captureRow.hidden = false;
-  // v0.1.20 — 소감란 복원 + 자동 저장
+  // v0.1.29 — 소감란: 항상 빈 상태로 시작 (이전 소감 미복원), textarea 활성화
   if ($completionNote) {
-    $completionNote.value = localStorage.getItem(BATTLE_STORAGE.completionNote) || '';
+    $completionNote.value = '';
+    $completionNote.disabled = false;
+    localStorage.removeItem(BATTLE_STORAGE.completionNote);
     $completionNote.oninput = () => {
       localStorage.setItem(BATTLE_STORAGE.completionNote, $completionNote.value);
-      // v0.1.22 — 텍스트 있을 때만 저장 버튼 표시
       if ($noteUploadBtn) $noteUploadBtn.hidden = !$completionNote.value.trim();
     };
-    if ($noteUploadBtn) $noteUploadBtn.hidden = !$completionNote.value.trim();
+    if ($noteUploadBtn) {
+      $noteUploadBtn.hidden = true;    // 빈 상태이므로 버튼 숨김
+      $noteUploadBtn.disabled = false;
+      $noteUploadBtn.textContent = '저장';
+    }
   }
 
   // v0.1.17 — 배틀 중이었으면 결과 보기 버튼 표시
   if (activeBattleId) {
     $battleResultBtn.hidden = false;
     $battleResultBtn.dataset.battleId = activeBattleId;
+    // v0.1.29 — 배틀 완료 시 status 'done' 업데이트 (여러 카드 '진행 중' 버그 수정)
+    if (sb) {
+      sb.from('battles')
+        .update({ status: 'done' })
+        .eq('id', activeBattleId)
+        .then(({ error }) => {
+          if (error) console.warn('[Supabase] battles done 업데이트 실패:', error.message);
+          else console.log('[Supabase] battles status → done:', activeBattleId);
+        });
+    }
   }
 
   saveTimerState({

@@ -1978,14 +1978,15 @@ dialog.modal input[type="text"]:focus {
 }
 
 /* v0.1.28 — 소감 저장 버튼 (textarea 오른쪽 하단 오버레이) */
+/* v0.1.29 — bottom/border-radius 조정 */
 .btn-note-upload {
   position: absolute;
-  bottom: 7px;
+  bottom: 9px;
   right: 8px;
   background: var(--accent);
   color: #fff;
   border: none;
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 4px 12px;
   font-size: 12px;
   font-weight: 600;
@@ -1997,6 +1998,14 @@ dialog.modal input[type="text"]:focus {
 .btn-note-upload:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+/* v0.1.29 — 소감 저장 후 비활성 상태 */
+.completion-note:disabled {
+  background: var(--bg);
+  color: var(--text-soft);
+  cursor: default;
+  opacity: 0.85;
 }
 
 /* v0.1.23 — 배틀카드 편집 모드 (드래그 순서변경) */
