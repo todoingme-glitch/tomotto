@@ -1805,3 +1805,19 @@ dialog.modal input[type="text"]:focus {
   font-size: 14px;
   line-height: 1.6;
 }
+
+/* v0.1.18 — Realtime LIVE 표시 */
+.live-dot {
+  display: inline-block;
+  color: #4caf50;
+  font-size: 10px;
+  vertical-align: middle;
+  margin-left: 4px;
+  opacity: 0.4;  /* 구독 연결 전 흐릿하게, SUBSCRIBED 시 JS로 1로 변경 */
+  animation: live-pulse 2s ease-in-out infinite;
+}
+
+@keyframes live-pulse {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 1; }
+}

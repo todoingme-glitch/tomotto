@@ -243,17 +243,17 @@ $battleCreateBtn.addEventListener('click', () => {
 // v0.1.15 — 배틀 생성 모달: 모드에 따라 가챠 결과 미리보기 업데이트
 function updateBattleTaskPreview(mode) {
   if (mode === 'common') {
-    $battleTaskLabel.textContent = '공통 작업 (내 가챠 결과가 자동으로 사용돼요)';
+    $battleTaskLabel.textContent = '🍅 TOM MODE — 공통 작업 (내 가챠 결과가 자동으로 사용돼요)';
   } else {
-    $battleTaskLabel.textContent = '내 가챠 결과 (친구는 각자 가챠를 돌려요)';
+    $battleTaskLabel.textContent = '🎲 MOTO MODE — 내 가챠 결과 (친구는 각자 가챠를 돌려요)';
   }
 
   if (currentTask) {
     $battleTaskText.textContent = currentTask;
     $battleTaskText.className = 'has-task';
     $battleTaskHint.textContent = mode === 'common'
-      ? `"${currentTask}"이 친구에게 공통 작업으로 공유돼요.`
-      : `내 작업: "${currentTask}". 친구는 본인 가챠로 정해요.`;
+      ? `"${currentTask}"이 친구에게 공통 미션으로 공유돼요.`
+      : `내 미션: "${currentTask}". 친구는 본인 가챠로 정해요.`;
     $battleTaskHint.style.color = '';
     $battleCreateConfirmBtn.disabled = false;
   } else {
@@ -450,9 +450,9 @@ async function renderMyBattles() {
     return;
   }
   $battleList.innerHTML = list.map((b) => {
-    const modeLabel = b.mode === 'common' ? '공통 작업' : '따로 가챠';
+    const modeLabel = b.mode === 'common' ? '🍅 TOM MODE' : '🎲 MOTO MODE';
     const statusLabel = b.status === 'waiting' ? '친구 대기 중' : (b.status === 'active' ? '진행 중' : '완료');
-    const taskLabel = b.mode === 'common' ? escapeHtml(b.task_common || '') : '(각자 가챠)';
+    const taskLabel = b.mode === 'common' ? escapeHtml(b.task_common || '') : '각자 랜덤 가챠';
     const minutes = Math.round(b.duration_sec / 60);
     const roleLabel = b._isCreator ? '내가 만듦' : '초대받음';
     // 삭제 버튼은 생성자만
@@ -531,7 +531,7 @@ $battleList.addEventListener('click', async (e) => {
 // 초대 링크 모달
 function openInviteModal(battle) {
   const link = makeInviteLink(battle.id);
-  const modeLabel = battle.mode === 'common' ? '공통 작업' : '따로 가챠';
+  const modeLabel = battle.mode === 'common' ? '🍅 TOM MODE' : '🎲 MOTO MODE';
   const taskLabel = battle.mode === 'common' ? ` · "${battle.task_common}"` : '';
   const minutes = Math.round(battle.duration_sec / 60);
   $inviteSummary.textContent = `${modeLabel}${taskLabel} · ${minutes}분`;
@@ -599,6 +599,7 @@ const $battleRoomStartBtn = document.getElementById('battleRoomStartBtn');
 let currentBattleId = null;
 let currentBattleData = null;
 let activeBattleId = null;   // v0.1.17 — 배틀 타이머 진행 중인 battle ID (인증샷 업로드용)
+let realtimeChannel = null;  // v0.1.18 — Supabase Realtime 구독 채널
 
 // v0.1.15 — 배틀 초대 URL로 들어온 경우 타이머 잠금 (B안)
 let lockedBattleId = null;
@@ -667,6 +668,11 @@ async function openBattleRoom(battleId) {
   }
 
   await refreshBattleRoom();
+
+  // v0.1.18 — 배틀 룸 열리면 Realtime 구독 시작 (배틀 완료 전까지만)
+  if (currentBattleData?.battle?.status !== 'done') {
+    subscribeBattleRoom(battleId);
+  }
 }
 
 async function refreshBattleRoom() {
@@ -685,7 +691,7 @@ async function refreshBattleRoom() {
 function renderBattleRoom() {
   const { battle, players } = currentBattleData;
   const minutes = Math.round(battle.duration_sec / 60);
-  const modeLabel = battle.mode === 'common' ? '공통 작업' : '따로 가챠';
+  const modeLabel = battle.mode === 'common' ? '🍅 TOM MODE' : '🎲 MOTO MODE';
   const statusLabel = battle.status === 'waiting' ? '친구 대기 중' : (battle.status === 'active' ? '진행 중' : '완료');
 
   $battleRoomSummary.textContent = `${modeLabel} · ${minutes}분 · ${statusLabel}`;
@@ -711,10 +717,10 @@ function renderBattleRoom() {
 
   // 작업 표시 — 공통 모드일 때
   if (battle.mode === 'common' && battle.task_common) {
-    $battleRoomTask.textContent = `오늘의 공통 작업: ${battle.task_common}`;
+    $battleRoomTask.textContent = `🍅 오늘의 공통 미션: ${battle.task_common}`;
     $battleRoomTask.className = 'battle-room-task';
   } else if (battle.mode === 'separate') {
-    $battleRoomTask.textContent = '각자 가챠 모드 — 각자 카테고리에서 가챠 돌리기';
+    $battleRoomTask.textContent = '🎲 MOTO MODE — 각자 카테고리에서 가챠 돌리기';
     $battleRoomTask.className = 'battle-room-task';
   }
 
@@ -729,7 +735,8 @@ function renderBattleRoom() {
     $battleRoomAcceptBtn.hidden = false;
     $battleRoomStatus.textContent = '이 배틀에 참여하시겠어요?';
   } else if (alreadyJoined && !friend) {
-    $battleRoomStatus.textContent = '친구가 링크를 열고 수락하길 기다리는 중...';
+    // v0.1.18 — LIVE dot: 새로고침 불필요하다는 시각적 표시
+    $battleRoomStatus.innerHTML = '친구가 링크를 열고 수락하길 기다리는 중... <span class="live-dot" title="자동 새로고침 중">●</span>';
   } else if (alreadyJoined && friend) {
     // v0.1.15 — 따로 가챠 모드인데 본인 가챠 결과가 없으면 → 가챠 유도
     if (battle.mode === 'separate' && !currentTask) {
@@ -859,8 +866,59 @@ function startBattleTimer() {
 }
 
 function closeBattleRoom() {
+  unsubscribeBattleRoom();  // v0.1.18 — 모달 닫을 때 Realtime 구독 해제
   if (typeof $battleRoomModal.close === 'function') $battleRoomModal.close();
   else $battleRoomModal.removeAttribute('open');
+}
+
+// v0.1.18 — Supabase Realtime 구독: battle_players INSERT 감지 → 배틀 룸 자동 갱신
+function subscribeBattleRoom(battleId) {
+  if (!sb || !battleId) return;
+  unsubscribeBattleRoom();  // 기존 채널 먼저 해제
+
+  realtimeChannel = sb.channel(`battle-room-${battleId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'battle_players',
+        filter: `battle_id=eq.${battleId}`,
+      },
+      async (payload) => {
+        console.log('[Realtime] INSERT 감지:', payload);
+        // 친구 수락 감지 → 배틀 룸 자동 갱신
+        if (currentBattleId === battleId) {
+          await refreshBattleRoom();
+          renderMyBattles();  // 소셜 탭 배틀 카드도 갱신
+        }
+      }
+    )
+    .subscribe((status) => {
+      console.log('[Realtime] 구독 상태:', status, '/ battleId:', battleId);
+      // 구독 상태 변화 시 "대기 중" 표시 업데이트
+      if (status === 'SUBSCRIBED') {
+        updateRealtimeStatusDot(true);
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        console.warn('[Realtime] 구독 실패 또는 타임아웃. SELECT 정책 확인 필요.');
+        updateRealtimeStatusDot(false);
+      }
+    });
+}
+
+function unsubscribeBattleRoom() {
+  if (realtimeChannel && sb) {
+    sb.removeChannel(realtimeChannel);
+    realtimeChannel = null;
+  }
+}
+
+// 배틀 룸 상태 메시지에 LIVE 표시 업데이트
+function updateRealtimeStatusDot(isLive) {
+  const dot = $battleRoomStatus.querySelector('.live-dot');
+  if (!dot) return;
+  dot.style.opacity = isLive ? '1' : '0.3';
+  dot.title = isLive ? '자동 새로고침 중' : '연결 중...';
 }
 
 $battleRoomCancelBtn.addEventListener('click', closeBattleRoom);
@@ -1813,8 +1871,8 @@ async function openBattleResult(battleId) {
 
   const { battle, players } = result;
   const minutes = Math.round(battle.duration_sec / 60);
-  const modeLabel = battle.mode === 'common' ? '공통 작업' : '따로 가챠';
-  $battleResultSummary.textContent = `${modeLabel} · ${minutes}분 · ${battle.task_common || '각자 가챠'}`;
+  const modeLabel = battle.mode === 'common' ? '🍅 TOM MODE' : '🎲 MOTO MODE';
+  $battleResultSummary.textContent = `${modeLabel} · ${minutes}분 · ${battle.task_common || '각자 랜덤 가챠'}`;
 
   const creator = players.find(p => p.is_creator);
   const friend = players.find(p => !p.is_creator);
