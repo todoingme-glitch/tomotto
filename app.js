@@ -1052,13 +1052,10 @@ function renderBattleRoom() {
         $battleRoomGachaBtn.hidden = false;
         $battleRoomStatus.textContent = '가챠를 먼저 돌려서 내 작업을 정해주세요!';
       } else {
-        // v0.1.29 — TOM MODE: 창조자와 동일한 문구로 통일
-        $battleRoomStatus.innerHTML = battle.mode === 'common'
-          ? '둘 다 준비됐어요. 시작하면 친구도 동시에 시작돼요. <span class="live-dot">●</span>'
-          : `${escapeHtml(creator?.nickname || '상대방')}님이 시작하면 자동으로 카운트다운이 시작돼요! <span class="live-dot">●</span>`;
+        // v0.1.30 — 가챠 완료 상태: TOM/MOTO 모두 동일 문구·버튼으로 통일
+        $battleRoomStatus.innerHTML = '둘 다 준비됐어요. 시작하면 친구도 동시에 시작돼요. <span class="live-dot">●</span>';
         $battleRoomStartBtn.hidden = false;
-        // TOM MODE: 창조자와 동일한 버튼 텍스트 / MOTO MODE: 먼저 시작 가능 표시
-        $battleRoomStartBtn.textContent = battle.mode === 'common' ? '▶ 타이머 시작' : '내가 먼저 시작하기';
+        $battleRoomStartBtn.textContent = '▶ 타이머 시작';
       }
     }
   } else if (!alreadyJoined && friend) {
@@ -1097,6 +1094,9 @@ async function acceptBattle() {
 // v0.1.17 — 3·2·1 카운트다운 (얼굴 양 옆 배치)
 async function startBattleWithCountdown() {
   if (!currentBattleData || isStartingBattle || timer.running) return;
+  // v0.1.30 — MOTO MODE에서 내 가챠가 아직 안 됐으면 카운트다운 차단
+  // renderBattleRoom()이 이미 '가챠 먼저 돌리기' 버튼을 보여주고 있으므로 UI는 정상
+  if (currentBattleData.battle?.mode === 'separate' && !currentTask) return;
   isStartingBattle = true;
 
   // v0.1.19 — battles 상태 'active'로 업데이트 → 상대방 Realtime 트리거
