@@ -1980,10 +1980,10 @@ dialog.modal input[type="text"]:focus {
   border-radius: 10px;
   padding: 10px 12px;
 }
-/* 배틀 로그 — 왼쪽 진한 빨강 테두리 */
+/* 배틀 로그 — 주황 배경으로 구분 */
 .log-item--battle {
-  border-left: 3px solid #5a1010;
-  padding-left: 10px;
+  background: #fde0c0;
+  border-color: #e8a060;
 }
 .log-item-row {
   display: flex;
@@ -2101,18 +2101,10 @@ dialog.modal input[type="text"]:focus {
   background-size: contain;
   pointer-events: none;
 }
-/* 배틀한 날 — 상단 우측 작은 검 배지 */
-.log-strip-day.has-battle::after {
-  content: '';
-  position: absolute;
-  top: -2px;
-  right: -2px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #5a1010;
-  border: 1.5px solid #fff;
-  pointer-events: none;
+/* 배틀한 날 — 주황 테두리 */
+.log-strip-day.has-battle {
+  outline: 2px solid #e8751a;
+  outline-offset: 1px;
 }
 /* 선택된 날 — 토마토 테두리 하나만, 배경은 레벨 색상 유지 */
 .log-strip-day[data-sel] { box-shadow: 0 0 0 2px var(--accent) !important; outline: none; }
