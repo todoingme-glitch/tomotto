@@ -670,6 +670,7 @@ async function openBattleRoom(battleId) {
   await refreshBattleRoom();
 
   // v0.1.18 — 배틀 룸 열리면 Realtime 구독 시작 (배틀 완료 전까지만)
+  console.log('[Realtime] openBattleRoom — status:', currentBattleData?.battle?.status);
   if (currentBattleData?.battle?.status !== 'done') {
     subscribeBattleRoom(battleId);
   }
@@ -873,7 +874,11 @@ function closeBattleRoom() {
 
 // v0.1.18 — Supabase Realtime 구독: battle_players INSERT 감지 → 배틀 룸 자동 갱신
 function subscribeBattleRoom(battleId) {
-  if (!sb || !battleId) return;
+  console.log('[Realtime] subscribeBattleRoom 호출됨 | battleId:', battleId, '| sb 있음:', !!sb);
+  if (!sb || !battleId) {
+    console.warn('[Realtime] 중단 — sb:', !!sb, '/ battleId:', battleId);
+    return;
+  }
   unsubscribeBattleRoom();  // 기존 채널 먼저 해제
 
   realtimeChannel = sb.channel(`battle-room-${battleId}`)
