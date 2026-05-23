@@ -500,6 +500,10 @@ function loadNickname() {
 }
 
 function renderBattleNickname() {
+  // 설정 모달 닉네임도 같이 갱신
+  const $settingsNick = document.getElementById('settingsNickDisplay');
+  if ($settingsNick) $settingsNick.textContent = myNickname || '(미설정)';
+
   if (myNickname) {
     $battleNick.textContent = myNickname;
     $battleNick.style.color = '';
@@ -556,6 +560,50 @@ $nickInput.addEventListener('keydown', (e) => {
 $battleNickEditBtn.addEventListener('click', () => openNickModal('edit'));
 // 닉네임 텍스트 직접 클릭/탭으로도 수정 모달 열기 (웹·모바일 공통)
 $battleNick.addEventListener('click', () => openNickModal('edit'));
+
+// =====================================================
+// v0.1.35 — 설정 모달
+// =====================================================
+const STORAGE_STATUS_PUBLIC = 'tomotto_status_public';
+
+const $settingsModal    = document.getElementById('settingsModal');
+const $settingsBtn      = document.getElementById('settingsBtn');
+const $settingsCloseBtn = document.getElementById('settingsCloseBtn');
+const $settingsNickEditBtn = document.getElementById('settingsNickEditBtn');
+const $settingsStatusToggle = document.getElementById('settingsStatusToggle');
+
+// 활동 상태 공개 여부 (localStorage 복원)
+let isStatusPublic = localStorage.getItem(STORAGE_STATUS_PUBLIC) !== 'false'; // 기본 true
+if ($settingsStatusToggle) $settingsStatusToggle.checked = isStatusPublic;
+
+$settingsBtn?.addEventListener('click', () => {
+  if (typeof $settingsModal.showModal === 'function') $settingsModal.showModal();
+  else $settingsModal.setAttribute('open', '');
+  renderBattleNickname(); // 닉네임 최신값 반영
+});
+
+$settingsCloseBtn?.addEventListener('click', () => {
+  if (typeof $settingsModal.close === 'function') $settingsModal.close();
+  else $settingsModal.removeAttribute('open');
+});
+
+$settingsModal?.addEventListener('click', (e) => {
+  if (e.target === $settingsModal) {
+    if (typeof $settingsModal.close === 'function') $settingsModal.close();
+    else $settingsModal.removeAttribute('open');
+  }
+});
+
+$settingsNickEditBtn?.addEventListener('click', () => {
+  if (typeof $settingsModal.close === 'function') $settingsModal.close();
+  else $settingsModal.removeAttribute('open');
+  openNickModal('edit');
+});
+
+$settingsStatusToggle?.addEventListener('change', () => {
+  isStatusPublic = $settingsStatusToggle.checked;
+  localStorage.setItem(STORAGE_STATUS_PUBLIC, String(isStatusPublic));
+});
 
 // 배틀 생성 모달
 $battleCreateBtn.addEventListener('click', () => {
@@ -1958,7 +2006,7 @@ let switchTab = () => {};
     });
     localStorage.setItem(TAB_STORAGE_KEY, tabId);
     // v0.1.32 — 소셜 탭으로 전환 시 배틀카드 상태 즉시 갱신 (timer.isRunning 반영)
-    if (tabId === 'social') renderMyBattles();
+    if (tabId === 'social') { renderMyBattles(); renderLeaderboard(); }
     // v0.1.33 — 기록 탭으로 전환 시 캘린더 갱신
     if (tabId === 'log') renderLogCalendar();
   };
@@ -2741,6 +2789,9 @@ function finishTimer() {
   updateCompletedDisplay();
   $captureRow.hidden = false;
 
+  // v0.1.36 — 소셜 리더보드 통계 동기화
+  syncUserStats();
+
   // v0.1.33 — 기록 탭 로그 저장
   const _now = Date.now();
   saveLog({
@@ -2816,6 +2867,134 @@ function finishTimer() {
     setTimeout(() => o.stop(), 350);
   } catch {}
 }
+
+// =====================================================
+// v0.1.36 — 소셜 리더보드
+// =====================================================
+
+function getWeekKey(date = new Date()) {
+  // ISO 주차: 월요일 기준
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const day = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+}
+
+function getMonthKey(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+// 타이머 완료 시 Supabase user_stats에 카운트 업데이트
+async function syncUserStats() {
+  if (!sb || !myNickname) return;
+  const now = new Date();
+  const periods = [
+    { period_type: 'week',  period_key: getWeekKey(now)  },
+    { period_type: 'month', period_key: getMonthKey(now) },
+  ];
+  for (const p of periods) {
+    try {
+      const { data: existing } = await sb
+        .from('user_stats')
+        .select('count')
+        .eq('nickname', myNickname)
+        .eq('period_type', p.period_type)
+        .eq('period_key', p.period_key)
+        .maybeSingle();
+      await sb.from('user_stats').upsert({
+        nickname: myNickname,
+        period_type: p.period_type,
+        period_key: p.period_key,
+        count: (existing?.count ?? 0) + 1,
+        updated_at: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.warn('[syncUserStats] 실패:', err);
+    }
+  }
+}
+
+let lbPeriod = 'week'; // 현재 선택된 기간 ('week' | 'month')
+
+async function renderLeaderboard() {
+  const $body = document.getElementById('leaderboardBody');
+  if (!$body) return;
+
+  if (!myNickname) {
+    $body.innerHTML = '<p class="lb-empty">닉네임을 설정하면 여기에 기록이 쌓여요.</p>';
+    return;
+  }
+
+  // 파트너 닉네임 수집 (내 배틀 목록에서)
+  let partnerNicks = [];
+  try {
+    const myBattles = JSON.parse(localStorage.getItem(BATTLE_STORAGE.myBattles) || '[]');
+    const nickSet = new Set();
+    for (const b of myBattles) {
+      if (b.partnerNick && b.partnerNick !== myNickname) nickSet.add(b.partnerNick);
+    }
+    partnerNicks = [...nickSet];
+  } catch {}
+
+  const now = new Date();
+  const periodKey = lbPeriod === 'week' ? getWeekKey(now) : getMonthKey(now);
+  const allNicks = [myNickname, ...partnerNicks];
+
+  $body.innerHTML = '<p class="lb-loading">불러오는 중…</p>';
+
+  let rows = [];
+  if (sb) {
+    try {
+      const { data, error } = await sb
+        .from('user_stats')
+        .select('nickname, count')
+        .in('nickname', allNicks)
+        .eq('period_type', lbPeriod)
+        .eq('period_key', periodKey);
+      if (!error && data) rows = data;
+    } catch {}
+  }
+
+  // 없으면 0으로 채움
+  const statsMap = Object.fromEntries(rows.map(r => [r.nickname, r.count]));
+  const entries = allNicks.map(nick => ({ nick, count: statsMap[nick] ?? 0 }));
+  entries.sort((a, b) => b.count - a.count);
+
+  if (entries.every(e => e.count === 0)) {
+    $body.innerHTML = '<p class="lb-empty">아직 기록이 없어요. 타이머를 완료하면 집계돼요!</p>';
+    return;
+  }
+
+  const maxCount = entries[0].count || 1;
+  const medals = ['🥇', '🥈', '🥉'];
+  const html = entries.map((e, i) => {
+    const isMe = e.nick === myNickname;
+    const pct = Math.max(4, Math.round((e.count / maxCount) * 100));
+    const medal = medals[i] || `${i + 1}`;
+    return `
+      <div class="lb-row${isMe ? ' lb-row-me' : ''}">
+        <span class="lb-rank">${medal}</span>
+        <span class="lb-nick">${e.nick}${isMe ? ' <span class="lb-me-badge">나</span>' : ''}</span>
+        <div class="lb-bar-wrap">
+          <div class="lb-bar" style="width:${pct}%"></div>
+        </div>
+        <span class="lb-count">${e.count}회</span>
+      </div>`;
+  }).join('');
+  $body.innerHTML = html;
+}
+
+// 리더보드 기간 탭 이벤트
+document.querySelectorAll('.lb-period-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.lb-period-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    lbPeriod = btn.dataset.period;
+    renderLeaderboard();
+  });
+});
 
 // 탭이 다시 보일 때 즉시 업데이트 (백그라운드 throttle 보정)
 document.addEventListener('visibilitychange', () => {

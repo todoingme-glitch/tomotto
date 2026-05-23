@@ -10,7 +10,8 @@
 </head>
 <body>
   <div class="container">
-    <header>
+    <header class="app-header">
+      <button id="settingsBtn" class="header-settings-btn" type="button" aria-label="설정">⚙️</button>
       <div class="logo-wrap" id="logoWrap" title="한 번 더 하이파이브! 🍅">
         <svg class="logo-svg" id="tomottoLogo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 506.18 183.13" aria-label="Tomotto logo">
           <defs>
@@ -266,6 +267,18 @@
       <p class="battle-hint">친구한테 초대 링크 보내면 받는 쪽도 닉네임만 입력하면 시작.</p>
     </section>
 
+    <!-- v0.1.36 — 리더보드 섹션 -->
+    <section class="card leaderboard-section">
+      <h2>🏆 리더보드</h2>
+      <div class="lb-period-tabs">
+        <button class="lb-period-btn active" data-period="week" type="button">이번 주</button>
+        <button class="lb-period-btn" data-period="month" type="button">이번 달</button>
+      </div>
+      <div id="leaderboardBody" class="lb-body">
+        <p class="lb-empty">닉네임을 설정하면 여기에 기록이 쌓여요.</p>
+      </div>
+    </section>
+
     </div><!-- /tab-panel#tab-social -->
 
     <!-- 탭 패널 : 기록 (v0.1.33~) -->
@@ -295,9 +308,37 @@
     </div><!-- /tab-panel#tab-league -->
 
     <footer>
-      <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1.33 · 기록탭추가 · 캘린더히트맵 · 로그저장</span></small>
+      <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1.36 · 소셜리더보드 · 설정모달 · 기록탭개선</span></small>
     </footer>
   </div>
+
+  <!-- v0.1.35 — 설정 모달 -->
+  <dialog id="settingsModal" class="modal settings-modal">
+    <div class="settings-header">
+      <h3 class="settings-title">설정</h3>
+      <button id="settingsCloseBtn" class="modal-close-btn" type="button" aria-label="닫기">✕</button>
+    </div>
+
+    <div class="settings-section">
+      <p class="settings-label">닉네임</p>
+      <div class="settings-row">
+        <span class="settings-value" id="settingsNickDisplay">—</span>
+        <button id="settingsNickEditBtn" class="btn-mini" type="button">수정</button>
+      </div>
+      <p class="settings-hint">친구 배틀에서 표시되는 이름이에요.</p>
+    </div>
+
+    <div class="settings-section">
+      <p class="settings-label">활동 상태 공개</p>
+      <div class="settings-row">
+        <p class="settings-hint" style="margin:0">뽀모도로 중일 때 배틀 상대에게 상태 표시</p>
+        <label class="settings-toggle">
+          <input type="checkbox" id="settingsStatusToggle">
+          <span class="settings-toggle-track"></span>
+        </label>
+      </div>
+    </div>
+  </dialog>
 
   <!-- v0.1.13 — 닉네임 입력 모달 -->
   <dialog id="nickModal" class="modal">
