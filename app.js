@@ -32,6 +32,7 @@ const $timerStatus = document.getElementById('timerStatus');
 const $completedCount = document.getElementById('completedCount');
 const $captureRow = document.getElementById('captureRow');
 const $captureBtn = document.getElementById('captureBtn');
+const $completionNote = document.getElementById('completionNote'); // v0.1.20 — 소감
 const $captureInput = document.getElementById('captureInput');
 const $lastCapture = document.getElementById('lastCapture');
 const $lastCaptureImg = document.getElementById('lastCaptureImg');
@@ -98,6 +99,7 @@ const $inviteCloseBtn = document.getElementById('inviteCloseBtn');
 const BATTLE_STORAGE = {
   nickname: 'tomotto_battle_nickname',
   myBattles: 'tomotto_battle_myBattles',  // 내가 만든 배틀 목록 (JSON 배열)
+  completionNote: 'tomotto_completion_note', // v0.1.20 — 완료 소감
 };
 
 let myNickname = '';
@@ -758,8 +760,7 @@ function renderBattleRoom() {
         $battleRoomStatus.textContent = '둘 다 준비됐어요. 시작하면 친구도 동시에 시작돼요.';
       }
     } else {
-      // v0.1.19 — 친구: 창조자가 시작하길 기다림 + battles UPDATE 구독
-      subscribeBattleStart(battle.id);
+      // v0.1.19 — 친구: 창조자가 시작하면 자동 카운트다운 (subscribeBattleRoom 내 battles UPDATE로 처리)
       if (battle.mode === 'separate' && !currentTask) {
         $battleRoomGachaBtn.hidden = false;
         $battleRoomStatus.textContent = '가챠를 먼저 돌려서 내 작업을 정해주세요!';
@@ -908,7 +909,7 @@ function closeBattleRoom() {
   else $battleRoomModal.removeAttribute('open');
 }
 
-// v0.1.18 — Supabase Realtime 구독: battle_players INSERT 감지 → 배틀 룸 자동 갱신
+// v0.1.18/19 — Supabase Realtime 구독: battle_players INSERT + battles UPDATE 동시 감지
 function subscribeBattleRoom(battleId) {
   console.log('[Realtime] subscribeBattleRoom 호출됨 | battleId:', battleId, '| sb 있음:', !!sb);
   if (!sb || !battleId) {
@@ -918,34 +919,46 @@ function subscribeBattleRoom(battleId) {
   unsubscribeBattleRoom();  // 기존 채널 먼저 해제
 
   realtimeChannel = sb.channel(`battle-room-${battleId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'battle_players',
-        filter: `battle_id=eq.${battleId}`,
-      },
+    // ① 친구 수락 감지 (battle_players INSERT)
+    .on('postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'battle_players', filter: `battle_id=eq.${battleId}` },
       async (payload) => {
-        console.log('[Realtime] INSERT 감지:', payload);
-        renderMyBattles();  // 소셜 탭 배틀 카드 갱신
+        console.log('[Realtime] 친구 수락 INSERT 감지:', payload);
+        renderMyBattles();
 
         if ($battleRoomModal.open && currentBattleId === battleId) {
-          // 배틀 룸 모달이 열려있으면 → 내부 갱신
           await refreshBattleRoom();
         } else {
-          // 모달 닫혀있으면 → 자동으로 배틀 룸 열기
           currentBattleId = battleId;
           await openBattleRoom(battleId);
         }
       }
     )
+    // ② 누가 먼저 시작하든 상대방 자동 카운트다운 (battles UPDATE) — v0.1.19 양방향
+    .on('postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'battles', filter: `id=eq.${battleId}` },
+      async (payload) => {
+        console.log('[Realtime] battles UPDATE 감지:', payload);
+        if (payload.new?.status !== 'active') return;
+        if (isStartingBattle || timer.running) return;  // 내가 이미 시작 중이면 무시
+
+        unsubscribeBattleRoom();  // 중복 트리거 방지
+
+        // 배틀 룸 모달이 닫혀있으면 데이터 로드 후 열기
+        if (!$battleRoomModal.open) {
+          currentBattleId = battleId;
+          const result = await fetchBattle(battleId);
+          if (result?.battle) currentBattleData = result;
+          if (typeof $battleRoomModal.showModal === 'function') $battleRoomModal.showModal();
+          else $battleRoomModal.setAttribute('open', '');
+        }
+        await startBattleWithCountdown();
+      }
+    )
     .subscribe((status) => {
       console.log('[Realtime] 구독 상태:', status, '/ battleId:', battleId);
-      // 구독 상태 변화 시 "대기 중" 표시 업데이트
-      if (status === 'SUBSCRIBED') {
-        updateRealtimeStatusDot(true);
-      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+      if (status === 'SUBSCRIBED') updateRealtimeStatusDot(true);
+      else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
         console.warn('[Realtime] 구독 실패 또는 타임아웃. SELECT 정책 확인 필요.');
         updateRealtimeStatusDot(false);
       }
@@ -1010,6 +1023,17 @@ function unsubscribeBattleStart() {
     sb.removeChannel(battleStartChannel);
     battleStartChannel = null;
   }
+}
+
+// v0.1.20 — 배틀 파트너 닉네임 + 모드 반환
+function getBattlePartnerInfo() {
+  if (!currentBattleData) return null;
+  const { battle, players } = currentBattleData;
+  const creator = players.find(p => p.is_creator);
+  const friend = players.find(p => !p.is_creator);
+  const meIsCreator = creator?.nickname === myNickname;
+  const partner = meIsCreator ? friend : creator;
+  return partner ? { mode: battle.mode, partnerNick: partner.nickname } : null;
 }
 
 $battleRoomCancelBtn.addEventListener('click', closeBattleRoom);
@@ -1774,7 +1798,18 @@ function finishTimer() {
   $startBtn.disabled = true;
   $pauseBtn.disabled = true;
   $resetBtn.disabled = false;
-  $timerStatus.textContent = `✓ "${currentTask}" 완료! 수고하셨어요`;
+  // v0.1.20 — 배틀 모드면 파트너 닉네임 포함
+  const battlePartner = getBattlePartnerInfo();
+  if (battlePartner) {
+    const who = escapeHtml(battlePartner.partnerNick);
+    if (battlePartner.mode === 'common') {
+      $timerStatus.textContent = `✓ ${who}님이 함께한 "${currentTask}" 완료! 수고하셨어요`;
+    } else {
+      $timerStatus.textContent = `✓ ${who}님과 함께한 "${currentTask}" 완료! 수고하셨어요`;
+    }
+  } else {
+    $timerStatus.textContent = `✓ "${currentTask}" 완료! 수고하셨어요`;
+  }
   $timerStatus.classList.add('success');
   $timerStatus.classList.remove('resumed');
 
@@ -1783,6 +1818,11 @@ function finishTimer() {
   localStorage.setItem(STORAGE.completedCount, String(completedCount));
   updateCompletedDisplay();
   $captureRow.hidden = false;
+  // v0.1.20 — 소감란 복원 + 자동 저장
+  if ($completionNote) {
+    $completionNote.value = localStorage.getItem(STORAGE.completionNote) || '';
+    $completionNote.oninput = () => localStorage.setItem(STORAGE.completionNote, $completionNote.value);
+  }
 
   // v0.1.17 — 배틀 중이었으면 결과 보기 버튼 표시
   if (activeBattleId) {
@@ -2001,6 +2041,18 @@ $battleResultCloseBtn.addEventListener('click', () => {
   else $battleResultModal.removeAttribute('open');
 });
 
+// v0.1.20 — 배틀 결과 인증샷 탭 → 라이트박스
+$battleResultPlayers.addEventListener('click', (e) => {
+  const img = e.target.closest('.battle-result-img');
+  if (!img) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'img-lightbox';
+  overlay.innerHTML = `<img src="${img.src}" alt="인증샷 크게 보기"><button class="lightbox-close" aria-label="닫기">✕</button>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', () => overlay.remove());
+  overlay.querySelector('.lightbox-close').addEventListener('click', (ev) => { ev.stopPropagation(); overlay.remove(); });
+});
+
 document.getElementById('battleResultRefreshBtn').addEventListener('click', () => {
   const id = $battleResultBtn.dataset.battleId || activeBattleId;
   if (id) openBattleResult(id);
@@ -2202,6 +2254,10 @@ $removeCaptureBtn.addEventListener('click', () => {
   $lastCaptureImg.src = '';
   $lastCapture.hidden = true;
   localStorage.removeItem(STORAGE.lastCapture);
+  lastCapturedDataUrl = null;
+  // v0.1.20 — 버튼 상태 초기화 → 재업로드 가능
+  $captureBtn.textContent = '📷 인증샷 첨부 (선택)';
+  $captureBtn.disabled = false;
 });
 
 // v0.1.8 — 이미지 압축 (canvas 사용)
