@@ -2214,9 +2214,10 @@ $battleResultBtn.addEventListener('click', () => {
 });
 
 // ====== v0.1.8 — 인증샷 ======
-// v0.1.10: 인증샷 첨부 → 인앱 카메라 모달 우선. 모달 안에 갤러리 옵션도 있음.
+// v0.1.24: 인앱 카메라 모달 제거 → 네이티브 파일선택 직접 사용
+// (모바일: 카메라/갤러리 선택 시트, 데스크탑: 파일 선택창)
 $captureBtn.addEventListener('click', () => {
-  openCameraModal();
+  $captureInput.click();
 });
 
 // ====== v0.1.10 — 인앱 카메라 (셔터 소리 X, getUserMedia 기반) ======
@@ -2431,7 +2432,4 @@ function compressImage(dataUrl, maxDim, quality) {
       ctx.drawImage(img, 0, 0, width, height);
       resolve(canvas.toDataURL('image/jpeg', quality));
     };
-    img.onerror = () => resolve(dataUrl);  // 실패 시 원본
-    img.src = dataUrl;
-  });
-}
+    img.onerror = () => resolve(

@@ -1691,14 +1691,15 @@ dialog.modal input[type="text"]:focus {
 
 /* ====== v0.1.17 — 하단 탭 네비게이션 ====== */
 
-/* v0.1.23 — 탭을 하단 고정 (position: fixed, 카드 너비와 동일) */
+/* v0.1.23 — 탭을 하단 고정 (position: fixed, 카드 내부 너비와 동일) */
+/* 컨테이너 padding이 좌우 20px씩이므로 탭도 동일하게 안쪽 너비 맞춤 */
 .bottom-tab {
   position: fixed;
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 100%;
-  max-width: 720px;
+  width: calc(100% - 40px);
+  max-width: 680px;
   z-index: 200;
   display: flex;
   align-items: stretch;
@@ -1938,8 +1939,8 @@ dialog.modal input[type="text"]:focus {
 .battle-result-note {
   margin-top: 8px;
   font-size: 13px;
-  color: var(--text-secondary, #555);
-  background: var(--bg-secondary, #f7f4f2);
+  color: var(--text-soft);
+  background: var(--accent-soft);
   border-radius: 8px;
   padding: 8px 10px;
   line-height: 1.5;
@@ -1949,7 +1950,7 @@ dialog.modal input[type="text"]:focus {
 /* v0.1.22 — 소감 저장 버튼 */
 .btn-note-upload {
   align-self: flex-start;
-  background: var(--tomato);
+  background: var(--accent);
   color: #fff;
   border: none;
   border-radius: 20px;
@@ -2004,8 +2005,3 @@ dialog.modal input[type="text"]:focus {
   left: 10px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 18px;
-  color: var(--text-muted);
-  user-select: none;
-  line-height: 1;
-}
