@@ -364,7 +364,8 @@ function initOnboardingTooltip(onComplete) {
       pos: 'top'
     },
     {
-      target: '.timer-section',
+      target: '#pauseBtn',
+      highlightTarget: '.timer-section',
       speaker: 'tom', name: '🍅 톰',
       msg: '뽑힌 할 일로 <strong>뽀모도로 집중!</strong><br>기본 25분, 원하는 시간으로 조절 가능해 ⏱',
       pos: 'bottom'
@@ -439,11 +440,13 @@ function initOnboardingTooltip(onComplete) {
       const GAP  = 22;
       const TT_W = 272;
 
-      // 1) 하이라이트 먼저 표시
-      highlight.style.top    = (rect.top  - PAD) + 'px';
-      highlight.style.left   = (rect.left - PAD) + 'px';
-      highlight.style.width  = (rect.width  + PAD * 2) + 'px';
-      highlight.style.height = (rect.height + PAD * 2) + 'px';
+      // 1) 하이라이트 표시 — highlightTarget 있으면 별도 요소 기준, 없으면 target 기준
+      const hlEl   = step.highlightTarget ? document.querySelector(step.highlightTarget) : el;
+      const hlRect = hlEl ? hlEl.getBoundingClientRect() : rect;
+      highlight.style.top    = (hlRect.top  - PAD) + 'px';
+      highlight.style.left   = (hlRect.left - PAD) + 'px';
+      highlight.style.width  = (hlRect.width  + PAD * 2) + 'px';
+      highlight.style.height = (hlRect.height + PAD * 2) + 'px';
       highlight.style.display = 'block';
 
       // 2) 툴팁 위치 계산 (아직 invisible)
