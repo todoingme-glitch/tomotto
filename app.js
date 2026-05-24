@@ -3504,10 +3504,12 @@ $battleResultBtn.addEventListener('click', () => {
 });
 
 // ====== v0.1.8 — 인증샷 ======
-// 📷 인증샷 버튼 — 모바일: 인앱 카메라 모달(셔터 소리 없음) / 데스크톱: 파일 선택창
+// 📷 인증샷 버튼 — 모바일(카카오톡 제외): 인앱 카메라 모달(셔터 소리 없음) / 데스크톱·카카오톡: 파일 선택창
+// 카카오톡 WebView는 getUserMedia 권한을 매번 요청 → 파일 선택창(셔터 소리는 OS 수준)으로 우회
 const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+const isKakaoTalk = /KAKAOTALK/i.test(navigator.userAgent);
 $captureBtn.addEventListener('click', () => {
-  if (isMobile) {
+  if (isMobile && !isKakaoTalk) {
     openCameraModal();
   } else {
     $captureInput.click();
@@ -3677,13 +3679,32 @@ $cameraRetryBtn.addEventListener('click', retryCamera);
 $cameraSaveBtn.addEventListener('click', saveCameraCapture);
 $cameraCancelBtn.addEventListener('click', closeCameraModal);
 $cameraGalleryBtn.addEventListener('click', () => {
-  // v0.1.57 — 카메라 스트림을 먼저 완전히 해제한 뒤 갤러리 열기
-  // 스트림이 살아있는 채로 file input 클릭하면 Android가 "작업 선택" 시트(카메라+갤러리)를 띄움
-  // 해제 후 300ms 대기하면 accept="image/*" 만으로 갤러리를 바로 엶
+  // v0.1.58 — 카메라 완전 해제 후 새 input 요소를 동적 생성해서 갤러리 열기
+  // 기존 $captureInput은 카메라 컨텍스트와 연결된 것으로 Chrome이 인식할 수 있어서
+  // 완전히 새로운 input 요소를 만들면 카메라 연관 없이 순수 갤러리(사진 및 동영상)로 열림
   stopCameraStream();
   if (typeof $cameraModal.close === 'function') $cameraModal.close();
   else $cameraModal.removeAttribute('open');
-  setTimeout(() => $captureInput.click(), 300);
+
+  setTimeout(() => {
+    const tmpInput = document.createElement('input');
+    tmpInput.type = 'file';
+    tmpInput.accept = 'image/*';
+    tmpInput.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
+    tmpInput.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (ev) => saveCaptureToStorage(ev.target.result);
+        reader.readAsDataURL(file);
+      }
+      tmpInput.remove();
+    });
+    document.body.appendChild(tmpInput);
+    tmpInput.click();
+    // 선택 취소 시 클린업
+    setTimeout(() => { if (tmpInput.parentNode) tmpInput.remove(); }, 60000);
+  }, 300);
 });
 // backdrop 클릭 시 닫기 + stream 정리
 $cameraModal.addEventListener('click', (e) => {
