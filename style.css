@@ -2974,8 +2974,4 @@ dialog.modal input[type="text"]:focus {
 }
 
 .lb-count {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: var(--text-main);
-  white-space: nowrap;
-}
+  fo
