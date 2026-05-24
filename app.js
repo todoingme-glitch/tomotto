@@ -1017,15 +1017,8 @@ async function loadMyBattles() {
         return { ...b, _isCreator: myRow ? myRow.is_creator : false, _myTask: myRow?.task || null };
       });
 
-      // v0.1.64 — done 배틀은 항상 표시에서 제외
-      const doneBattles = mapped.filter(b => b.status === 'done');
+      // v0.1.64 — done 배틀은 목록에서 숨김 (DB 삭제는 하지 않음 — 인증샷 업로드 보호)
       const activeBattles = mapped.filter(b => b.status !== 'done');
-
-      // 탭 닫고 새로 열었을 때만 DB/localStorage 정리 (새로고침은 sessionStorage 유지라 스킵)
-      if (doneBattles.length > 0 && !sessionStorage.getItem(CLEANED_DONE_KEY) && !$battleRoomModal?.open) {
-        sessionStorage.setItem(CLEANED_DONE_KEY, '1');
-        doneBattles.forEach(b => deleteBattleSilent(b.id));
-      }
 
       // v0.1.26 — 저장된 드래그 순서 적용
       return applyBattleOrder(activeBattles);
@@ -3930,6 +3923,7 @@ $cameraGalleryBtn.addEventListener('click', () => {
     const tmpInput = document.createElement('input');
     tmpInput.type = 'file';
     tmpInput.accept = 'image/*';
+    tmpInput.multiple = false; // v0.1.65 — 모바일 갤러리 다중선택 방지
     tmpInput.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
     tmpInput.addEventListener('change', (e) => {
       const file = e.target.files?.[0];
