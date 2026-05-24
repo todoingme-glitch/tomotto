@@ -1017,19 +1017,18 @@ async function loadMyBattles() {
         return { ...b, _isCreator: myRow ? myRow.is_creator : false, _myTask: myRow?.task || null };
       });
 
-      // v0.1.64 — 완료된 배틀 자동 삭제 (탭 닫고 재진입 시만, 새로고침·배틀룸 열려있으면 스킵)
-      if (!sessionStorage.getItem(CLEANED_DONE_KEY) && !$battleRoomModal?.open) {
+      // v0.1.64 — done 배틀은 항상 표시에서 제외
+      const doneBattles = mapped.filter(b => b.status === 'done');
+      const activeBattles = mapped.filter(b => b.status !== 'done');
+
+      // 탭 닫고 새로 열었을 때만 DB/localStorage 정리 (새로고침은 sessionStorage 유지라 스킵)
+      if (doneBattles.length > 0 && !sessionStorage.getItem(CLEANED_DONE_KEY) && !$battleRoomModal?.open) {
         sessionStorage.setItem(CLEANED_DONE_KEY, '1');
-        const doneBattles = mapped.filter(b => b.status === 'done');
-        const activeBattles = mapped.filter(b => b.status !== 'done');
-        if (doneBattles.length > 0) {
-          doneBattles.forEach(b => deleteBattleSilent(b.id));
-        }
-        return applyBattleOrder(activeBattles);
+        doneBattles.forEach(b => deleteBattleSilent(b.id));
       }
 
       // v0.1.26 — 저장된 드래그 순서 적용
-      return applyBattleOrder(mapped);
+      return applyBattleOrder(activeBattles);
     } catch (err) {
       console.error('내 배틀 fetch 실패:', err);
       // 실패 시 localStorage fallback
@@ -1039,15 +1038,14 @@ async function loadMyBattles() {
   }
   try {
     const all = JSON.parse(localStorage.getItem(BATTLE_STORAGE.myBattles) || '[]');
-    // v0.1.64 — 완료 배틀 자동 정리 (탭 닫고 재진입 시만, 새로고침·배틀룸 열려있으면 스킵)
-    if (!sessionStorage.getItem(CLEANED_DONE_KEY) && !$battleRoomModal?.open) {
+    // v0.1.64 — done 배틀은 항상 표시에서 제외, 탭 닫고 재진입 시 정리
+    const done = all.filter(b => b.status === 'done');
+    const active = all.filter(b => b.status !== 'done');
+    if (done.length > 0 && !sessionStorage.getItem(CLEANED_DONE_KEY) && !$battleRoomModal?.open) {
       sessionStorage.setItem(CLEANED_DONE_KEY, '1');
-      const done = all.filter(b => b.status === 'done');
-      const active = all.filter(b => b.status !== 'done');
-      if (done.length > 0) done.forEach(b => deleteBattleSilent(b.id));
-      return active;
+      done.forEach(b => deleteBattleSilent(b.id));
     }
-    return all;
+    return active;
   }
   catch { return []; }
 }
