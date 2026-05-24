@@ -1357,21 +1357,34 @@ function openInviteModal(battle) {
   $inviteSummary.textContent = `${modeLabel}${taskLabel} · ${minutes}분`;
   $inviteLinkInput.value = link;
 
-  // Web Share API 지원 시 공유 버튼 표시
-  $inviteShareBtn.hidden = !navigator.share;
+  // 공유 버튼 항상 표시
+  $inviteShareBtn.hidden = false;
+  // 공유 메뉴 닫힌 상태로 초기화
+  const $shareMenu = document.getElementById('shareMenu');
+  if ($shareMenu) $shareMenu.hidden = true;
 
   if (typeof $inviteModal.showModal === 'function') $inviteModal.showModal();
   else $inviteModal.setAttribute('open', '');
 }
 
 function makeInviteLink(battleId) {
-  const base = location.origin + location.pathname;
+  // Vercel preview URL(커밋 해시 포함)에서 생성하면 로그인 요구됨.
+  // preview URL 패턴: {project}-{8~12alphanum}-{team}.vercel.app
+  // → 해시 제거해서 production URL로 교체
+  const h = location.hostname;
+  const previewMatch = h.match(/^(.+?)-[a-z0-9]{8,12}-(.+\.vercel\.app)$/);
+  const base = previewMatch
+    ? `https://${previewMatch[1]}-${previewMatch[2]}${location.pathname}`
+    : location.origin + location.pathname;
   return `${base}?battle=${battleId}`;
 }
 
 function closeInviteModal() {
   if (typeof $inviteModal.close === 'function') $inviteModal.close();
   else $inviteModal.removeAttribute('open');
+  // 공유 메뉴도 닫기
+  const $sm = document.getElementById('shareMenu');
+  if ($sm) $sm.hidden = true;
 }
 
 $inviteCloseBtn.addEventListener('click', closeInviteModal);
@@ -1388,15 +1401,61 @@ $inviteCopyBtn.addEventListener('click', async () => {
   }
 });
 
+// 인앱 공유 메뉴 핸들러
+const $shareMenu = document.getElementById('shareMenu');
+
 $inviteShareBtn.addEventListener('click', async () => {
-  if (!navigator.share) return;
-  try {
-    await navigator.share({
-      title: 'Tomotto 친구 배틀',
-      text: '같이 작업할래? 시간 정해서 같이 집중하기.',
-      url: $inviteLinkInput.value,
-    });
-  } catch {}
+  const link = $inviteLinkInput.value;
+
+  // 1) 네이티브 공유시트 시도 (모바일에서 카카오톡 등 앱 목록 뜸)
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: 'Tomotto 친구 배틀',
+        text: '같이 작업할래? 시간 정해서 같이 집중하기.',
+        url: link,
+      });
+      return; // 성공하면 끝
+    } catch (err) {
+      // AbortError = 사용자가 직접 닫은 것 → 메뉴 안 띄움
+      if (err.name === 'AbortError') return;
+      // 그 외 오류 (NotAllowedError 등) = 폴백 메뉴로
+    }
+  }
+
+  // 2) 폴백: 인앱 공유 메뉴 토글
+  if ($shareMenu) {
+    $shareMenu.hidden = !$shareMenu.hidden;
+  }
+});
+
+// 공유 메뉴 각 항목 클릭
+$shareMenu?.addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-share]');
+  if (!btn) return;
+  const link = $inviteLinkInput.value;
+  const type = btn.dataset.share;
+
+  if (type === 'kakao') {
+    // 링크 복사 + 안내 (카카오 SDK 없이 URL 공유 불가)
+    try { await navigator.clipboard.writeText(link); } catch { /* ignore */ }
+    btn.querySelector('span:nth-child(3)').textContent = '복사됐어요 ✓';
+    setTimeout(() => {
+      btn.querySelector('span:nth-child(3)').textContent = '링크 복사 후 붙여넣기';
+    }, 2000);
+  } else if (type === 'line') {
+    const url = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(link)}`;
+    window.open(url, '_blank', 'noopener,width=600,height=600');
+    $shareMenu.hidden = true;
+  } else if (type === 'copy') {
+    try { await navigator.clipboard.writeText(link); } catch { /* ignore */ }
+    const orig = btn.querySelector('span:nth-child(2)').textContent;
+    btn.querySelector('span:nth-child(2)').textContent = '복사됐어요 ✓';
+    setTimeout(() => {
+      btn.querySelector('span:nth-child(2)').textContent = orig;
+      $shareMenu.hidden = true;
+    }, 1500);
+  }
 });
 
 // v0.1.15 — 배틀 잠금 배너 요소 (B안)

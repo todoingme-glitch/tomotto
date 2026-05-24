@@ -2837,6 +2837,44 @@ dialog.modal input[type="text"]:focus {
 }
 
 /* =====================================================
+   공유 메뉴 (인앱 폴백)
+   ===================================================== */
+.share-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+  border: 1.5px solid var(--border-soft);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg-card);
+}
+.share-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border-soft);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-main);
+  text-align: left;
+  transition: background 0.12s;
+}
+.share-menu-item:last-child { border-bottom: none; }
+.share-menu-item:hover { background: var(--bg-surface, #f5f5f5); }
+.share-icon { font-size: 1.1rem; width: 22px; text-align: center; flex-shrink: 0; }
+.share-item-hint {
+  margin-left: auto;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+/* =====================================================
    v0.1.36 — 소셜 리더보드
    ===================================================== */
 .leaderboard-section { margin-top: 12px; }

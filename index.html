@@ -425,9 +425,26 @@
 
     <p class="modal-hint">친구에게 이 링크를 보내세요. 친구가 링크 열고 닉네임 입력하면 배틀 수락.</p>
 
+    <!-- 공유 메뉴 패널 (navigator.share 실패 시 폴백) -->
+    <div id="shareMenu" class="share-menu" hidden>
+      <button class="share-menu-item" data-share="kakao" type="button">
+        <span class="share-icon">💬</span>
+        <span>카카오톡</span>
+        <span class="share-item-hint">링크 복사 후 붙여넣기</span>
+      </button>
+      <button class="share-menu-item" data-share="line" type="button">
+        <span class="share-icon">🟢</span>
+        <span>LINE</span>
+      </button>
+      <button class="share-menu-item" data-share="copy" type="button">
+        <span class="share-icon">🔗</span>
+        <span>링크 복사</span>
+      </button>
+    </div>
+
     <div class="modal-actions">
       <div class="modal-actions-right">
-        <button id="inviteShareBtn" class="btn-modal btn-modal-secondary" type="button" hidden>📤 공유</button>
+        <button id="inviteShareBtn" class="btn-modal btn-modal-secondary" type="button">📤 공유</button>
         <button id="inviteCloseBtn" class="btn-modal btn-modal-primary" type="button">닫기</button>
       </div>
     </div>
