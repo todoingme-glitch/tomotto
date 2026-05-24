@@ -81,7 +81,7 @@ header {
   border-radius: 8px;
   line-height: 1;
   transition: background 0.15s;
-  color: var(--text-muted);
+  color: #4a7c59;
 }
 .header-settings-btn:hover { background: var(--border-soft); }
 
@@ -2706,8 +2706,11 @@ dialog.modal input[type="text"]:focus {
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px 14px;
-  border-top: none;
+  border: none !important;
   margin-top: 2px;
+}
+.onb-tt-body, .onb-tt-welcome, .onb-tt-content {
+  border: none !important;
 }
 .onb-tt-btn {
   background: none;
