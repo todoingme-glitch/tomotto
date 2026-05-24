@@ -107,7 +107,7 @@ header {
   .logo-svg { width: min(320px, 100%); }
   .logo-wrap {
     transform: translateX(-8px);  /* T 하단 공백 보정 — 시각적 중앙정렬 */
-    margin-top: 16px;             /* 설정 버튼과 로고 클릭 영역 분리 */
+    margin-top: 10px;             /* 설정 버튼과 로고 클릭 영역 분리 */
   }
   .header-settings-btn {
     top: 0;
@@ -1658,7 +1658,12 @@ dialog.modal input[type="text"]:focus {
 /* Mobile */
 @media (max-width: 480px) {
   .container {
-    padding: 20px 14px 40px;
+    padding: 20px 14px 80px; /* 푸터가 탭에 안 붙도록 하단 여유 확보 */
+  }
+
+  footer {
+    margin-top: 8px;
+    padding: 8px 16px;
   }
 
   header h1 {
@@ -1893,9 +1898,10 @@ dialog.modal input[type="text"]:focus {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1px;
+  gap: 0px;          /* 얼굴 사이 간격 최소화 */
   height: 26px;
 }
+/* 각 얼굴을 개인 탭 단일 아이콘(.tab-icon)과 동일한 26×26으로 유지 */
 .tab-icon-sm {
   width: 26px;
   height: 26px;
