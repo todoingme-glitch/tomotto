@@ -333,6 +333,12 @@ function initOnboardingTooltip(onComplete) {
   // 개인 탭 요소들을 정확히 잡기 위해 개인 탭으로 전환
   switchTab('personal');
 
+  // 온보딩 중 스크롤 잠금
+  document.body.style.overflow = 'hidden';
+  document.documentElement.style.overflow = 'hidden';
+  const _preventTouch = (e) => e.preventDefault();
+  document.addEventListener('touchmove', _preventTouch, { passive: false });
+
   // 톰 = motto-face(왼쪽/안경), 모토 = tom-face(오른쪽)
   const tomHtml  = _buildOnbFaceHtml(mottoFaceEl, '237 45 98 95', '48px');
   const motoHtml = _buildOnbFaceHtml(tomFaceEl,   '405 45 98 95', '48px');
@@ -424,20 +430,21 @@ function initOnboardingTooltip(onComplete) {
     ttEl.style.transform = 'none';
 
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // 모바일 smooth scroll 완료 대기 (모바일은 350ms보다 오래 걸릴 수 있음)
     setTimeout(() => {
       const rect = el.getBoundingClientRect();
       const PAD  = 4;
       const GAP  = 22;
       const TT_W = 272;
 
-      // 하이라이트 표시
+      // 1) 하이라이트 먼저 표시
       highlight.style.top    = (rect.top  - PAD) + 'px';
       highlight.style.left   = (rect.left - PAD) + 'px';
       highlight.style.width  = (rect.width  + PAD * 2) + 'px';
       highlight.style.height = (rect.height + PAD * 2) + 'px';
       highlight.style.display = 'block';
 
-      // 툴팁 위치
+      // 2) 툴팁 위치 계산 (아직 invisible)
       ttEl.setAttribute('data-pos', step.pos || 'bottom');
       const ttH = ttEl.offsetHeight || 150;
       let top = step.pos === 'top' ? rect.top - ttH - GAP : rect.bottom + GAP;
@@ -445,12 +452,12 @@ function initOnboardingTooltip(onComplete) {
       if (top + ttH > window.innerHeight - 8) top = rect.top - ttH - GAP;
       let left = rect.left + rect.width / 2 - TT_W / 2;
       left = Math.max(8, Math.min(left, window.innerWidth - TT_W - 8));
-
       ttEl.style.top  = top  + 'px';
       ttEl.style.left = left + 'px';
-      // 위치 확정 후 페이드인
-      requestAnimationFrame(() => { ttEl.style.opacity = '1'; });
-    }, 350);
+
+      // 3) 하이라이트 표시 후 150ms 딜레이로 말풍선 fade in
+      setTimeout(() => { ttEl.style.opacity = '1'; }, 150);
+    }, 520);  // 모바일 scroll 완료까지 넉넉히 대기
   }
 
   function render(idx) {
@@ -482,11 +489,19 @@ function initOnboardingTooltip(onComplete) {
   }
 
   function finish() {
+    // 스크롤 잠금 해제
+    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
+    document.removeEventListener('touchmove', _preventTouch);
+
     overlay.remove();
     highlight.remove();
     ttEl.remove();
     localStorage.setItem(STORAGE_ONBOARDED_TT, '1');
-    onComplete?.(); // 배틀 룸 열기 등 후속 동작
+
+    // 맨 위로 스크롤 (배틀링크 진입이면 onComplete에서 소셜탭 전환)
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    onComplete?.();
   }
 
   setTimeout(() => render(0), 600);
@@ -653,12 +668,16 @@ function updateBattleTaskPreview(mode) {
       : `내 미션: "${currentTask}". 친구는 본인 가챠로 정해요.`;
     $battleTaskHint.style.color = '';
     $battleCreateConfirmBtn.disabled = false;
+    $battleCreateConfirmBtn.textContent = '만들기';
+    delete $battleCreateConfirmBtn.dataset.noGacha;
   } else {
     $battleTaskText.textContent = '가챠 결과 없음';
     $battleTaskText.className = 'no-task';
     $battleTaskHint.textContent = '⚠ 먼저 가챠를 돌려서 작업을 정해주세요!';
     $battleTaskHint.style.color = 'var(--accent)';
-    $battleCreateConfirmBtn.disabled = true;
+    $battleCreateConfirmBtn.disabled = false;
+    $battleCreateConfirmBtn.textContent = '🎰 가챠 먼저 돌리기';
+    $battleCreateConfirmBtn.dataset.noGacha = 'true';
   }
 }
 
@@ -708,15 +727,22 @@ function getBattleDurationSec() {
 $battleCreateCancelBtn.addEventListener('click', closeBattleCreateModal);
 
 $battleCreateConfirmBtn.addEventListener('click', async () => {
+  // 가챠 없는 상태에서 '가챠 먼저 돌리기' 버튼 클릭 시
+  if ($battleCreateConfirmBtn.dataset.noGacha === 'true') {
+    closeBattleCreateModal();
+    switchTab('personal');
+    document.getElementById('gachaBtn')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
   const mode = document.querySelector('input[name="battleMode"]:checked').value;
   const durationSec = getBattleDurationSec();
   let taskCommon = null;
 
-  // v0.1.15 — 두 모드 모두 가챠 결과 필수
+  // v0.1.15 — 두 모드 모두 가챠 결과 필수 (방어 코드)
   if (!currentTask) {
-    alert('먼저 가챠를 돌려서 작업을 정해주세요!');
     closeBattleCreateModal();
-    document.querySelector('.gacha-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    switchTab('personal');
     return;
   }
 
@@ -2137,7 +2163,8 @@ window.addEventListener('load', () => {
     showBattleLock(battleId);
     // initOnboarding();        // v0.1.34 — Shepherd.js 버전 (보관)
     initOnboardingTooltip(() => {
-      // 온보딩 완료(또는 건너뛰기, 또는 이미 온보딩됨) 후 배틀 룸 열기
+      switchTab('social');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       setTimeout(() => openBattleRoom(battleId), 300);
     });
   } else {
@@ -2984,8 +3011,12 @@ function getMonthKey(date = new Date()) {
 }
 
 // 타이머 완료 시 Supabase user_stats에 카운트 업데이트
+let _lastSyncedTimestamp = 0;  // 중복 호출 방지
 async function syncUserStats() {
   if (!sb || !myNickname) return;
+  const now = Date.now();
+  if (now - _lastSyncedTimestamp < 5000) return;  // 5초 이내 재호출 무시
+  _lastSyncedTimestamp = now;
   const now = new Date();
   const periods = [
     { period_type: 'week',  period_key: getWeekKey(now)  },
@@ -3024,16 +3055,29 @@ async function renderLeaderboard() {
     return;
   }
 
-  // 파트너 닉네임 수집 (내 배틀 목록에서)
+  // 파트너 닉네임 — Supabase battle_players에서 조회 (localStorage에는 partnerNick 없음)
   let partnerNicks = [];
-  try {
-    const myBattles = JSON.parse(localStorage.getItem(BATTLE_STORAGE.myBattles) || '[]');
-    const nickSet = new Set();
-    for (const b of myBattles) {
-      if (b.partnerNick && b.partnerNick !== myNickname) nickSet.add(b.partnerNick);
-    }
-    partnerNicks = [...nickSet];
-  } catch {}
+  if (sb) {
+    try {
+      // 내가 참여한 배틀 ID 목록
+      const { data: myRows } = await sb
+        .from('battle_players')
+        .select('battle_id')
+        .eq('nickname', myNickname);
+      if (myRows?.length) {
+        const battleIds = myRows.map(r => r.battle_id);
+        // 같은 배틀의 다른 참가자 닉네임
+        const { data: partners } = await sb
+          .from('battle_players')
+          .select('nickname')
+          .in('battle_id', battleIds)
+          .neq('nickname', myNickname);
+        if (partners) {
+          partnerNicks = [...new Set(partners.map(p => p.nickname))];
+        }
+      }
+    } catch {}
+  }
 
   const now = new Date();
   const periodKey = lbPeriod === 'week' ? getWeekKey(now) : getMonthKey(now);

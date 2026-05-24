@@ -2608,7 +2608,7 @@ dialog.modal input[type="text"]:focus {
   border-radius: 14px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
   font-family: 'Pretendard', sans-serif;
-  transition: opacity 0.2s ease;  /* 위치 슬라이드 제거, opacity만 */
+  transition: top 0.32s ease, opacity 0.2s ease;  /* 위아래만 슬라이드, 좌우 고정 */
   overflow: visible;
 }
 
