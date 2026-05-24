@@ -144,9 +144,8 @@
             </g>
           </g>
         </svg>
-        <span class="version">v0.1</span>
       </div>
-      <p class="tagline">뭐부터 할지 모르겠을 때, 가챠로 결정하자</p>
+      <p class="tagline">뭐부터 해야 할지 모르겠다면, Tomotto가 골라줄게.</p>
     </header>
 
     <!-- 탭 패널 : 개인 -->
@@ -154,20 +153,20 @@
 
     <!-- 1. 카테고리 설정 -->
     <section class="card category-section">
-      <h2><span class="step">1</span> 오늘 할 일 카테고리</h2>
+      <h2><span class="step">1</span> 오늘 할 일 정하기</h2>
       <div class="add-row">
-        <input type="text" id="categoryInput" placeholder="예: 보고서, 운동, 청소, 공부..." maxlength="30">
+        <input type="text" id="categoryInput" placeholder="공부, 청소, 운동, 보고서 ···" maxlength="30">
         <button id="addBtn" class="btn-add">+ 추가</button>
       </div>
       <ul id="categoryList" class="category-list"></ul>
-      <p id="emptyHint" class="empty-hint">카테고리를 2개 이상 등록하면 가챠를 돌릴 수 있어요.</p>
+      <p id="emptyHint" class="empty-hint">할 일을 추가하고 가챠를 돌려봐요!</p>
     </section>
 
     <!-- 2. 가챠 -->
     <section class="card gacha-section">
       <h2><span class="step">2</span> 가챠 돌리기</h2>
       <div class="gacha-result" id="gachaResult">
-        <p class="gacha-placeholder">아직 안 돌렸어요. 카테고리 등록 후 버튼을 눌러보세요.</p>
+        <p class="gacha-placeholder">아직 안 돌렸어요. 할 일 등록 후 버튼을 눌러보세요.</p>
       </div>
       <button id="gachaBtn" class="btn-gacha" disabled>가챠 돌리기!</button>
       <p class="gacha-counter">
@@ -178,7 +177,7 @@
 
     <!-- 3. 타이머 -->
     <section class="card timer-section">
-      <h2><span class="step">3</span> 뽀모도로 타이머</h2>
+      <h2><span class="step">3</span> 집중하기</h2>
       <div class="timer-display" id="timerDisplay">25:00</div>
       <!-- B안: 배틀 초대 링크로 들어왔을 때 타이머 잠금 배너 -->
       <div class="battle-lock-banner" id="battleLockBanner" hidden>
@@ -309,7 +308,7 @@
     </div><!-- /tab-panel#tab-league -->
 
     <footer>
-      <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1.43 · 온보딩 문구 수정 + 말풍선 스크롤 안정 후 표시</span></small>
+      <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1.45 · 로고 버전 제거 + 크기 확대 + 중앙정렬</span></small>
     </footer>
   </div>
 

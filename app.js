@@ -307,7 +307,7 @@ function initOnboarding() {
     attachTo: { element: '#bottomTab', on: 'top' },
     buttons: [
       { text: '건너뛰기', classes: 'onb-btn-skip', action() { tour.cancel(); } },
-      { text: '완료! 🍅', action() { tour.complete(); } }
+      { text: '완료!', action() { tour.complete(); } }
     ]
   });
 
@@ -349,7 +349,7 @@ function initOnboardingTooltip(onComplete) {
     {
       target: null,
       speaker: 'both',
-      msg: '안녕! 우리는 <strong>톰</strong>이랑 <strong>모토</strong>야.<br>토모토에 온 걸 환영해!'
+      msg: '안녕! 우리는 <strong>톰</strong>이랑 <strong>모토</strong>야.<br>토모토에 온 걸 환영해!<br>잠깐 같이 둘러볼까?'
     },
     {
       target: '.category-section',
@@ -360,14 +360,14 @@ function initOnboardingTooltip(onComplete) {
     {
       target: '#gachaBtn',
       speaker: 'moto', name: '모토',
-      msg: '카테고리를 만들었으면 <strong>가챠</strong>를 돌려봐!<br>오늘 뭐 할지 랜덤으로 뽑아줄게',
+      msg: '카테고리를 만들었다면<br><strong>가챠</strong>를 돌려봐!<br>오늘 뭘 할지 랜덤으로 뽑아줄게',
       pos: 'top'
     },
     {
       target: '#pauseBtn',
       highlightTarget: '.timer-section',
       speaker: 'tom', name: '톰',
-      msg: '뽑힌 할 일로 <strong>뽀모도로 집중!</strong><br>기본 25분, 원하는 시간으로 조절 가능해',
+      msg: '뽑힌 할 일로 <strong>뽀모도로 집중!</strong><br>원하는 시간으로<br>조절할 수 있어!',
       pos: 'bottom'
     },
     {
@@ -527,7 +527,7 @@ function initOnboardingTooltip(onComplete) {
         <div class="onb-tt-footer">
           <button class="onb-tt-btn onb-tt-skip">건너뛰기</button>
           <span class="onb-tt-dots">${dots}</span>
-          <button class="onb-tt-btn onb-tt-next">${isLast ? '완료! 🍅' : '다음 →'}</button>
+          <button class="onb-tt-btn onb-tt-next">${isLast ? '완료!' : '다음 →'}</button>
         </div>`;
 
       ttEl.querySelector('.onb-tt-skip').onclick = finish;
@@ -2502,8 +2502,8 @@ function renderCategories() {
     li.innerHTML = `<span class="cat-text" data-index="${i}" title="탭하면 수정">${escapeHtml(cat)}</span> <button class="remove-btn" data-index="${i}" title="삭제">✕</button>`;
     $catList.appendChild(li);
   });
-  $emptyHint.classList.toggle('hidden', categories.length >= 2);
-  $gachaBtn.disabled = categories.length < 2;
+  $emptyHint.classList.toggle('hidden', categories.length >= 1);
+  $gachaBtn.disabled = categories.length < 1;
   saveCategories();
   editingCategoryIndex = -1;
 
@@ -2512,7 +2512,7 @@ function renderCategories() {
     currentTask = null;
     localStorage.removeItem(STORAGE.currentTask);
     $gachaResult.className = 'gacha-result';
-    $gachaResult.innerHTML = '<p class="gacha-placeholder">아직 안 돌렸어요. 카테고리 등록 후 버튼을 눌러보세요.</p>';
+    $gachaResult.innerHTML = '<p class="gacha-placeholder">아직 안 돌렸어요. 할 일 등록 후 버튼을 눌러보세요.</p>';
     $startBtn.disabled = true;
   }
 }
@@ -2735,7 +2735,7 @@ function spawnConfetti() {
 
 // 슬롯머신 reel 방식 — 카테고리들이 위→아래로 흐르다가 점점 느려져 멈춤
 async function spinGacha() {
-  if (categories.length < 2) return;
+  if (categories.length < 1) return;
 
   // v0.1.9 — 사이클 3 도달 시 자동 리셋. 운영 모드면 광고 confirm 후 리셋.
   if (gachaCount >= 3) {
