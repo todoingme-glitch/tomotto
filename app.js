@@ -1020,6 +1020,7 @@ async function loadMyBattles() {
       // v0.1.65 — done 배틀 자동 정리:
       //   24시간 이상 경과 → DB 삭제 (백그라운드)
       //   24시간 미만     → UI 숨김만 (인증샷 업로드 보호)
+      //   locallyCompletedBattleIds → 이번 세션 완료분도 즉시 숨김
       const now = Date.now();
       const oneDayMs = 24 * 60 * 60 * 1000;
       const doneBattles = mapped.filter(b => b.status === 'done');
@@ -1031,7 +1032,7 @@ async function loadMyBattles() {
         console.log(`[배틀 정리] ${stale.length}개 완료 배틀 자동 삭제 (24h+)`);
         stale.forEach(b => deleteBattleSilent(b.id));
       }
-      const activeBattles = mapped.filter(b => b.status !== 'done');
+      const activeBattles = mapped.filter(b => b.status !== 'done' && !locallyCompletedBattleIds.has(b.id));
 
       // v0.1.26 — 저장된 드래그 순서 적용
       return applyBattleOrder(activeBattles);
@@ -1077,6 +1078,7 @@ function applyBattleOrder(battles) {
 // '대기 중' = 나머지 전부 (waiting / active-but-not-my-timer)
 function getBattleDisplayStatus(b) {
   if (b.status === 'done') return { label: '완료', cls: 'done' };
+  if (locallyCompletedBattleIds.has(b.id)) return { label: '완료', cls: 'done' }; // v0.1.65 — 이번 세션 완료분
   if (activeBattleId === b.id && !timer.isRunning && timer.remaining === 0) return { label: '완료', cls: 'done' }; // v0.1.65 — 타이머 완료 직후
   if (timer.isRunning && activeBattleId === b.id) return { label: '진행 중', cls: 'running' };
   return { label: '대기 중', cls: 'waiting' };
@@ -1751,6 +1753,7 @@ const $battleRoomStartBtn = document.getElementById('battleRoomStartBtn');
 let currentBattleId = null;
 let currentBattleData = null;
 let activeBattleId = null;   // v0.1.17 — 배틀 타이머 진행 중인 battle ID (인증샷 업로드용)
+const locallyCompletedBattleIds = new Set(); // v0.1.65 — 이번 세션에서 완료된 배틀 ID (Supabase 타이밍 무관하게 필터링)
 let realtimeChannel = null;    // v0.1.18 — battle_players INSERT 구독 채널 (룸 뷰용)
 let battleStartChannel = null; // v0.1.19 — battles UPDATE 구독 채널 (친구 쪽 동시 시작용)
 let isStartingBattle = false;  // v0.1.19 — 중복 시작 방지 플래그
@@ -3256,8 +3259,10 @@ function resetTimer() {
   // v0.1.17 — 배틀 결과 버튼은 리셋 시 숨기지 않음 (새 배틀 시작 전까지 유지)
 
   saveTimerState(null);
+  const prevBattleId = activeBattleId;
   activeBattleId = null;   // v0.1.17 — 배틀 세션 종료
   localStorage.removeItem('tomotto_activeBattleId');
+  if (prevBattleId) renderMyBattles(); // v0.1.65 — 완료 배틀카드 즉시 숨김 갱신
 }
 
 // v0.1.9 — select·custom input(시·분) 종합해서 현재 적용 시간(초) 반환
@@ -3342,6 +3347,7 @@ function finishTimer() {
 
   // v0.1.17 — 배틀 중이었으면 결과 보기 버튼 표시
   if (activeBattleId) {
+    locallyCompletedBattleIds.add(activeBattleId); // v0.1.65 — 로컬 완료 Set에 추가 (리셋해도 카드 숨김 유지)
     $battleResultBtn.hidden = false;
     $battleResultBtn.dataset.battleId = activeBattleId;
     // v0.1.29 — 배틀 완료 시 status 'done' 업데이트 (여러 카드 '진행 중' 버그 수정)
