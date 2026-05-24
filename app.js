@@ -1073,10 +1073,11 @@ function applyBattleOrder(battles) {
 
 // v0.1.31 — 배틀카드 상태 표시 재정의
 // '진행 중' = 내 로컬 타이머가 이 배틀로 실제로 돌아가는 상태
-// '완료'   = battles.status === 'done'
+// '완료'   = battles.status === 'done' OR 타이머가 막 끝난 상태 (remaining=0)
 // '대기 중' = 나머지 전부 (waiting / active-but-not-my-timer)
 function getBattleDisplayStatus(b) {
   if (b.status === 'done') return { label: '완료', cls: 'done' };
+  if (activeBattleId === b.id && !timer.isRunning && timer.remaining === 0) return { label: '완료', cls: 'done' }; // v0.1.65 — 타이머 완료 직후
   if (timer.isRunning && activeBattleId === b.id) return { label: '진행 중', cls: 'running' };
   return { label: '대기 중', cls: 'waiting' };
 }
@@ -3303,6 +3304,9 @@ function finishTimer() {
   localStorage.setItem(STORAGE.completedCount, String(completedCount));
   updateCompletedDisplay();
   $captureRow.hidden = false;
+  // v0.1.65 — 인증샷 버튼 항상 초기화 (이전 배틀 '업로드 완료' 문구 잔류 방지)
+  $captureBtn.textContent = '📷 인증샷 첨부 (선택)';
+  $captureBtn.disabled = false;
 
   // v0.1.36 — 소셜 리더보드 통계 동기화
   syncUserStats();
@@ -3348,8 +3352,13 @@ function finishTimer() {
         .eq('id', activeBattleId)
         .then(({ error }) => {
           if (error) console.warn('[Supabase] battles done 업데이트 실패:', error.message);
-          else console.log('[Supabase] battles status → done:', activeBattleId);
+          else {
+            console.log('[Supabase] battles status → done:', activeBattleId);
+            renderMyBattles(); // v0.1.65 — 완료 후 카드 상태 즉시 갱신
+          }
         });
+    } else {
+      renderMyBattles(); // v0.1.65 — 오프라인 모드도 갱신
     }
   }
 
