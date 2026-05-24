@@ -13,7 +13,7 @@
 <body>
   <div class="container">
     <header class="app-header">
-      <button id="settingsBtn" class="header-settings-btn" type="button" aria-label="설정">⚙️</button>
+      <button id="settingsBtn" class="header-settings-btn" type="button" aria-label="설정">⚙</button>
       <div class="logo-wrap" id="logoWrap" title="한 번 더 하이파이브! 🍅">
         <svg class="logo-svg" id="tomottoLogo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 506.18 183.13" aria-label="Tomotto logo">
           <defs>
@@ -340,6 +340,17 @@
       </div>
     </div>
 
+    <div class="settings-section">
+      <p class="settings-label">데이터 숨기기</p>
+      <div class="settings-row">
+        <p class="settings-hint" style="margin:0">켜면 데이터가 없는 것처럼 보여요. 끄면 복원돼요.</p>
+        <label class="settings-toggle">
+          <input type="checkbox" id="settingsHideDataToggle">
+          <span class="settings-toggle-track"></span>
+        </label>
+      </div>
+    </div>
+
     <div class="settings-section settings-section--dev">
       <p class="settings-label">🛠 개발자 옵션</p>
       <button id="devResetOnboardingBtn" class="btn-mini btn-mini--danger" type="button">온보딩 초기화</button>
@@ -557,8 +568,6 @@
   </nav>
 
   <!-- Supabase JS SDK -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- Shepherd.js 온보딩 -->
   <script src="https://cdn.jsdelivr.net/npm/shepherd.js@11/dist/js/shepherd.min.js"></script>
   <!-- Kakao JS SDK -->
   <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" crossorigin="anonymous"></script>

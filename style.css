@@ -2630,23 +2630,8 @@ dialog.modal input[type="text"]:focus {
   overflow: visible;
 }
 
-/* 화살표 */
-.onb-tt::before {
-  content: '';
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 8px solid transparent;
-  pointer-events: none;
-}
-.onb-tt[data-pos="bottom"]::before {
-  top: -16px;
-  border-bottom-color: #fff;
-}
-.onb-tt[data-pos="top"]::before {
-  bottom: -16px;
-  border-top-color: #fff;
-}
+/* 화살표 제거 */
+.onb-tt::before { display: none; }
 
 /* 웰컴 스텝 — 얼굴 나란히 */
 .onb-tt-welcome {

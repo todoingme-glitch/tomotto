@@ -321,7 +321,9 @@ function initOnboarding() {
 // =====================================================
 // v0.1.34 — 툴팁 온보딩 (커스텀, 라이브러리 없음)
 // =====================================================
-const STORAGE_ONBOARDED_TT = 'tomotto_onboarded_tt';
+const STORAGE_ONBOARDED_TT  = 'tomotto_onboarded_tt';
+const STORAGE_DATA_BACKUP   = 'tomotto_data_backup';
+const STORAGE_HIDE_DATA     = 'tomotto_hide_data';
 
 // onComplete: 온보딩 완료(또는 건너뛰기) 후 호출할 콜백. 이미 온보딩된 유저면 즉시 호출.
 function initOnboardingTooltip(onComplete) {
@@ -362,10 +364,10 @@ function initOnboardingTooltip(onComplete) {
       pos: 'top'
     },
     {
-      target: '.timer-section',
+      target: '#pauseBtn',
       speaker: 'tom', name: '🍅 톰',
       msg: '뽑힌 할 일로 <strong>뽀모도로 집중!</strong><br>기본 25분, 원하는 시간으로 조절 가능해 ⏱',
-      pos: 'top'
+      pos: 'bottom'
     },
     {
       target: '#bottomTab',
@@ -641,6 +643,42 @@ $settingsStatusToggle?.addEventListener('change', () => {
   isStatusPublic = $settingsStatusToggle.checked;
   localStorage.setItem(STORAGE_STATUS_PUBLIC, String(isStatusPublic));
 });
+
+// 데이터 숨기기 토글
+const $hideDataToggle = document.getElementById('settingsHideDataToggle');
+if ($hideDataToggle) {
+  $hideDataToggle.checked = !!localStorage.getItem(STORAGE_HIDE_DATA);
+  $hideDataToggle.addEventListener('change', () => {
+    if ($hideDataToggle.checked) {
+      // 현재 모든 tomotto_ 데이터 백업 후 삭제 (온보딩·숨기기 플래그·백업키 제외)
+      const backup = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('tomotto_') &&
+            k !== STORAGE_HIDE_DATA && k !== STORAGE_DATA_BACKUP &&
+            k !== STORAGE_ONBOARDED_TT) {
+          backup[k] = localStorage.getItem(k);
+        }
+      }
+      localStorage.setItem(STORAGE_DATA_BACKUP, JSON.stringify(backup));
+      localStorage.setItem(STORAGE_HIDE_DATA, '1');
+      Object.keys(backup).forEach(k => localStorage.removeItem(k));
+      location.reload();
+    } else {
+      // 백업에서 복원
+      const raw = localStorage.getItem(STORAGE_DATA_BACKUP);
+      if (raw) {
+        try {
+          const backup = JSON.parse(raw);
+          Object.entries(backup).forEach(([k, v]) => localStorage.setItem(k, v));
+        } catch {}
+        localStorage.removeItem(STORAGE_DATA_BACKUP);
+      }
+      localStorage.removeItem(STORAGE_HIDE_DATA);
+      location.reload();
+    }
+  });
+}
 
 // 개발자 옵션 — 온보딩 초기화
 document.getElementById('devResetOnboardingBtn')?.addEventListener('click', () => {
@@ -3540,20 +3578,21 @@ $captureInput.addEventListener('change', (e) => {
   // 파일을 Data URL로 읽고 → 압축 후 저장 (v0.1.10: 카메라/갤러리 공통 함수 사용)
   const reader = new FileReader();
   reader.onload = (ev) => {
-    saveCaptureToStorage(ev.target.result);
+    ge(ev.target.result);
   };
   reader.readAsDataURL(file);
-
-  // 같은 파일 다시 선택 가능하게 input value 초기화
   $captureInput.value = '';
 });
 
 $removeCaptureBtn.addEventListener('click', () => {
-  if (!confirm('마지막 인증샷을 지울까요?')) return;
-  $lastCaptureImg.src = '';
-  $lastCapture.hidden = true;
+  if ($lastCaptureImg) $lastCaptureImg.src = '';
+  if ($lastCapture)    $lastCapture.hidden = true;
   localStorage.removeItem(STORAGE.lastCapture);
   lastCapturedDataUrl = null;
+  if ($captureBtn) {
+    $captureBtn.textContent = '\ud83d\udcf7 인증샷 첨부 (선택)';
+    $captureBtn.disabled = false;
+  }
   // v0.1.20 — 버튼 상태 초기화 → 재업로드 가능
   $captureBtn.textContent = '📷 인증샷 첨부 (선택)';
   $captureBtn.disabled = false;
