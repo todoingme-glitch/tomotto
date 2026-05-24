@@ -560,22 +560,20 @@ function initOnboardingTooltip(onComplete) {
 function playHifive() {
   if (!$logoSvg) return;
 
-  // 팔·하이파이브 요소에만 will-change 설정 (로고 본체는 항상 벡터 유지)
-  const _animEls = $logoSvg.querySelectorAll('#hifive, #motto-arm, #tom-arm');
-  _animEls.forEach(el => { el.style.willChange = 'transform, opacity'; });
+  // SVG 자체에 will-change → 브라우저가 SVG 전체를 올바른 devicePixelRatio로 래스터화.
+  // 자식(팔·이펙트)은 SVG 레이어 안에서 컴포지팅 → 선명도 유지.
+  // 자식에 개별 will-change를 걸면 부모 SVG도 낮은 해상도로 재래스터화되어 전체가 뿌옇게 됨.
+  $logoSvg.style.willChange = 'transform';
 
   // SVG는 offsetWidth reflow가 안 먹힘 → 더블 rAF로 클래스 재트리거
   $logoSvg.classList.remove('play');
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       $logoSvg.classList.add('play');
-      // 애니메이션 완료 후:
-      // 1) will-change 해제 — GPU 레이어 힌트 제거
-      // 2) .play 클래스 제거 — animation 속성 자체를 없애야 브라우저가 컴포지팅 레이어를 완전히 해제함
-      //    (팔 최종 상태가 transform(0,0,0)이라 시각적 변화 없음)
       setTimeout(() => {
-        _animEls.forEach(el => { el.style.willChange = 'auto'; });
+        $logoSvg.style.willChange = 'auto';
         $logoSvg.classList.remove('play');
+        // .play 제거 후 #hifive는 CSS 기본값(opacity:1)으로 복귀 → 이펙트 유지
       }, 1400);
     });
   });

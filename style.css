@@ -106,8 +106,8 @@ header {
 @media (max-width: 480px) {
   .logo-svg { width: min(320px, 100%); }
   .logo-wrap {
-    transform: translateX(-9px);  /* T 하단 공백 보정 — 시각적 중앙정렬 */
-    margin-top: 32px;             /* 설정 버튼과 로고 클릭 영역 분리 */
+    transform: translateX(-8px);  /* T 하단 공백 보정 — 시각적 중앙정렬 */
+    margin-top: 16px;             /* 설정 버튼과 로고 클릭 영역 분리 */
   }
   .header-settings-btn {
     top: 0;
@@ -129,8 +129,8 @@ header {
 #motto-arm { transform-origin: center bottom; }
 #tom-arm { transform-origin: center bottom; }
 
-/* 기본 상태 — 하이파이브 효과는 안 보임 */
-.logo-svg #hifive { opacity: 0; }
+/* 기본 상태 — 하이파이브 이펙트 항상 표시. 애니메이션 시작 시 opacity:0에서 팝인 */
+.logo-svg #hifive { opacity: 1; }
 
 /* 페이지 로드 시 자동 재생 + 클릭으로 재트리거 */
 .logo-svg.play #tom-arm {
