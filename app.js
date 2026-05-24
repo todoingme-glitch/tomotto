@@ -762,6 +762,43 @@ document.getElementById('devResetOnboardingBtn')?.addEventListener('click', () =
   btn.disabled = true;
 });
 
+// v0.1.64 — 전체 초기화
+document.getElementById('fullResetBtn')?.addEventListener('click', async () => {
+  if (!confirm('정말 모든 데이터를 삭제할까요?\n\n카테고리, 기록, 완료 횟수, 배틀 목록, 닉네임이 모두 사라져요. 되돌릴 수 없어요.')) return;
+
+  const btn = document.getElementById('fullResetBtn');
+  btn.textContent = '초기화 중...';
+  btn.disabled = true;
+
+  // 1. Supabase — 내 닉네임 관련 데이터 삭제
+  const nick = myNickname;
+  if (sb && nick) {
+    try {
+      await sb.from('user_stats').delete().eq('nickname', nick);
+      await sb.from('battle_players').delete().eq('nickname', nick);
+      // 내가 만든 배틀 중 상대방 없는 것도 정리
+      const { data: myBattles } = await sb.from('battle_players').select('battle_id').eq('nickname', nick);
+      // 이미 위에서 삭제했으므로, 고아 battles 직접 조회해서 삭제
+      const myBattleIds = JSON.parse(localStorage.getItem(BATTLE_STORAGE.myBattles) || '[]')
+        .filter(b => b._isCreator)
+        .map(b => b.id);
+      if (myBattleIds.length) {
+        await sb.from('battles').delete().in('id', myBattleIds);
+      }
+    } catch (e) {
+      console.warn('[fullReset] Supabase 삭제 중 오류:', e);
+    }
+  }
+
+  // 2. localStorage 전체 삭제 (tomotto_* 키)
+  Object.keys(localStorage)
+    .filter(k => k.startsWith('tomotto_') || k.startsWith('pomocha_'))
+    .forEach(k => localStorage.removeItem(k));
+
+  // 3. 페이지 새로고침
+  location.reload();
+});
+
 // 배틀 생성 모달
 $battleCreateBtn.addEventListener('click', () => {
   // 닉네임 없으면 먼저 입력받음
@@ -3434,11 +3471,15 @@ async function renderLeaderboard() {
     return;
   }
 
-  const maxCount = entries[0].count || 1;
+  // v0.1.64 — 이번 기간 완료 횟수 0인 파트너는 표시 안 함 (월 초 자동 정리)
+  // 단, 본인은 0이어도 항상 표시
+  const displayEntries = entries.filter(e => e.count > 0 || e.nick === myNickname);
+
+  const maxCount = displayEntries[0].count || 1;
   const medalEmojis = ['🥇', '🥈', '🥉'];
-  const html = entries.map((e, i) => {
+  const html = displayEntries.map((e, i) => {
     const isMe = e.nick === myNickname;
-    const pct = Math.max(4, Math.round((e.count / maxCount) * 100));
+    const pct = e.count > 0 ? Math.max(4, Math.round((e.count / maxCount) * 100)) : 0;
     const rankBadge = i < 3
       ? `<span style="font-size:1.4rem;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:28px">${medalEmojis[i]}</span>`
       : `<span class="lb-rank-badge" style="background:#e0dbd8;color:#888">${i + 1}</span>`;
