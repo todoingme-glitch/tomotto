@@ -559,11 +559,20 @@ function initOnboardingTooltip(onComplete) {
 
 function playHifive() {
   if (!$logoSvg) return;
+
+  // 애니메이션 직전에만 will-change 설정 → 평소엔 GPU 레이어 없음 (SVG 선명도 유지)
+  const _animEls = $logoSvg.querySelectorAll('#hifive, #motto-arm, #tom-arm');
+  _animEls.forEach(el => { el.style.willChange = 'transform, opacity'; });
+
   // SVG는 offsetWidth reflow가 안 먹힘 → 더블 rAF로 클래스 재트리거
   $logoSvg.classList.remove('play');
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       $logoSvg.classList.add('play');
+      // 애니메이션 완료(1.15s) 후 will-change 해제 → 다시 선명한 벡터 렌더링으로 복귀
+      setTimeout(() => {
+        _animEls.forEach(el => { el.style.willChange = 'auto'; });
+      }, 1400);
     });
   });
 }
