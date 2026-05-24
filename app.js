@@ -3406,14 +3406,19 @@ async function renderLeaderboard() {
   }
 
   const maxCount = entries[0].count || 1;
-  const medals = ['🥇', '🥈', '🥉'];
+  const rankColors = [
+    { bg: '#FFD700', color: '#7a5800' },  // 1위 금
+    { bg: '#C0C0C0', color: '#555' },     // 2위 은
+    { bg: '#CD7F32', color: '#fff' },     // 3위 동
+  ];
   const html = entries.map((e, i) => {
     const isMe = e.nick === myNickname;
     const pct = Math.max(4, Math.round((e.count / maxCount) * 100));
-    const medal = medals[i] || `${i + 1}`;
+    const rc = rankColors[i] || { bg: '#e0dbd8', color: '#999' };
+    const rankBadge = `<span class="lb-rank-badge" style="background:${rc.bg};color:${rc.color}">${i + 1}</span>`;
     return `
       <div class="lb-row${isMe ? ' lb-row-me' : ''}">
-        <span class="lb-rank">${medal}</span>
+        ${rankBadge}
         <span class="lb-nick">${e.nick}${isMe ? ' <span class="lb-me-badge">나</span>' : ''}</span>
         <div class="lb-bar-wrap">
           <div class="lb-bar" style="width:${pct}%"></div>

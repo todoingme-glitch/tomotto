@@ -2199,7 +2199,7 @@ dialog.modal input[type="text"]:focus {
 .log-strip-day.lv3::before {
   content: '';
   position: absolute;
-  top: -7px;
+  top: -3px;
   left: calc(50% - 5px);
   width: 12px;
   height: 10px;
@@ -3055,6 +3055,17 @@ dialog.modal input[type="text"]:focus {
 }
 
 .lb-rank { font-size: 1.1rem; text-align: center; }
+.lb-rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
 
 .lb-nick {
   font-size: 0.88rem;
