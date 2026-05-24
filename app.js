@@ -1177,7 +1177,7 @@ async function renderMyBattles() {
           <div class="battle-card-body">
             <div class="battle-card-top">
               <span class="battle-card-mode">${modeLabel} · ${roleLabel}</span>
-              <span class="battle-card-status ${statusCls}">${statusLabel}</span>
+              <span class="battle-card-status" data-status="${statusCls}">${statusLabel}</span>
             </div>
             <div class="battle-card-task">${taskLabel}</div>
             <div class="battle-card-meta">시간 ${minutes}분 · ID ${b.id}</div>
@@ -1194,7 +1194,7 @@ async function renderMyBattles() {
       <div class="battle-card" data-id="${b.id}" data-idx="${idx}">
         <div class="battle-card-top">
           <span class="battle-card-mode">${modeLabel} · ${roleLabel}</span>
-          <span class="battle-card-status ${statusCls}">${statusLabel}</span>
+          <span class="battle-card-status" data-status="${statusCls}">${statusLabel}</span>
         </div>
         <div class="battle-card-task">${taskLabel}</div>
         <div class="battle-card-meta">시간 ${minutes}분 · ID ${b.id}</div>

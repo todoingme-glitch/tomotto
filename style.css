@@ -1302,10 +1302,10 @@ dialog.modal input[type="text"]:focus {
   color: var(--text-muted);
 }
 
-/* v0.1.33 — 상태별 색상 재정의 */
-.battle-card-status.waiting { color: var(--accent); }
-.battle-card-status.running { color: var(--basil-deep); font-weight: 600; }
-.battle-card-status.done    { color: var(--text-muted); }
+/* v0.1.37 — 배틀카드 상태 색상 (data-status 속성 기반으로 변경) */
+.battle-card-status[data-status="waiting"] { color: var(--accent); }
+.battle-card-status[data-status="running"] { color: var(--basil-deep); font-weight: 600; }
+.battle-card-status[data-status="done"]    { color: var(--text-muted); }
 
 .battle-card-task {
   font-size: 14px;
