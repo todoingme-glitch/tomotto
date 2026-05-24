@@ -433,8 +433,10 @@ function initOnboardingTooltip(onComplete) {
     ttEl.style.transform = 'none';
 
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    // 모바일 smooth scroll 완료 대기 (모바일은 350ms보다 오래 걸릴 수 있음)
-    setTimeout(() => {
+
+    // v0.1.39 — 스크롤 완료 감지 (고정 타임아웃 대신 scroll 이벤트 기반)
+    // 스크롤이 끝난 후 80ms 조용하면 위치 계산 → 어떤 길이의 스크롤도 정확히 대응
+    const _doPos = () => {
       const rect = el.getBoundingClientRect();
       const PAD  = 4;
       const GAP  = 22;
@@ -449,7 +451,7 @@ function initOnboardingTooltip(onComplete) {
       highlight.style.height = (hlRect.height + PAD * 2) + 'px';
       highlight.style.display = 'block';
 
-      // 2) 툴팁 위치 계산 (아직 invisible)
+      // 2) 툴팁 위치 계산
       ttEl.setAttribute('data-pos', step.pos || 'bottom');
       const ttH = ttEl.offsetHeight || 150;
       let top = step.pos === 'top' ? rect.top - ttH - GAP : rect.bottom + GAP;
@@ -460,9 +462,27 @@ function initOnboardingTooltip(onComplete) {
       ttEl.style.top  = top  + 'px';
       ttEl.style.left = left + 'px';
 
-      // 3) 하이라이트 표시 후 150ms 딜레이로 말풍선 fade in
       setTimeout(() => { ttEl.style.opacity = '1'; }, 150);
-    }, 520);  // 모바일 scroll 완료까지 넉넉히 대기
+    };
+
+    let _scrollEndTimer = null;
+    let _scrollFired    = false;
+    const _onScroll = () => {
+      _scrollFired = true;
+      clearTimeout(_scrollEndTimer);
+      _scrollEndTimer = setTimeout(() => {
+        window.removeEventListener('scroll', _onScroll);
+        _doPos();
+      }, 80); // 스크롤 멈춘 후 80ms 경과 시 완료로 간주
+    };
+    window.addEventListener('scroll', _onScroll, { passive: true });
+    // 이미 화면 안에 있어 스크롤 이벤트가 없으면 300ms 후 직접 실행
+    setTimeout(() => {
+      if (!_scrollFired) {
+        window.removeEventListener('scroll', _onScroll);
+        _doPos();
+      }
+    }, 300);
   }
 
   function render(idx) {
@@ -2197,12 +2217,40 @@ let switchTab = () => {};
   // 기본값(personal)은 HTML에서 이미 active 클래스로 설정돼 있음
 })();
 
+// v0.1.39 — 인앱 브라우저(카카오톡 등) 감지 → 외부 브라우저 유도 배너
+function checkInAppBrowser() {
+  if (localStorage.getItem('tomotto_iab_ok')) return;
+  const ua = navigator.userAgent || '';
+  const isInApp = /KAKAOTALK|NAVER|Instagram|FB_IAB|FBAN|Line\/|Snapchat/i.test(ua);
+  if (!isInApp) return;
+  const banner = document.createElement('div');
+  banner.className = 'iab-banner';
+  banner.innerHTML =
+    '<span class="iab-msg">더 나은 경험을 위해 Chrome / Safari에서 열어주세요 🙏</span>' +
+    '<button class="iab-open-btn" id="iabCopyBtn">링크 복사</button>' +
+    '<button class="iab-close-btn" id="iabCloseBtn">✕</button>';
+  document.body.prepend(banner);
+  document.getElementById('iabCopyBtn').addEventListener('click', () => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(location.href)
+        .then(() => alert('링크 복사됐어요!\nChrome / Safari에 붙여넣어 주세요.'));
+    } else {
+      prompt('아래 링크를 복사해서 브라우저에서 열어주세요', location.href);
+    }
+  });
+  document.getElementById('iabCloseBtn').addEventListener('click', () => {
+    banner.remove();
+    localStorage.setItem('tomotto_iab_ok', '1');
+  });
+}
+
 // 페이지 로드 시 닉네임 + 내 배틀 복원 + 온보딩 순서 처리
 window.addEventListener('load', () => {
   loadNickname();
   renderMyBattles();
   setTimeout(playHifive, 400);
   initTabIcons();               // v0.1.34 — 탭 아이콘에 실제 로고 얼굴 주입
+  checkInAppBrowser();          // v0.1.39 — 인앱 브라우저 감지
 
   const params = new URLSearchParams(location.search);
   const battleId = params.get('battle');

@@ -1754,7 +1754,7 @@ dialog.modal input[type="text"]:focus {
 /* ====== v0.1.17 — 하단 탭 네비게이션 ====== */
 
 /* v0.1.23 — 탭을 하단 고정 (position: fixed, 카드 내부 너비와 동일) */
-/* 컨테이너 padding이 좌우 20px씩이므로 탭도 동일하게 안쪽 너비 맞춤 */
+/* v0.1.39 — 모바일 패딩 14px 기준 너비 맞춤 + 모서리 카드와 통일 */
 .bottom-tab {
   position: fixed;
   bottom: 0;
@@ -1767,10 +1767,15 @@ dialog.modal input[type="text"]:focus {
   align-items: stretch;
   background: var(--bg-card);
   border-top: 1.5px solid var(--border);
-  border-radius: 16px 16px 0 0;
+  border-radius: var(--radius) var(--radius) 0 0;
   box-shadow: 0 -2px 12px rgba(80,40,40,0.09);
   padding: 0 4px;
   padding-bottom: env(safe-area-inset-bottom, 0); /* iOS home indicator */
+}
+@media (max-width: 480px) {
+  .bottom-tab {
+    width: calc(100% - 28px); /* 모바일 컨테이너 padding 14px × 2 = 28px */
+  }
 }
 
 .tab-btn {
@@ -2999,4 +3004,52 @@ dialog.modal input[type="text"]:focus {
 }
 
 .lb-count {
-  fo
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+/* =====================================================
+   v0.1.39 — 인앱 브라우저 (카카오톡 등) 안내 배너
+   ===================================================== */
+.iab-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10000;
+  background: var(--text);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-family: 'Pretendard', sans-serif;
+}
+.iab-msg {
+  flex: 1;
+  line-height: 1.4;
+}
+.iab-open-btn {
+  background: rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.35);
+  color: #fff;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.iab-close-btn {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.6);
+  font-size: 15px;
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
+  flex-shrink: 0;
+}
