@@ -457,13 +457,33 @@ function initOnboardingTooltip(onComplete) {
       highlight.style.width  = (r.width  + PAD * 2) + 'px';
       highlight.style.height = (r.height + PAD * 2) + 'px';
 
-      // 말풍선 위치
-      const rect = el.getBoundingClientRect();
-      const ttH  = ttEl.offsetHeight || 150;
-      let top  = step.pos === 'top' ? rect.top - ttH - GAP : rect.bottom + GAP;
-      if (top < 8) top = rect.bottom + GAP;
-      if (top + ttH > window.innerHeight - 8) top = rect.top - ttH - GAP;
-      let left = rect.left + rect.width / 2 - TT_W / 2;
+      // 말풍선 위치 — hlEl이 있으면 전체 하이라이트 박스 기준으로 위치 결정
+      const rect   = el.getBoundingClientRect();
+      const hlRect = hlEl ? hlEl.getBoundingClientRect() : rect;
+      const ttH    = ttEl.offsetHeight || 150;
+      let top, posAttr;
+
+      if (step.pos === 'top') {
+        // 기본: 하이라이트 박스 위쪽
+        top = hlRect.top - ttH - GAP;
+        posAttr = 'top';
+        if (top < 8) { top = hlRect.bottom + GAP; posAttr = 'bottom'; }
+      } else {
+        // 기본: el 아래쪽 (pos: 'bottom')
+        top = rect.bottom + GAP;
+        posAttr = 'bottom';
+        // 화면 아래로 넘치면 → 하이라이트 박스 위쪽으로 완전히 올림 (테두리 바깥)
+        if (top + ttH > window.innerHeight - 8) {
+          top = hlRect.top - ttH - GAP;
+          posAttr = 'top';
+        }
+      }
+
+      if (top < 8) top = 8;
+      ttEl.setAttribute('data-pos', posAttr);
+
+      // 가로 위치: 하이라이트 박스 중앙 기준
+      let left = hlRect.left + hlRect.width / 2 - TT_W / 2;
       left = Math.max(8, Math.min(left, window.innerWidth - TT_W - 8));
       ttEl.style.top  = top  + 'px';
       ttEl.style.left = left + 'px';
