@@ -444,48 +444,36 @@ function initOnboardingTooltip(onComplete) {
     const GAP = 22;
     const TT_W = 272;
 
-    // 하이라이트 — rAF로 요소 위치 실시간 추적 (스크롤 중에도 항상 따라감)
+    // 하이라이트 + 말풍선 — rAF로 매 프레임 실시간 추적 (스크롤 중에도 항상 따라감)
     const hlEl = step.highlightTarget ? document.querySelector(step.highlightTarget) : el;
     highlight.style.display = 'block';
-    const trackHighlight = () => {
+    ttEl.setAttribute('data-pos', step.pos || 'bottom');
+
+    const trackAll = () => {
+      // 하이라이트 위치
       const r = (hlEl || el).getBoundingClientRect();
       highlight.style.top    = (r.top    - PAD) + 'px';
       highlight.style.left   = (r.left   - PAD) + 'px';
       highlight.style.width  = (r.width  + PAD * 2) + 'px';
       highlight.style.height = (r.height + PAD * 2) + 'px';
-      _trackRafId = requestAnimationFrame(trackHighlight);
-    };
-    _trackRafId = requestAnimationFrame(trackHighlight);
 
-    // 툴팁 위치 — 스크롤 완료 후 한 번만 계산
-    const setTooltipPos = () => {
+      // 말풍선 위치
       const rect = el.getBoundingClientRect();
-      ttEl.setAttribute('data-pos', step.pos || 'bottom');
-      const ttH = ttEl.offsetHeight || 150;
-      let top = step.pos === 'top' ? rect.top - ttH - GAP : rect.bottom + GAP;
+      const ttH  = ttEl.offsetHeight || 150;
+      let top  = step.pos === 'top' ? rect.top - ttH - GAP : rect.bottom + GAP;
       if (top < 8) top = rect.bottom + GAP;
       if (top + ttH > window.innerHeight - 8) top = rect.top - ttH - GAP;
       let left = rect.left + rect.width / 2 - TT_W / 2;
       left = Math.max(8, Math.min(left, window.innerWidth - TT_W - 8));
       ttEl.style.top  = top  + 'px';
       ttEl.style.left = left + 'px';
-      ttEl.style.opacity = '1';
-    };
 
-    let _scrollEndTimer = null;
-    let _scrollFired = false;
-    const _onScroll = () => {
-      _scrollFired = true;
-      clearTimeout(_scrollEndTimer);
-      _scrollEndTimer = setTimeout(() => {
-        window.removeEventListener('scroll', _onScroll);
-        setTooltipPos();
-      }, 80);
+      _trackRafId = requestAnimationFrame(trackAll);
     };
-    window.addEventListener('scroll', _onScroll, { passive: true });
-    setTimeout(() => {
-      if (!_scrollFired) { window.removeEventListener('scroll', _onScroll); setTooltipPos(); }
-    }, 300);
+    _trackRafId = requestAnimationFrame(trackAll);
+
+    // 첫 프레임 위치 계산 후 페이드인
+    setTimeout(() => { ttEl.style.opacity = '1'; }, 50);
   }
 
   function render(idx) {
