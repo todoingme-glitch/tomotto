@@ -1006,11 +1006,12 @@ async function loadMyBattles() {
       const battleIds = (myPlayerRows || []).map((r) => r.battle_id);
       if (battleIds.length === 0) return [];
 
-      // 2) 해당 battle_id들의 battle 정보 가져오기
+      // 2) 해당 battle_id들의 battle 정보 가져오기 (v0.1.65 — done 완전 제외)
       const { data: battles, error: e2 } = await sb
         .from('battles')
         .select('*')
         .in('id', battleIds)
+        .neq('status', 'done')
         .order('created_at', { ascending: false });
       if (e2) throw e2;
       const mapped = (battles || []).map((b) => {
@@ -1018,31 +1019,20 @@ async function loadMyBattles() {
         return { ...b, _isCreator: myRow ? myRow.is_creator : false, _myTask: myRow?.task || null };
       });
 
-      // v0.1.65 — done 배틀 자동 정리:
-      //   24시간 이상 경과 → DB 삭제 (백그라운드)
-      //   24시간 미만     → UI 숨김만 (인증샷 업로드 보호)
-      //   locallyCompletedBattleIds → 이번 세션 완료분도 즉시 숨김
+      // v0.1.65 — 쿼리 자체에서 done 제외 (.neq('status','done'))
+      // locallyCompletedBattleIds: Supabase done 업데이트 in-flight 중인 배틀도 숨김 (안전망)
+      const completedSet = getLocallyCompletedIds();
+      const activeBattles = mapped.filter(b => !completedSet.has(b.id));
+
+      // 24시간 이상 된 done 배틀 자동 삭제 (백그라운드, 별도 쿼리)
       const now = Date.now();
       const oneDayMs = 24 * 60 * 60 * 1000;
-      const doneBattles = mapped.filter(b => b.status === 'done');
-      const stale = doneBattles.filter(b => {
-        const t = new Date(b.updated_at || b.created_at).getTime();
-        return (now - t) >= oneDayMs;
-      });
-      if (stale.length > 0) {
-        console.log(`[배틀 정리] ${stale.length}개 완료 배틀 자동 삭제 (24h+)`);
-        stale.forEach(b => deleteBattleSilent(b.id));
-      }
-      // DB에서 이미 'done'인 배틀은 localStorage 완료 목록에서 제거 (정리)
-      const confirmedDoneIds = mapped.filter(b => b.status === 'done').map(b => b.id);
-      if (confirmedDoneIds.length > 0) {
-        let stored = [];
-        try { stored = JSON.parse(localStorage.getItem(BATTLE_STORAGE.completedIds) || '[]'); } catch {}
-        const remaining = stored.filter(id => !confirmedDoneIds.includes(id));
-        localStorage.setItem(BATTLE_STORAGE.completedIds, JSON.stringify(remaining));
-      }
-      const completedSet = getLocallyCompletedIds();
-      const activeBattles = mapped.filter(b => b.status !== 'done' && !completedSet.has(b.id));
+      sb.from('battles').select('id, updated_at, created_at').in('id', battleIds).eq('status', 'done')
+        .then(({ data: doneBattles }) => {
+          if (!doneBattles) return;
+          doneBattles.filter(b => (now - new Date(b.updated_at || b.created_at).getTime()) >= oneDayMs)
+                     .forEach(b => { console.log('[배틀 정리] 자동 삭제:', b.id); deleteBattleSilent(b.id); });
+        });
 
       // v0.1.26 — 저장된 드래그 순서 적용
       return applyBattleOrder(activeBattles);
