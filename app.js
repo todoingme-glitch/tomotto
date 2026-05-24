@@ -947,7 +947,7 @@ async function loadMyBattles() {
       // 1) 본인 nickname으로 battle_players에서 본인 row 찾기
       const { data: myPlayerRows, error: e1 } = await sb
         .from('battle_players')
-        .select('battle_id, is_creator')
+        .select('battle_id, is_creator, task')
         .eq('nickname', myNickname);
       if (e1) throw e1;
       const battleIds = (myPlayerRows || []).map((r) => r.battle_id);
@@ -962,7 +962,7 @@ async function loadMyBattles() {
       if (e2) throw e2;
       const mapped = (battles || []).map((b) => {
         const myRow = myPlayerRows.find((r) => r.battle_id === b.id);
-        return { ...b, _isCreator: myRow ? myRow.is_creator : false };
+        return { ...b, _isCreator: myRow ? myRow.is_creator : false, _myTask: myRow?.task || null };
       });
       // v0.1.26 — 저장된 드래그 순서 적용
       return applyBattleOrder(mapped);
@@ -1159,7 +1159,7 @@ function renderLogDay(dateStr) {
   if (dayLogs.length === 0) {
     $list.innerHTML = '<p class="log-empty-day">이 날은 기록이 없어요.</p>';
   } else {
-    $list.innerHTML = dayLogs.map(log => {
+    $list.innerHTML = dayLogs.map((log, idx) => {
       const mins = Math.round((log.durationSec || 0) / 60);
       const icon = log.type === 'battle' ? '⚔️' : '🍅';
       const partnerText = log.partner ? ` · ${escapeHtml(log.partner)}님과` : '';
@@ -1170,19 +1170,41 @@ function renderLogDay(dateStr) {
         : '';
       const captureUrl = captures[String(log.id)];
       const captureHtml = captureUrl
-        ? `<img class="log-item-capture" src="${captureUrl}" alt="인증샷">`
+        ? `<img class="log-item-capture" src="${captureUrl}" alt="인증샷" loading="lazy">`
         : '';
-      return `<div class="log-item${log.type === 'battle' ? ' log-item--battle' : ''}">
-        <div class="log-item-row">
+      // v0.1.61 — 아코디언: 사진·소감 있는 항목만 펼치기 표시
+      const hasDetail = !!(captureUrl || log.note);
+      const detailHtml = hasDetail
+        ? `<div class="log-item-detail" id="log-detail-${log.id}">${captureHtml}${noteHtml}</div>`
+        : '';
+      const toggleAttr = hasDetail ? ` data-log-toggle="${log.id}"` : '';
+      const chevron = hasDetail ? `<span class="log-item-chevron">▾</span>` : '';
+      return `<div class="log-item${log.type === 'battle' ? ' log-item--battle' : ''}${hasDetail ? ' has-detail' : ''}" data-log-id="${log.id}">
+        <div class="log-item-row"${toggleAttr}>
           <span class="log-item-icon">${icon}</span>
           <span class="log-item-task">${escapeHtml(log.task || '무제')}</span>
           <span class="log-item-meta">${mins}분${partnerText}</span>
           <span class="log-item-time">${timeStr}</span>
+          ${chevron}
         </div>
-        ${captureHtml}
-        ${noteHtml}
+        ${detailHtml}
       </div>`;
     }).join('');
+
+    // 아코디언 토글 이벤트
+    $list.querySelectorAll('[data-log-toggle]').forEach(row => {
+      row.addEventListener('click', () => {
+        const id = row.dataset.logToggle;
+        const detail = document.getElementById(`log-detail-${id}`);
+        const item = row.closest('.log-item');
+        if (!detail) return;
+        const isOpen = item.classList.toggle('log-item--open');
+        detail.hidden = !isOpen;
+        row.querySelector('.log-item-chevron').textContent = isOpen ? '▴' : '▾';
+      });
+    });
+    // 기본 닫힘 상태
+    $list.querySelectorAll('.log-item-detail').forEach(d => { d.hidden = true; });
   }
 
   $detail.hidden = false;
@@ -1225,7 +1247,9 @@ async function renderMyBattles() {
   $battleList.innerHTML = toolbarHtml + list.map((b, idx) => {
     const modeLabel  = b.mode === 'common' ? '🍅 TOM MODE' : '🎲 MOTO MODE';
     const { label: statusLabel, cls: statusCls } = getBattleDisplayStatus(b);
-    const taskLabel  = b.mode === 'common' ? escapeHtml(b.task_common || '') : '각자 랜덤 가챠';
+    const taskLabel  = b.mode === 'common'
+      ? escapeHtml(b.task_common || '')
+      : escapeHtml(b._myTask || '가챠 전');
     const minutes    = Math.round(b.duration_sec / 60);
     const roleLabel  = b._isCreator ? '내가 만듦' : '초대받음';
     const isSelected = selectedBattleIds.has(b.id);
