@@ -1016,8 +1016,16 @@ async function loadMyBattles() {
         const myRow = myPlayerRows.find((r) => r.battle_id === b.id);
         return { ...b, _isCreator: myRow ? myRow.is_creator : false, _myTask: myRow?.task || null };
       });
+
+      // v0.1.64 — 완료된 배틀 자동 삭제 (재진입 시 조용히 정리)
+      const doneBattles = mapped.filter(b => b.status === 'done');
+      const activeBattles = mapped.filter(b => b.status !== 'done');
+      if (doneBattles.length > 0) {
+        doneBattles.forEach(b => deleteBattleSilent(b.id));
+      }
+
       // v0.1.26 — 저장된 드래그 순서 적용
-      return applyBattleOrder(mapped);
+      return applyBattleOrder(activeBattles);
     } catch (err) {
       console.error('내 배틀 fetch 실패:', err);
       // 실패 시 localStorage fallback
@@ -1025,7 +1033,16 @@ async function loadMyBattles() {
       catch { return []; }
     }
   }
-  try { return JSON.parse(localStorage.getItem(BATTLE_STORAGE.myBattles) || '[]'); }
+  try {
+    const all = JSON.parse(localStorage.getItem(BATTLE_STORAGE.myBattles) || '[]');
+    // v0.1.64 — 완료 배틀 자동 정리 (localStorage fallback 경로)
+    const done = all.filter(b => b.status === 'done');
+    const active = all.filter(b => b.status !== 'done');
+    if (done.length > 0) {
+      done.forEach(b => deleteBattleSilent(b.id));
+    }
+    return active;
+  }
   catch { return []; }
 }
 
