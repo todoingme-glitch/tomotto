@@ -330,6 +330,9 @@ function initOnboardingTooltip(onComplete) {
   if (!tomFaceEl || !mottoFaceEl) { onComplete?.(); return; }
   if (localStorage.getItem(STORAGE_ONBOARDED_TT)) { onComplete?.(); return; }
 
+  // 개인 탭 요소들을 정확히 잡기 위해 개인 탭으로 전환
+  switchTab('personal');
+
   // 톰 = motto-face(왼쪽/안경), 모토 = tom-face(오른쪽)
   const tomHtml  = _buildOnbFaceHtml(mottoFaceEl, '237 45 98 95', '48px');
   const motoHtml = _buildOnbFaceHtml(tomFaceEl,   '405 45 98 95', '48px');
