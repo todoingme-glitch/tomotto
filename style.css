@@ -2619,7 +2619,7 @@ dialog.modal input[type="text"]:focus {
   box-shadow: 0 0 0 9999px rgba(30, 30, 30, 0.45), 0 0 0 3px var(--accent);
   z-index: 8950;
   pointer-events: none;
-  transition: top 0.3s ease, left 0.3s ease, width 0.3s ease, height 0.3s ease;
+  /* transition 제거 — rAF 실시간 추적으로 교체 */
 }
 
 /* 툴팁 카드 */

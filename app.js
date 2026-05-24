@@ -411,10 +411,16 @@ function initOnboardingTooltip(onComplete) {
     </div>`;
   }
 
-  // 툴팁 위치 확정 + 페이드인 (opacity는 이미 0인 상태에서 호출)
+  // v0.1.40 — rAF 기반 하이라이트 실시간 추적 (스크롤 길이와 무관하게 항상 정확)
+  let _trackRafId = null;
+  function stopTracking() {
+    if (_trackRafId !== null) { cancelAnimationFrame(_trackRafId); _trackRafId = null; }
+  }
+
   function position(step) {
+    stopTracking();
+
     if (!step.target) {
-      // 웰컴 스텝: transform 없이 픽셀로 중앙 계산 (transform 전환 튀는 문제 방지)
       highlight.style.display = 'none';
       ttEl.style.transform = 'none';
       const TT_W = 272;
@@ -434,24 +440,26 @@ function initOnboardingTooltip(onComplete) {
 
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-    // v0.1.39 — 스크롤 완료 감지 (고정 타임아웃 대신 scroll 이벤트 기반)
-    // 스크롤이 끝난 후 80ms 조용하면 위치 계산 → 어떤 길이의 스크롤도 정확히 대응
-    const _doPos = () => {
+    const PAD = 4;
+    const GAP = 22;
+    const TT_W = 272;
+
+    // 하이라이트 — rAF로 요소 위치 실시간 추적 (스크롤 중에도 항상 따라감)
+    const hlEl = step.highlightTarget ? document.querySelector(step.highlightTarget) : el;
+    highlight.style.display = 'block';
+    const trackHighlight = () => {
+      const r = (hlEl || el).getBoundingClientRect();
+      highlight.style.top    = (r.top    - PAD) + 'px';
+      highlight.style.left   = (r.left   - PAD) + 'px';
+      highlight.style.width  = (r.width  + PAD * 2) + 'px';
+      highlight.style.height = (r.height + PAD * 2) + 'px';
+      _trackRafId = requestAnimationFrame(trackHighlight);
+    };
+    _trackRafId = requestAnimationFrame(trackHighlight);
+
+    // 툴팁 위치 — 스크롤 완료 후 한 번만 계산
+    const setTooltipPos = () => {
       const rect = el.getBoundingClientRect();
-      const PAD  = 4;
-      const GAP  = 22;
-      const TT_W = 272;
-
-      // 1) 하이라이트 표시 — highlightTarget 있으면 별도 요소 기준, 없으면 target 기준
-      const hlEl   = step.highlightTarget ? document.querySelector(step.highlightTarget) : el;
-      const hlRect = hlEl ? hlEl.getBoundingClientRect() : rect;
-      highlight.style.top    = (hlRect.top  - PAD) + 'px';
-      highlight.style.left   = (hlRect.left - PAD) + 'px';
-      highlight.style.width  = (hlRect.width  + PAD * 2) + 'px';
-      highlight.style.height = (hlRect.height + PAD * 2) + 'px';
-      highlight.style.display = 'block';
-
-      // 2) 툴팁 위치 계산
       ttEl.setAttribute('data-pos', step.pos || 'bottom');
       const ttH = ttEl.offsetHeight || 150;
       let top = step.pos === 'top' ? rect.top - ttH - GAP : rect.bottom + GAP;
@@ -461,27 +469,22 @@ function initOnboardingTooltip(onComplete) {
       left = Math.max(8, Math.min(left, window.innerWidth - TT_W - 8));
       ttEl.style.top  = top  + 'px';
       ttEl.style.left = left + 'px';
-
-      setTimeout(() => { ttEl.style.opacity = '1'; }, 150);
+      ttEl.style.opacity = '1';
     };
 
     let _scrollEndTimer = null;
-    let _scrollFired    = false;
+    let _scrollFired = false;
     const _onScroll = () => {
       _scrollFired = true;
       clearTimeout(_scrollEndTimer);
       _scrollEndTimer = setTimeout(() => {
         window.removeEventListener('scroll', _onScroll);
-        _doPos();
-      }, 80); // 스크롤 멈춘 후 80ms 경과 시 완료로 간주
+        setTooltipPos();
+      }, 80);
     };
     window.addEventListener('scroll', _onScroll, { passive: true });
-    // 이미 화면 안에 있어 스크롤 이벤트가 없으면 300ms 후 직접 실행
     setTimeout(() => {
-      if (!_scrollFired) {
-        window.removeEventListener('scroll', _onScroll);
-        _doPos();
-      }
+      if (!_scrollFired) { window.removeEventListener('scroll', _onScroll); setTooltipPos(); }
     }, 300);
   }
 
@@ -514,6 +517,7 @@ function initOnboardingTooltip(onComplete) {
   }
 
   function finish() {
+    stopTracking();
     // 스크롤 잠금 해제
     document.body.style.overflow = '';
     document.documentElement.style.overflow = '';
@@ -2217,7 +2221,7 @@ let switchTab = () => {};
   // 기본값(personal)은 HTML에서 이미 active 클래스로 설정돼 있음
 })();
 
-// v0.1.39 — 인앱 브라우저(카카오톡 등) 감지 → 외부 브라우저 유도 배너
+// v0.1.40 — 인앱 브라우저(카카오톡 등) 감지 → 외부 브라우저 유도 배너
 function checkInAppBrowser() {
   if (localStorage.getItem('tomotto_iab_ok')) return;
   const ua = navigator.userAgent || '';
@@ -2250,7 +2254,7 @@ window.addEventListener('load', () => {
   renderMyBattles();
   setTimeout(playHifive, 400);
   initTabIcons();               // v0.1.34 — 탭 아이콘에 실제 로고 얼굴 주입
-  checkInAppBrowser();          // v0.1.39 — 인앱 브라우저 감지
+  checkInAppBrowser();          // v0.1.40 — 인앱 브라우저 감지
 
   const params = new URLSearchParams(location.search);
   const battleId = params.get('battle');
