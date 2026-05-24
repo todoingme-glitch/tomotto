@@ -825,6 +825,7 @@ header {
   color: var(--accent);
   font-variant-numeric: tabular-nums;
   padding: 0 4px;
+  vertical-align: text-bottom; /* 숫자 하단을 주변 텍스트 하단에 맞춤 */
 }
 
 .capture-row {
@@ -1673,6 +1674,32 @@ dialog.modal input[type="text"]:focus {
   .gacha-winner,
   .gacha-spinner {
     font-size: 22px;
+  }
+
+  /* 모바일: 시간 설정 + 직접 입력창 한 줄에 표시 */
+  .timer-settings {
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 4px;
+  }
+  .timer-settings select {
+    padding: 5px 4px;
+    font-size: 12px;
+    max-width: 110px;
+  }
+  .custom-duration {
+    margin-left: 0;
+    padding-left: 6px;
+    border-left: 1px solid var(--border);
+    gap: 3px;
+    font-size: 12px;
+    flex-wrap: nowrap;
+  }
+  .custom-duration input {
+    width: 40px;
+    padding: 5px 4px;
+    font-size: 13px;
+    text-align: center;
   }
 }
 

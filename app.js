@@ -3292,10 +3292,7 @@ $durationSelect.addEventListener('change', () => {
   // v0.1.9 — 직접 입력 모드 토글 (시:분 분리)
   if ($durationSelect.value === 'custom') {
     $customDurationWrap.hidden = false;
-    // 값이 없을 때만 0으로 초기화 (이미 입력된 값은 유지)
-    if ($customHours.value === '') $customHours.value = '0';
-    if ($customMinutes.value === '') $customMinutes.value = '0';
-    setTimeout(() => $customMinutes.focus(), 50);
+    setTimeout(() => $customHours.focus(), 50); // 시간 입력란에 커서 이동
   } else {
     $customDurationWrap.hidden = true;
   }
