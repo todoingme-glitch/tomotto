@@ -3483,10 +3483,10 @@ $battleResultBtn.addEventListener('click', () => {
 });
 
 // ====== v0.1.8 — 인증샷 ======
-// v0.1.24: 인앱 카메라 모달 제거 → 네이티브 파일선택 직접 사용
-// (모바일: 카메라/갤러리 선택 시트, 데스크탑: 파일 선택창)
+// 📷 인증샷 버튼 → 인앱 카메라 모달 (getUserMedia 기반, 셔터 소리 없음)
+// getUserMedia 미지원 환경(일부 인앱 브라우저)에서는 모달 내 갤러리 버튼으로 fallback
 $captureBtn.addEventListener('click', () => {
-  $captureInput.click();
+  openCameraModal();
 });
 
 // ====== v0.1.10 — 인앱 카메라 (셔터 소리 X, getUserMedia 기반) ======
@@ -3662,7 +3662,7 @@ $captureInput.addEventListener('change', (e) => {
   // 파일을 Data URL로 읽고 → 압축 후 저장 (v0.1.10: 카메라/갤러리 공통 함수 사용)
   const reader = new FileReader();
   reader.onload = (ev) => {
-    ge(ev.target.result);
+    saveCaptureToStorage(ev.target.result);
   };
   reader.readAsDataURL(file);
   $captureInput.value = '';
