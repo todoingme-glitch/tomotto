@@ -1017,15 +1017,19 @@ async function loadMyBattles() {
         return { ...b, _isCreator: myRow ? myRow.is_creator : false, _myTask: myRow?.task || null };
       });
 
-      // v0.1.64 — 완료된 배틀 자동 삭제 (재진입 시 조용히 정리)
-      const doneBattles = mapped.filter(b => b.status === 'done');
-      const activeBattles = mapped.filter(b => b.status !== 'done');
-      if (doneBattles.length > 0) {
-        doneBattles.forEach(b => deleteBattleSilent(b.id));
+      // v0.1.64 — 완료된 배틀 자동 삭제 (탭 닫고 재진입 시만, 새로고침·배틀룸 열려있으면 스킵)
+      if (!sessionStorage.getItem(CLEANED_DONE_KEY) && !$battleRoomModal?.open) {
+        sessionStorage.setItem(CLEANED_DONE_KEY, '1');
+        const doneBattles = mapped.filter(b => b.status === 'done');
+        const activeBattles = mapped.filter(b => b.status !== 'done');
+        if (doneBattles.length > 0) {
+          doneBattles.forEach(b => deleteBattleSilent(b.id));
+        }
+        return applyBattleOrder(activeBattles);
       }
 
       // v0.1.26 — 저장된 드래그 순서 적용
-      return applyBattleOrder(activeBattles);
+      return applyBattleOrder(mapped);
     } catch (err) {
       console.error('내 배틀 fetch 실패:', err);
       // 실패 시 localStorage fallback
@@ -1035,13 +1039,15 @@ async function loadMyBattles() {
   }
   try {
     const all = JSON.parse(localStorage.getItem(BATTLE_STORAGE.myBattles) || '[]');
-    // v0.1.64 — 완료 배틀 자동 정리 (localStorage fallback 경로)
-    const done = all.filter(b => b.status === 'done');
-    const active = all.filter(b => b.status !== 'done');
-    if (done.length > 0) {
-      done.forEach(b => deleteBattleSilent(b.id));
+    // v0.1.64 — 완료 배틀 자동 정리 (탭 닫고 재진입 시만, 새로고침·배틀룸 열려있으면 스킵)
+    if (!sessionStorage.getItem(CLEANED_DONE_KEY) && !$battleRoomModal?.open) {
+      sessionStorage.setItem(CLEANED_DONE_KEY, '1');
+      const done = all.filter(b => b.status === 'done');
+      const active = all.filter(b => b.status !== 'done');
+      if (done.length > 0) done.forEach(b => deleteBattleSilent(b.id));
+      return active;
     }
-    return active;
+    return all;
   }
   catch { return []; }
 }
@@ -1748,6 +1754,10 @@ let watchBattleId = null;      // v0.1.27 — watchChannel이 감시 중인 batt
 
 // v0.1.15 — 배틀 초대 URL로 들어온 경우 타이머 잠금 (B안)
 let lockedBattleId = null;
+
+// v0.1.64 — 완료 배틀 자동 정리: sessionStorage로 탭 세션 내 스킵
+// 탭 닫고 새로 열었을 때만 실행 (새로고침은 같은 세션이므로 스킵)
+const CLEANED_DONE_KEY = 'tomotto_cleaned_done_battles';
 
 // v0.1.64 — 유저가 의도적으로 배틀룸을 닫았을 때 true (가챠 먼저 돌리기 등)
 // → room_opened_at 신호로 인한 자동 재오픈 방지
