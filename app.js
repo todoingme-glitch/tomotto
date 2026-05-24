@@ -318,11 +318,12 @@ function initOnboarding() {
 // =====================================================
 const STORAGE_ONBOARDED_TT = 'tomotto_onboarded_tt';
 
-function initOnboardingTooltip() {
+// onComplete: 온보딩 완료(또는 건너뛰기) 후 호출할 콜백. 이미 온보딩된 유저면 즉시 호출.
+function initOnboardingTooltip(onComplete) {
   const tomFaceEl   = document.getElementById('tom-face');
   const mottoFaceEl = document.getElementById('motto-face');
-  if (!tomFaceEl || !mottoFaceEl) return;
-  if (localStorage.getItem(STORAGE_ONBOARDED_TT)) return;
+  if (!tomFaceEl || !mottoFaceEl) { onComplete?.(); return; }
+  if (localStorage.getItem(STORAGE_ONBOARDED_TT)) { onComplete?.(); return; }
 
   // 톰 = motto-face(왼쪽/안경), 모토 = tom-face(오른쪽)
   const tomHtml  = _buildOnbFaceHtml(mottoFaceEl, '237 45 98 95', '48px');
@@ -465,6 +466,7 @@ function initOnboardingTooltip() {
     highlight.remove();
     ttEl.remove();
     localStorage.setItem(STORAGE_ONBOARDED_TT, '1');
+    onComplete?.(); // 배틀 룸 열기 등 후속 동작
   }
 
   setTimeout(() => render(0), 600);
@@ -1404,26 +1406,28 @@ $inviteCopyBtn.addEventListener('click', async () => {
 // 인앱 공유 메뉴 핸들러
 const $shareMenu = document.getElementById('shareMenu');
 
+// 모바일 여부 — navigator.share가 실제로 네이티브 시트를 띄워주는 환경인지 판단
+const _isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
 $inviteShareBtn.addEventListener('click', async () => {
   const link = $inviteLinkInput.value;
 
-  // 1) 네이티브 공유시트 시도 (모바일에서 카카오톡 등 앱 목록 뜸)
-  if (navigator.share) {
+  // 모바일: 네이티브 공유시트 (카카오톡 등 앱 목록 직접 표시)
+  if (_isMobile && navigator.share) {
     try {
       await navigator.share({
         title: 'Tomotto 친구 배틀',
         text: '같이 작업할래? 시간 정해서 같이 집중하기.',
         url: link,
       });
-      return; // 성공하면 끝
+      return; // 성공
     } catch (err) {
-      // AbortError = 사용자가 직접 닫은 것 → 메뉴 안 띄움
-      if (err.name === 'AbortError') return;
-      // 그 외 오류 (NotAllowedError 등) = 폴백 메뉴로
+      if (err.name === 'AbortError') return; // 사용자가 직접 닫음 → 무시
+      // 그 외 실패 → 폴백 메뉴로 떨어짐
     }
   }
 
-  // 2) 폴백: 인앱 공유 메뉴 토글
+  // 데스크탑(또는 모바일 폴백): 인앱 공유 메뉴 토글
   if ($shareMenu) {
     $shareMenu.hidden = !$shareMenu.hidden;
   }
@@ -2087,26 +2091,29 @@ let switchTab = () => {};
   // 기본값(personal)은 HTML에서 이미 active 클래스로 설정돼 있음
 })();
 
-// 페이지 로드 시 닉네임 + 내 배틀 복원, ?battle=ID 있으면 배틀 룸 자동 열기
+// 페이지 로드 시 닉네임 + 내 배틀 복원 + 온보딩 순서 처리
 window.addEventListener('load', () => {
   loadNickname();
   renderMyBattles();
+  setTimeout(playHifive, 400);
+  initTabIcons();               // v0.1.34 — 탭 아이콘에 실제 로고 얼굴 주입
 
-  // URL에 ?battle=ID 있으면 배틀 룸 모달 자동 열기 + 타이머 잠금 (B안)
   const params = new URLSearchParams(location.search);
   const battleId = params.get('battle');
-  if (battleId) {
-    showBattleLock(battleId);           // 타이머 시작 버튼 잠금
-    setTimeout(() => openBattleRoom(battleId), 400);
-  }
-});
 
-// 페이지 로드 시 한 번 자동 재생 + 클릭 시 다시 재생
-window.addEventListener('load', () => {
-  setTimeout(playHifive, 400);  // 페이지 그리기 끝나고 살짝 후
-  initTabIcons();               // v0.1.34 — 탭 아이콘에 실제 로고 얼굴 주입
-  // initOnboarding();          // v0.1.34 — Shepherd.js 버전 (보관)
-  initOnboardingTooltip();      // v0.1.34 — 툴팁 버전 (비교용)
+  if (battleId) {
+    // 배틀 링크로 진입: 온보딩 먼저 → 완료 후 배틀 룸
+    showBattleLock(battleId);
+    // initOnboarding();        // v0.1.34 — Shepherd.js 버전 (보관)
+    initOnboardingTooltip(() => {
+      // 온보딩 완료(또는 건너뛰기, 또는 이미 온보딩됨) 후 배틀 룸 열기
+      setTimeout(() => openBattleRoom(battleId), 300);
+    });
+  } else {
+    // 일반 진입: 온보딩만
+    // initOnboarding();        // v0.1.34 — Shepherd.js 버전 (보관)
+    initOnboardingTooltip();
+  }
 });
 if ($logoWrap) {
   $logoWrap.addEventListener('click', playHifive);
