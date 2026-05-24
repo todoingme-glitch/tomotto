@@ -3576,5 +3576,3 @@ function compressImage(dataUrl, maxDim, quality) {
     img.src = dataUrl;
   });
 }
-;
-}
