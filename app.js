@@ -2174,7 +2174,7 @@ if ($noteUploadBtn) {
     // v0.1.29 — 저장 완료: textarea 잠금 + 수정 버튼으로 전환 (딜레이 없음)
     if ($completionNote) $completionNote.disabled = true;
     $noteUploadBtn.disabled = false;
-    $noteUploadBtn.textContent = '✏ 수정';
+    $noteUploadBtn.textContent = '수정';
   });
 }
 
@@ -2494,6 +2494,26 @@ function restoreTimerState() {
     $resetBtn.disabled = false;
     // v0.1.8 — 완료 후 페이지 다시 열렸을 때도 인증샷 첨부 가능
     $captureRow.hidden = false;
+    // v0.1.55 — 새로고침 후에도 소감란 oninput·저장버튼 복원
+    if ($completionNote) {
+      const savedNote = localStorage.getItem(BATTLE_STORAGE.completionNote) || '';
+      $completionNote.value = savedNote;
+      $completionNote.disabled = !!savedNote;  // 저장된 소감 있으면 잠금
+      $completionNote.oninput = () => {
+        localStorage.setItem(BATTLE_STORAGE.completionNote, $completionNote.value);
+        if ($noteUploadBtn) $noteUploadBtn.hidden = !$completionNote.value.trim();
+      };
+      if ($noteUploadBtn) {
+        $noteUploadBtn.disabled = false;
+        if (savedNote) {
+          $noteUploadBtn.hidden = false;
+          $noteUploadBtn.textContent = '수정';
+        } else {
+          $noteUploadBtn.hidden = true;
+          $noteUploadBtn.textContent = '저장';
+        }
+      }
+    }
     // v0.1.17 — 배틀 결과 버튼 복원 (새로고침 후에도 유지)
     if (activeBattleId) {
       $battleResultBtn.hidden = false;
@@ -3483,10 +3503,14 @@ $battleResultBtn.addEventListener('click', () => {
 });
 
 // ====== v0.1.8 — 인증샷 ======
-// 📷 인증샷 버튼 → 인앱 카메라 모달 (getUserMedia 기반, 셔터 소리 없음)
-// getUserMedia 미지원 환경(일부 인앱 브라우저)에서는 모달 내 갤러리 버튼으로 fallback
+// 📷 인증샷 버튼 — 모바일: 인앱 카메라 모달 / 데스크톱: 파일 선택창
+const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 $captureBtn.addEventListener('click', () => {
-  openCameraModal();
+  if (isMobile) {
+    openCameraModal();
+  } else {
+    $captureInput.click();
+  }
 });
 
 // ====== v0.1.10 — 인앱 카메라 (셔터 소리 X, getUserMedia 기반) ======
@@ -3520,6 +3544,14 @@ async function startCameraStream() {
     return;
   }
   try {
+    // v0.1.55 — 이미 살아있는 스트림이 있으면 재사용 (매번 권한 팝업 방지)
+    if (cameraStream && cameraStream.getTracks().some(t => t.readyState === 'live')) {
+      $cameraVideo.srcObject = cameraStream;
+      await $cameraVideo.play().catch(() => {});
+      $cameraHint.textContent = '준비 완료. 촬영 버튼을 눌러주세요.';
+      $cameraHint.classList.remove('error');
+      return;
+    }
     stopCameraStream();
     cameraStream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: { ideal: 'environment' } },  // 후면 우선
@@ -3644,7 +3676,8 @@ $cameraRetryBtn.addEventListener('click', retryCamera);
 $cameraSaveBtn.addEventListener('click', saveCameraCapture);
 $cameraCancelBtn.addEventListener('click', closeCameraModal);
 $cameraGalleryBtn.addEventListener('click', () => {
-  closeCameraModal();
+  // v0.1.55 — 모달 먼저 닫지 않고 파일 선택 → change 핸들러에서 닫음
+  // (모달을 먼저 닫으면 Android가 "작업 선택" 시트에 카메라 옵션을 포함시킴)
   $captureInput.click();
 });
 // backdrop 클릭 시 닫기 + stream 정리
@@ -3666,6 +3699,8 @@ $captureInput.addEventListener('change', (e) => {
   };
   reader.readAsDataURL(file);
   $captureInput.value = '';
+  // v0.1.55 — 갤러리 선택 완료 후 카메라 모달 닫기
+  closeCameraModal();
 });
 
 $removeCaptureBtn.addEventListener('click', () => {
