@@ -560,7 +560,7 @@ function initOnboardingTooltip(onComplete) {
 function playHifive() {
   if (!$logoSvg) return;
 
-  // 애니메이션 직전에만 will-change 설정 → 평소엔 GPU 레이어 없음 (SVG 선명도 유지)
+  // 팔·하이파이브 요소에만 will-change 설정 (로고 본체는 항상 벡터 유지)
   const _animEls = $logoSvg.querySelectorAll('#hifive, #motto-arm, #tom-arm');
   _animEls.forEach(el => { el.style.willChange = 'transform, opacity'; });
 
@@ -569,9 +569,13 @@ function playHifive() {
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       $logoSvg.classList.add('play');
-      // 애니메이션 완료(1.15s) 후 will-change 해제 → 다시 선명한 벡터 렌더링으로 복귀
+      // 애니메이션 완료 후:
+      // 1) will-change 해제 — GPU 레이어 힌트 제거
+      // 2) .play 클래스 제거 — animation 속성 자체를 없애야 브라우저가 컴포지팅 레이어를 완전히 해제함
+      //    (팔 최종 상태가 transform(0,0,0)이라 시각적 변화 없음)
       setTimeout(() => {
         _animEls.forEach(el => { el.style.willChange = 'auto'; });
+        $logoSvg.classList.remove('play');
       }, 1400);
     });
   });

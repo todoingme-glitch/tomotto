@@ -105,7 +105,15 @@ header {
 
 @media (max-width: 480px) {
   .logo-svg { width: min(320px, 100%); }
-  .logo-wrap { transform: translateX(-12px); } /* T 하단 공백 보정 — 시각적 중앙정렬 */
+  .logo-wrap {
+    transform: translateX(-9px);  /* T 하단 공백 보정 — 시각적 중앙정렬 */
+    margin-top: 32px;             /* 설정 버튼과 로고 클릭 영역 분리 */
+  }
+  .header-settings-btn {
+    top: 0;
+    right: 0;
+    z-index: 10; /* 로고보다 위에 */
+  }
 }
 
 /* 각 그룹 transform-origin 기준 (SVG box 내) */
