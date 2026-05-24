@@ -349,31 +349,31 @@ function initOnboardingTooltip(onComplete) {
     {
       target: null,
       speaker: 'both',
-      msg: '안녕! 나 <strong>톰</strong>이랑 <strong>모토</strong>야.<br>토마또 처음이지? 잠깐 구경시켜줄게!'
+      msg: '안녕! 우리는 <strong>톰</strong>이랑 <strong>모토</strong>야.<br>토모토에 온 걸 환영해!'
     },
     {
       target: '.category-section',
-      speaker: 'tom', name: '🍅 톰',
+      speaker: 'tom', name: '톰',
       msg: '먼저 <strong>카테고리</strong>를 추가해봐.<br>오늘 할 일의 종류를 여기서 설정해!',
       pos: 'bottom'
     },
     {
       target: '#gachaBtn',
-      speaker: 'moto', name: '🍅 모토',
-      msg: '카테고리 만들었으면 <strong>가챠</strong>!<br>오늘 뭐 할지 랜덤으로 뽑아줄게 🎰',
+      speaker: 'moto', name: '모토',
+      msg: '카테고리를 만들었으면 <strong>가챠</strong>를 돌려봐!<br>오늘 뭐 할지 랜덤으로 뽑아줄게',
       pos: 'top'
     },
     {
       target: '#pauseBtn',
       highlightTarget: '.timer-section',
-      speaker: 'tom', name: '🍅 톰',
-      msg: '뽑힌 할 일로 <strong>뽀모도로 집중!</strong><br>기본 25분, 원하는 시간으로 조절 가능해 ⏱',
+      speaker: 'tom', name: '톰',
+      msg: '뽑힌 할 일로 <strong>뽀모도로 집중!</strong><br>기본 25분, 원하는 시간으로 조절 가능해',
       pos: 'bottom'
     },
     {
       target: '#bottomTab',
-      speaker: 'moto', name: '🍅 모토',
-      msg: '<strong>소셜</strong>에서 배틀, <strong>기록</strong>에서 로그!<br>자, 이제 시작해봐 💪',
+      speaker: 'moto', name: '모토',
+      msg: '<strong>소셜</strong>에서 배틀, <strong>기록</strong>에서 로그!<br>자, 이제 시작해봐',
       pos: 'top'
     }
   ];
@@ -449,6 +449,11 @@ function initOnboardingTooltip(onComplete) {
     highlight.style.display = 'block';
     ttEl.setAttribute('data-pos', step.pos || 'bottom');
 
+    // 말풍선은 스크롤이 완전히 멈춘 후 페이드인 (스크롤 중간에 튀는 것 방지)
+    let _opacityDone  = false;
+    let _prevHlTop    = null;
+    let _stableFrames = 0;
+
     const trackAll = () => {
       // 하이라이트 위치
       const r = (hlEl || el).getBoundingClientRect();
@@ -488,12 +493,20 @@ function initOnboardingTooltip(onComplete) {
       ttEl.style.top  = top  + 'px';
       ttEl.style.left = left + 'px';
 
+      // 말풍선 opacity: 하이라이트 위치가 연속 6프레임 안정되면 페이드인
+      if (!_opacityDone) {
+        if (_prevHlTop !== null && Math.abs(r.top - _prevHlTop) < 0.5) {
+          _stableFrames++;
+          if (_stableFrames >= 6) { ttEl.style.opacity = '1'; _opacityDone = true; }
+        } else {
+          _stableFrames = 0;
+        }
+        _prevHlTop = r.top;
+      }
+
       _trackRafId = requestAnimationFrame(trackAll);
     };
     _trackRafId = requestAnimationFrame(trackAll);
-
-    // 첫 프레임 위치 계산 후 페이드인
-    setTimeout(() => { ttEl.style.opacity = '1'; }, 50);
   }
 
   function render(idx) {

@@ -2701,7 +2701,7 @@ dialog.modal input[type="text"]:focus {
   padding-top: 2px;
 }
 .onb-tt-name {
-  font-size: 0.68rem;
+  font-size: 0.82rem;
   font-weight: 700;
   color: var(--accent);
   margin: 0 0 4px;
