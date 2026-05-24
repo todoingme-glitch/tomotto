@@ -1695,6 +1695,10 @@ let watchBattleId = null;      // v0.1.27 — watchChannel이 감시 중인 batt
 // v0.1.15 — 배틀 초대 URL로 들어온 경우 타이머 잠금 (B안)
 let lockedBattleId = null;
 
+// v0.1.64 — 유저가 의도적으로 배틀룸을 닫았을 때 true (가챠 먼저 돌리기 등)
+// → room_opened_at 신호로 인한 자동 재오픈 방지
+let battleRoomUserDismissed = false;
+
 function showBattleLock(battleId) {
   lockedBattleId = battleId;
   $battleLockBanner.hidden = false;
@@ -1725,6 +1729,7 @@ $battleLockDismissBtn.addEventListener('click', () => {
 });
 
 async function openBattleRoom(battleId) {
+  battleRoomUserDismissed = false;  // v0.1.64 — 유저가 직접 열었으므로 dismissal 초기화
   currentBattleId = battleId;
   $battleRoomSummary.textContent = '불러오는 중...';
   $battleRoomPlayers.innerHTML = '';
@@ -2019,6 +2024,7 @@ function startBattleTimer() {
 
 function closeBattleRoom() {
   // v0.1.18 — 모달만 닫고 구독은 유지 (배틀 시작 전까지 친구 수락 감지 계속)
+  battleRoomUserDismissed = true;  // v0.1.64 — 유저가 의도적으로 닫음 → room_opened_at 자동 재오픈 방지
   if (typeof $battleRoomModal.close === 'function') $battleRoomModal.close();
   else $battleRoomModal.removeAttribute('open');
   // v0.1.63 — room_opened_at 초기화 (닫은 후 파트너 재접속 시 stale 신호 방지)
@@ -2062,7 +2068,7 @@ function subscribeBattleRoom(battleId) {
       async (payload) => {
         console.log('[Realtime] battle_players UPDATE 감지:', payload);
         // v0.1.63 — 파트너의 room_opened_at 변경 → 배틀룸 자동 오픈
-        if (payload.new?.room_opened_at && payload.new?.nickname !== myNickname && !$battleRoomModal.open) {
+        if (payload.new?.room_opened_at && payload.new?.nickname !== myNickname && !$battleRoomModal.open && !battleRoomUserDismissed) {
           console.log('[RoomSignal] 파트너 배틀룸 열림 → 자동 오픔:', payload.new?.nickname);
           currentBattleId = battleId;
           const result = await fetchBattle(battleId);
@@ -2115,7 +2121,7 @@ function subscribeBattleRoom(battleId) {
       if (status === 'SUBSCRIBED') {
         updateRealtimeStatusDot(true);
         // v0.1.63 — 구독 직후 파트너 room_opened_at 확인 (새탭/새로고침 케이스)
-        if (sb && myNickname && !$battleRoomModal.open) {
+        if (sb && myNickname && !$battleRoomModal.open && !battleRoomUserDismissed) {
           const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
           sb.from('battle_players')
             .select('nickname, room_opened_at')
@@ -2123,11 +2129,11 @@ function subscribeBattleRoom(battleId) {
             .neq('nickname', myNickname)
             .then(({ data }) => {
               const partnerInRoom = data?.some(r => r.room_opened_at && r.room_opened_at > fiveMinAgo);
-              if (partnerInRoom && !$battleRoomModal.open) {
+              if (partnerInRoom && !$battleRoomModal.open && !battleRoomUserDismissed) {
                 console.log('[RoomSignal] 구독 시점에 파트너 이미 배틀룸 → 자동 오픔');
                 fetchBattle(battleId).then(result => {
                   if (result?.battle) currentBattleData = result;
-                  if (!$battleRoomModal.open) {
+                  if (!$battleRoomModal.open && !battleRoomUserDismissed) {
                     if (typeof $battleRoomModal.showModal === 'function') $battleRoomModal.showModal();
                     else $battleRoomModal.setAttribute('open', '');
                     refreshBattleRoom();
@@ -2202,7 +2208,7 @@ function subscribeWatchBattle(battleId) {
     .on('postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'battle_players', filter: `battle_id=eq.${battleId}` },
       async (payload) => {
-        if (payload.new?.room_opened_at && payload.new?.nickname !== myNickname && !$battleRoomModal.open) {
+        if (payload.new?.room_opened_at && payload.new?.nickname !== myNickname && !$battleRoomModal.open && !battleRoomUserDismissed) {
           console.log('[Watch RoomSignal] 파트너 배틀룸 열림 → 자동 오픔:', payload.new?.nickname);
           currentBattleId = battleId;
           await openBattleRoom(battleId);
@@ -2213,6 +2219,7 @@ function subscribeWatchBattle(battleId) {
     .on('broadcast', { event: 'room-opened' }, async ({ payload }) => {
       if (payload?.by === myNickname) return;
       if ($battleRoomModal.open) return;
+      if (battleRoomUserDismissed) return;  // v0.1.64 — 유저가 직접 닫은 경우 재오픈 방지
       console.log('[Watch Broadcast] 파트너 배틀룸 열림 → 나도 열기:', payload?.by);
       currentBattleId = battleId;
       await openBattleRoom(battleId);
@@ -2229,7 +2236,7 @@ function subscribeWatchBattle(battleId) {
             .neq('nickname', myNickname)
             .then(({ data }) => {
               const partnerInRoom = data?.some(r => r.room_opened_at && r.room_opened_at > fiveMinAgo);
-              if (partnerInRoom && !$battleRoomModal.open) {
+              if (partnerInRoom && !$battleRoomModal.open && !battleRoomUserDismissed) {
                 console.log('[Watch RoomSignal] 구독 시점에 파트너 이미 배틀룸 → 자동 오픔');
                 openBattleRoom(battleId);
               }
@@ -3434,7 +3441,7 @@ async function renderLeaderboard() {
     const pct = Math.max(4, Math.round((e.count / maxCount) * 100));
     const rankBadge = i < 3
       ? `<span style="font-size:1.4rem;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:28px">${medalEmojis[i]}</span>`
-      : `<span class="lb-rank-badge" style="background:#e0dbd8;color:#888;width:20px;height:20px;font-size:0.7rem">${i + 1}</span>`;
+      : `<span class="lb-rank-badge" style="background:#e0dbd8;color:#888">${i + 1}</span>`;
     return `
       <div class="lb-row${isMe ? ' lb-row-me' : ''}">
         ${rankBadge}

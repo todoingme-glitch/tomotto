@@ -3059,12 +3059,14 @@ dialog.modal input[type="text"]:focus {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  font-size: 0.75rem;
+  font-size: 0.62rem;
   font-weight: 700;
   flex-shrink: 0;
+  justify-self: center;
+  margin: 0 auto;
 }
 
 .lb-nick {
