@@ -402,16 +402,16 @@ function initOnboardingTooltip(onComplete) {
     </div>`;
   }
 
+  // 툴팁 위치 확정 + 페이드인 (opacity는 이미 0인 상태에서 호출)
   function position(step) {
-    // 항상 먼저 숨기기 (슬라이드 없이 제자리 페이드아웃)
-    ttEl.style.opacity = '0';
-
     if (!step.target) {
-      // 웰컴 스텝: 중앙 고정, 즉시 페이드인
+      // 웰컴 스텝: transform 없이 픽셀로 중앙 계산 (transform 전환 튀는 문제 방지)
       highlight.style.display = 'none';
-      ttEl.style.transform = 'translate(-50%, -50%)';
-      ttEl.style.top  = '50%';
-      ttEl.style.left = '50%';
+      ttEl.style.transform = 'none';
+      const TT_W = 272;
+      const ttH  = ttEl.offsetHeight || 180;
+      ttEl.style.left = Math.round((window.innerWidth  - TT_W) / 2) + 'px';
+      ttEl.style.top  = Math.round((window.innerHeight - ttH)  / 2) + 'px';
       ttEl.removeAttribute('data-pos');
       requestAnimationFrame(() => { ttEl.style.opacity = '1'; });
       return;
@@ -421,7 +421,6 @@ function initOnboardingTooltip(onComplete) {
     if (!el) return;
 
     highlight.style.display = 'none';
-    // transform 초기화 (웰컴 스텝에서 넘어올 때 잔상 방지)
     ttEl.style.transform = 'none';
 
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -431,23 +430,19 @@ function initOnboardingTooltip(onComplete) {
       const GAP  = 22;
       const TT_W = 272;
 
-      // 하이라이트 정확한 위치/크기로 표시
+      // 하이라이트 표시
       highlight.style.top    = (rect.top  - PAD) + 'px';
       highlight.style.left   = (rect.left - PAD) + 'px';
       highlight.style.width  = (rect.width  + PAD * 2) + 'px';
       highlight.style.height = (rect.height + PAD * 2) + 'px';
       highlight.style.display = 'block';
 
-      // 툴팁 최종 위치 지정
+      // 툴팁 위치
       ttEl.setAttribute('data-pos', step.pos || 'bottom');
       const ttH = ttEl.offsetHeight || 150;
-
-      let top = step.pos === 'top'
-        ? rect.top - ttH - GAP
-        : rect.bottom + GAP;
+      let top = step.pos === 'top' ? rect.top - ttH - GAP : rect.bottom + GAP;
       if (top < 8) top = rect.bottom + GAP;
       if (top + ttH > window.innerHeight - 8) top = rect.top - ttH - GAP;
-
       let left = rect.left + rect.width / 2 - TT_W / 2;
       left = Math.max(8, Math.min(left, window.innerWidth - TT_W - 8));
 
@@ -461,22 +456,29 @@ function initOnboardingTooltip(onComplete) {
   function render(idx) {
     const step   = STEPS[idx];
     const isLast = idx === STEPS.length - 1;
-    const dots   = STEPS.map((_, i) =>
-      `<span class="onb-tt-dot${i === idx ? ' active' : ''}"></span>`
-    ).join('');
 
-    ttEl.innerHTML = `
-      ${buildContent(step)}
-      <div class="onb-tt-footer">
-        <button class="onb-tt-btn onb-tt-skip">건너뛰기</button>
-        <span class="onb-tt-dots">${dots}</span>
-        <button class="onb-tt-btn onb-tt-next">${isLast ? '완료! 🍅' : '다음 →'}</button>
-      </div>`;
+    // 1) 현재 말풍선 페이드아웃
+    ttEl.style.opacity = '0';
 
-    ttEl.querySelector('.onb-tt-skip').onclick = finish;
-    ttEl.querySelector('.onb-tt-next').onclick = isLast ? finish : () => render(idx + 1);
+    // 2) 페이드아웃 완료 후 내용 교체 + 위치 계산
+    setTimeout(() => {
+      const dots = STEPS.map((_, i) =>
+        `<span class="onb-tt-dot${i === idx ? ' active' : ''}"></span>`
+      ).join('');
 
-    position(step);
+      ttEl.innerHTML = `
+        ${buildContent(step)}
+        <div class="onb-tt-footer">
+          <button class="onb-tt-btn onb-tt-skip">건너뛰기</button>
+          <span class="onb-tt-dots">${dots}</span>
+          <button class="onb-tt-btn onb-tt-next">${isLast ? '완료! 🍅' : '다음 →'}</button>
+        </div>`;
+
+      ttEl.querySelector('.onb-tt-skip').onclick = finish;
+      ttEl.querySelector('.onb-tt-next').onclick = isLast ? finish : () => render(idx + 1);
+
+      position(step);
+    }, 200); // opacity 0.2s transition 완료 후
   }
 
   function finish() {
