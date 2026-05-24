@@ -1748,6 +1748,15 @@ async function openBattleRoom(battleId) {
 
   await refreshBattleRoom();
 
+  // v0.1.63 — 배틀룸 열었음을 DB에 기록 (파트너 재접속/새탭 감지용)
+  if (sb && myNickname) {
+    sb.from('battle_players')
+      .update({ room_opened_at: new Date().toISOString() })
+      .eq('battle_id', battleId)
+      .eq('nickname', myNickname)
+      .then(() => console.log('[RoomSignal] room_opened_at 업데이트'));
+  }
+
   // v0.1.18 — 배틀 룸 열리면 Realtime 구독 시작 (배틀 완료 전까지만)
   console.log('[Realtime] openBattleRoom — status:', currentBattleData?.battle?.status);
   if (currentBattleData?.battle?.status !== 'done') {
@@ -1993,6 +2002,14 @@ function closeBattleRoom() {
   // v0.1.18 — 모달만 닫고 구독은 유지 (배틀 시작 전까지 친구 수락 감지 계속)
   if (typeof $battleRoomModal.close === 'function') $battleRoomModal.close();
   else $battleRoomModal.removeAttribute('open');
+  // v0.1.63 — room_opened_at 초기화 (닫은 후 파트너 재접속 시 stale 신호 방지)
+  if (sb && myNickname && currentBattleId) {
+    sb.from('battle_players')
+      .update({ room_opened_at: null })
+      .eq('battle_id', currentBattleId)
+      .eq('nickname', myNickname)
+      .then(() => {});
+  }
 }
 
 // v0.1.18/19 — Supabase Realtime 구독: battle_players INSERT + battles UPDATE 동시 감지
@@ -2020,11 +2037,22 @@ function subscribeBattleRoom(battleId) {
         }
       }
     )
-    // ② 친구 task 저장 감지 (battle_players UPDATE) — MOTO MODE 준비 상태 동기화
+    // ② 친구 task/room_opened_at 변경 감지 (battle_players UPDATE)
     .on('postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'battle_players', filter: `battle_id=eq.${battleId}` },
       async (payload) => {
-        console.log('[Realtime] battle_players UPDATE 감지 (task/note):', payload);
+        console.log('[Realtime] battle_players UPDATE 감지:', payload);
+        // v0.1.63 — 파트너의 room_opened_at 변경 → 배틀룸 자동 오픈
+        if (payload.new?.room_opened_at && payload.new?.nickname !== myNickname && !$battleRoomModal.open) {
+          console.log('[RoomSignal] 파트너 배틀룸 열림 → 자동 오픔:', payload.new?.nickname);
+          currentBattleId = battleId;
+          const result = await fetchBattle(battleId);
+          if (result?.battle) currentBattleData = result;
+          if (typeof $battleRoomModal.showModal === 'function') $battleRoomModal.showModal();
+          else $battleRoomModal.setAttribute('open', '');
+          await refreshBattleRoom();
+          return;
+        }
         if ($battleRoomModal.open && currentBattleId === battleId) {
           await refreshBattleRoom();  // 친구 task 반영 → 시작 버튼 표시 여부 갱신
         }
@@ -2067,7 +2095,29 @@ function subscribeBattleRoom(battleId) {
       console.log('[Realtime] 구독 상태:', status, '/ battleId:', battleId);
       if (status === 'SUBSCRIBED') {
         updateRealtimeStatusDot(true);
-        // v0.1.62 — 룸을 열었음을 파트너에게 Broadcast
+        // v0.1.63 — 구독 직후 파트너 room_opened_at 확인 (새탭/새로고침 케이스)
+        if (sb && myNickname && !$battleRoomModal.open) {
+          const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+          sb.from('battle_players')
+            .select('nickname, room_opened_at')
+            .eq('battle_id', battleId)
+            .neq('nickname', myNickname)
+            .then(({ data }) => {
+              const partnerInRoom = data?.some(r => r.room_opened_at && r.room_opened_at > fiveMinAgo);
+              if (partnerInRoom && !$battleRoomModal.open) {
+                console.log('[RoomSignal] 구독 시점에 파트너 이미 배틀룸 → 자동 오픔');
+                fetchBattle(battleId).then(result => {
+                  if (result?.battle) currentBattleData = result;
+                  if (!$battleRoomModal.open) {
+                    if (typeof $battleRoomModal.showModal === 'function') $battleRoomModal.showModal();
+                    else $battleRoomModal.setAttribute('open', '');
+                    refreshBattleRoom();
+                  }
+                });
+              }
+            });
+        }
+        // v0.1.62 — Broadcast (보조 수단 유지)
         if (myNickname) {
           realtimeChannel?.send({
             type: 'broadcast',
@@ -2129,7 +2179,18 @@ function subscribeWatchBattle(battleId) {
         await startBattleWithCountdown();
       }
     )
-    // v0.1.62 — Broadcast: 상대방이 배틀룸 열었을 때 → 나도 자동 모달 열기 (watchChannel 경로)
+    // v0.1.63 — battle_players UPDATE: 파트너 room_opened_at 감지 (watchChannel 경로)
+    .on('postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'battle_players', filter: `battle_id=eq.${battleId}` },
+      async (payload) => {
+        if (payload.new?.room_opened_at && payload.new?.nickname !== myNickname && !$battleRoomModal.open) {
+          console.log('[Watch RoomSignal] 파트너 배틀룸 열림 → 자동 오픔:', payload.new?.nickname);
+          currentBattleId = battleId;
+          await openBattleRoom(battleId);
+        }
+      }
+    )
+    // v0.1.62 — Broadcast (보조 수단 유지)
     .on('broadcast', { event: 'room-opened' }, async ({ payload }) => {
       if (payload?.by === myNickname) return;
       if ($battleRoomModal.open) return;
@@ -2140,7 +2201,22 @@ function subscribeWatchBattle(battleId) {
     .subscribe((status) => {
       console.log('[Watch] 구독 상태:', status, '/ battleId:', battleId);
       if (status === 'SUBSCRIBED' && myNickname) {
-        // watchChannel에서도 room-opened 브로드캐스트 (realtimeChannel이 아직 없을 경우 커버)
+        // v0.1.63 — 구독 직후 파트너 room_opened_at 확인
+        if (sb && !$battleRoomModal.open) {
+          const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+          sb.from('battle_players')
+            .select('nickname, room_opened_at')
+            .eq('battle_id', battleId)
+            .neq('nickname', myNickname)
+            .then(({ data }) => {
+              const partnerInRoom = data?.some(r => r.room_opened_at && r.room_opened_at > fiveMinAgo);
+              if (partnerInRoom && !$battleRoomModal.open) {
+                console.log('[Watch RoomSignal] 구독 시점에 파트너 이미 배틀룸 → 자동 오픔');
+                openBattleRoom(battleId);
+              }
+            });
+        }
+        // Broadcast (보조)
         watchChannel?.send({
           type: 'broadcast',
           event: 'room-opened',
