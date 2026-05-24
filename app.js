@@ -411,6 +411,13 @@ function initOnboardingTooltip(onComplete) {
     const el = document.querySelector(step.target);
     if (!el) return;
 
+    // 전환 중 깜빡임 방지: 하이라이트 숨기고 툴팁 중앙 대기
+    highlight.style.display = 'none';
+    ttEl.style.transform = 'translate(-50%, -50%)';
+    ttEl.style.top  = '50%';
+    ttEl.style.left = '50%';
+    ttEl.removeAttribute('data-pos');
+
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     setTimeout(() => {
       const rect = el.getBoundingClientRect();
@@ -418,14 +425,14 @@ function initOnboardingTooltip(onComplete) {
       const GAP  = 14;
       const TT_W = 272;
 
-      // 하이라이트
-      highlight.style.display  = 'block';
+      // 하이라이트 — 처음부터 올바른 크기로 표시
       highlight.style.top      = (rect.top  - PAD) + 'px';
       highlight.style.left     = (rect.left - PAD) + 'px';
       highlight.style.width    = (rect.width  + PAD * 2) + 'px';
       highlight.style.height   = (rect.height + PAD * 2) + 'px';
+      highlight.style.display  = 'block';
 
-      // 툴팁
+      // 툴팁 위치
       ttEl.style.transform = 'none';
       ttEl.setAttribute('data-pos', step.pos || 'bottom');
       const ttH = ttEl.offsetHeight || 150;
@@ -433,7 +440,6 @@ function initOnboardingTooltip(onComplete) {
       let top = step.pos === 'top'
         ? rect.top - ttH - GAP
         : rect.bottom + GAP;
-      // 화면 밖으로 나가면 반대쪽
       if (top < 8) top = rect.bottom + GAP;
       if (top + ttH > window.innerHeight - 8) top = rect.top - ttH - GAP;
 
@@ -1475,14 +1481,6 @@ $shareMenu?.addEventListener('click', async (e) => {
     const url = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(link)}`;
     window.open(url, '_blank', 'noopener,width=600,height=600');
     $shareMenu.hidden = true;
-  } else if (type === 'copy') {
-    try { await navigator.clipboard.writeText(link); } catch { /* ignore */ }
-    const orig = btn.querySelector('span:nth-child(2)').textContent;
-    btn.querySelector('span:nth-child(2)').textContent = '복사됐어요 ✓';
-    setTimeout(() => {
-      btn.querySelector('span:nth-child(2)').textContent = orig;
-      $shareMenu.hidden = true;
-    }, 1500);
   }
 });
 
