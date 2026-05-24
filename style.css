@@ -452,6 +452,12 @@ header {
   font-size: 14px;
 }
 
+/* 모바일에서만 줄바꿈 — 웹에서는 한 줄 유지 */
+br.mobile-br { display: none; }
+@media (max-width: 480px) {
+  br.mobile-br { display: block; }
+}
+
 .gacha-label {
   display: block;
   font-size: 12px;
@@ -1891,8 +1897,8 @@ dialog.modal input[type="text"]:focus {
   height: 26px;
 }
 .tab-icon-sm {
-  width: 20px;
-  height: 20px;
+  width: 26px;
+  height: 26px;
 }
 
 .tab-soon-badge {
