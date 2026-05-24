@@ -1898,13 +1898,13 @@ dialog.modal input[type="text"]:focus {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0px;          /* 얼굴 사이 간격 최소화 */
+  gap: 0px;
   height: 26px;
 }
-/* 각 얼굴을 개인 탭 단일 아이콘(.tab-icon)과 동일한 26×26으로 유지 */
+/* 두 개를 합쳤을 때 시각적 무게가 단일 아이콘(26px)과 균형 맞도록 각각 20px */
 .tab-icon-sm {
-  width: 26px;
-  height: 26px;
+  width: 20px;
+  height: 20px;
 }
 
 .tab-soon-badge {
