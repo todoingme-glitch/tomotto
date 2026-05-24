@@ -1881,6 +1881,9 @@ async function acceptBattle() {
     addToMyBattles({ ...currentBattleData.battle, _isCreator: false });
   }
   await renderMyBattles();  // 수락자 쪽 배틀카드 목록에도 추가 (await 추가)
+
+  // v0.1.62 — 수락자도 watchBattle 구독: 창조자가 배틀룸 열었을 때 Broadcast 수신 보장
+  if (currentBattleId) subscribeWatchBattle(currentBattleId);
 }
 
 // v0.1.17 — 3·2·1 카운트다운 (얼굴 양 옆 배치)
@@ -2048,10 +2051,31 @@ function subscribeBattleRoom(battleId) {
         await startBattleWithCountdown();
       }
     )
+    // ④ v0.1.62 — Broadcast: 상대방이 배틀룸을 열면 나도 자동으로 모달 열기
+    .on('broadcast', { event: 'room-opened' }, async ({ payload }) => {
+      if (payload?.by === myNickname) return;  // 내가 보낸 건 무시
+      if ($battleRoomModal.open) return;        // 이미 열려있으면 무시
+      console.log('[Broadcast] 파트너가 배틀룸 열었음 → 나도 열기:', payload?.by);
+      currentBattleId = battleId;
+      const result = await fetchBattle(battleId);
+      if (result?.battle) currentBattleData = result;
+      if (typeof $battleRoomModal.showModal === 'function') $battleRoomModal.showModal();
+      else $battleRoomModal.setAttribute('open', '');
+      await refreshBattleRoom();
+    })
     .subscribe((status) => {
       console.log('[Realtime] 구독 상태:', status, '/ battleId:', battleId);
-      if (status === 'SUBSCRIBED') updateRealtimeStatusDot(true);
-      else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+      if (status === 'SUBSCRIBED') {
+        updateRealtimeStatusDot(true);
+        // v0.1.62 — 룸을 열었음을 파트너에게 Broadcast
+        if (myNickname) {
+          realtimeChannel?.send({
+            type: 'broadcast',
+            event: 'room-opened',
+            payload: { by: myNickname },
+          });
+        }
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
         console.warn('[Realtime] 구독 실패 또는 타임아웃. SELECT 정책 확인 필요.');
         updateRealtimeStatusDot(false);
       }
@@ -2105,8 +2129,24 @@ function subscribeWatchBattle(battleId) {
         await startBattleWithCountdown();
       }
     )
+    // v0.1.62 — Broadcast: 상대방이 배틀룸 열었을 때 → 나도 자동 모달 열기 (watchChannel 경로)
+    .on('broadcast', { event: 'room-opened' }, async ({ payload }) => {
+      if (payload?.by === myNickname) return;
+      if ($battleRoomModal.open) return;
+      console.log('[Watch Broadcast] 파트너 배틀룸 열림 → 나도 열기:', payload?.by);
+      currentBattleId = battleId;
+      await openBattleRoom(battleId);
+    })
     .subscribe((status) => {
       console.log('[Watch] 구독 상태:', status, '/ battleId:', battleId);
+      if (status === 'SUBSCRIBED' && myNickname) {
+        // watchChannel에서도 room-opened 브로드캐스트 (realtimeChannel이 아직 없을 경우 커버)
+        watchChannel?.send({
+          type: 'broadcast',
+          event: 'room-opened',
+          payload: { by: myNickname },
+        });
+      }
     });
 }
 

@@ -2193,36 +2193,22 @@ dialog.modal input[type="text"]:focus {
 .log-strip-day.lv3 { background: var(--accent); color: #fff; }
 .log-strip-day.lvf  { opacity: 0.25; pointer-events: none; }
 .log-today { box-shadow: 0 0 0 2px var(--accent); }
-/* 완료 기록 있는 날 — 토마토 꼭지 (짧은 꼭지 위 + 꽃받침 아래로 퍼짐) */
+/* 완료 기록 있는 날 — 토마토 꼭지 (3갈래 균일, 위로 올려서 원에 안 닿게) */
 .log-strip-day.lv1::before,
 .log-strip-day.lv2::before,
 .log-strip-day.lv3::before {
   content: '';
   position: absolute;
-  top: -4px;
-  left: 0;
-  right: 0;
-  margin: 0 auto;
+  top: -7px;
+  left: calc(50% - 5px);
   width: 12px;
   height: 10px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M5,0 L5,3 M5,3 L1,8 M5,3 L5,6 M5,3 L9,8' stroke='%236aa84f' stroke-width='1.8' stroke-linecap='round' fill='none'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M5,0 L5,3 M5,3 L1,8 M5,3 L5,8 M5,3 L9,8' stroke='%236aa84f' stroke-width='1.8' stroke-linecap='round' fill='none'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-size: contain;
   pointer-events: none;
 }
-/* 배틀한 날 — 작은 하단 점으로만 표시 (주황 테두리 제거 → 오늘 테두리와 혼동 방지) */
-.log-strip-day.has-battle::after {
-  content: '';
-  position: absolute;
-  bottom: 1px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: #e8751a;
-  pointer-events: none;
-}
+/* 배틀한 날 — 별도 표시 없음 (토마토 꼭지 + 오늘 테두리로 충분) */
 /* 선택된 날 — 토마토 테두리 하나만, 배경은 레벨 색상 유지 */
 .log-strip-day[data-sel] { box-shadow: 0 0 0 2px var(--accent) !important; outline: none; }
 .log-strip-num { font-size: 0.58rem; line-height: 1; font-weight: 600; }
