@@ -111,7 +111,22 @@ const BATTLE_STORAGE = {
   myBattles: 'tomotto_battle_myBattles',  // 내가 만든 배틀 목록 (JSON 배열)
   completionNote: 'tomotto_completion_note', // v0.1.20 — 완료 소감
   order: 'tomotto_battle_order',           // v0.1.26 — 사용자 정의 드래그 순서 (ID 배열)
+  knownPartners: 'tomotto_battle_knownPartners', // v0.1.64 — 배틀카드 삭제 후에도 리더보드 유지
 };
+
+// 파트너 닉네임을 로컬에 누적 저장 (배틀 삭제 후에도 리더보드에서 조회 가능하도록)
+function saveKnownPartner(nick) {
+  if (!nick || nick === myNickname) return;
+  let known = [];
+  try { known = JSON.parse(localStorage.getItem(BATTLE_STORAGE.knownPartners) || '[]'); } catch {}
+  if (!known.includes(nick)) {
+    known.push(nick);
+    localStorage.setItem(BATTLE_STORAGE.knownPartners, JSON.stringify(known));
+  }
+}
+function getKnownPartners() {
+  try { return JSON.parse(localStorage.getItem(BATTLE_STORAGE.knownPartners) || '[]'); } catch { return []; }
+}
 
 let myNickname = '';
 
@@ -1793,6 +1808,10 @@ function renderBattleRoom() {
   const meIsFriend = friend && friend.nickname === myNickname;
   const alreadyJoined = meIsCreator || meIsFriend;
 
+  // v0.1.64 — 파트너 닉네임 로컬 캐시 (배틀 삭제 후에도 리더보드 유지)
+  if (meIsCreator && friend?.nickname) saveKnownPartner(friend.nickname);
+  if (meIsFriend && creator?.nickname) saveKnownPartner(creator.nickname);
+
   $battleRoomPlayers.innerHTML = `
     <div class="battle-player ${meIsCreator ? 'is-me' : ''}">
       <div class="battle-player-nick">${creator ? escapeHtml(creator.nickname) : '—'}</div>
@@ -3352,8 +3371,8 @@ async function renderLeaderboard() {
     return;
   }
 
-  // 파트너 닉네임 — Supabase battle_players에서 조회 (localStorage에는 partnerNick 없음)
-  let partnerNicks = [];
+  // 파트너 닉네임 — DB + 로컬 캐시 병합 (배틀 삭제 후에도 유지)
+  let partnerNicks = [...getKnownPartners()]; // 로컬 캐시 먼저 로드
   if (sb) {
     try {
       // 내가 참여한 배틀 ID 목록
@@ -3370,7 +3389,10 @@ async function renderLeaderboard() {
           .in('battle_id', battleIds)
           .neq('nickname', myNickname);
         if (partners) {
-          partnerNicks = [...new Set(partners.map(p => p.nickname))];
+          const dbNicks = partners.map(p => p.nickname);
+          // DB 결과를 캐시에 저장하고 병합
+          dbNicks.forEach(n => saveKnownPartner(n));
+          partnerNicks = [...new Set([...partnerNicks, ...dbNicks])];
         }
       }
     } catch {}
