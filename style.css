@@ -2974,4 +2974,20 @@ dialog.modal input[type="text"]:focus {
 .lb-bar-wrap {
   width: 70px;
   height: 7px;
-  b
+  background: var(--border-soft);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.lb-bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.lb-count {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+}
