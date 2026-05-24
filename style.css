@@ -1901,10 +1901,10 @@ dialog.modal input[type="text"]:focus {
   gap: 0px;
   height: 26px;
 }
-/* 두 개를 합쳤을 때 시각적 무게가 단일 아이콘(26px)과 균형 맞도록 각각 20px */
+/* 22px × 2 = 44px 총 너비, 컨테이너 안에서 세로 중앙정렬 */
 .tab-icon-sm {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
 }
 
 .tab-soon-badge {
