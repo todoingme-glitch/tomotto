@@ -104,7 +104,7 @@ header {
 }
 
 @media (max-width: 480px) {
-  .logo-svg { width: 300px; }
+  .logo-svg { width: min(360px, 100%); }
 }
 
 /* 각 그룹 transform-origin 기준 (SVG box 내) */

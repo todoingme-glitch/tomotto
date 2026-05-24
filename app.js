@@ -360,7 +360,7 @@ function initOnboardingTooltip(onComplete) {
     {
       target: '#gachaBtn',
       speaker: 'moto', name: '모토',
-      msg: '할 일을 정했다면<br><strong>가챠</strong>를 돌려봐!<br>지금 할 작업을 랜덤으로 뽑아줄게',
+      msg: '할 일을 정했다면 <strong>가챠</strong>를 돌려봐!<br>지금 할 작업을 랜덤으로 뽑아줄게',
       pos: 'top'
     },
     {
