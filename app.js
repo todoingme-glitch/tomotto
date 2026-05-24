@@ -364,7 +364,7 @@ function initOnboardingTooltip(onComplete) {
       pos: 'top'
     },
     {
-      target: '#pauseBtn',
+      target: '.timer-section',
       speaker: 'tom', name: '🍅 톰',
       msg: '뽑힌 할 일로 <strong>뽀모도로 집중!</strong><br>기본 25분, 원하는 시간으로 조절 가능해 ⏱',
       pos: 'bottom'
