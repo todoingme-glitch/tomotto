@@ -2210,7 +2210,7 @@ dialog.modal input[type="text"]:focus {
 }
 /* 배틀한 날 — 별도 표시 없음 (토마토 꼭지 + 오늘 테두리로 충분) */
 /* 선택된 날 — 토마토 테두리 하나만, 배경은 레벨 색상 유지 */
-.log-strip-day[data-sel] { box-shadow: 0 0 0 2px var(--accent) !important; outline: none; }
+.log-strip-day[data-sel] { box-shadow: 0 0 0 2px #f07c3a !important; outline: none; }
 .log-strip-num { font-size: 0.58rem; line-height: 1; font-weight: 600; }
 /* 로그 있는 날은 원 색상으로 충분 — 점 숨김 */
 .log-strip-dot { display: none; }

@@ -3406,16 +3406,13 @@ async function renderLeaderboard() {
   }
 
   const maxCount = entries[0].count || 1;
-  const rankColors = [
-    { bg: '#FFD700', color: '#7a5800' },  // 1위 금
-    { bg: '#C0C0C0', color: '#555' },     // 2위 은
-    { bg: '#CD7F32', color: '#fff' },     // 3위 동
-  ];
+  const medalEmojis = ['🥇', '🥈', '🥉'];
   const html = entries.map((e, i) => {
     const isMe = e.nick === myNickname;
     const pct = Math.max(4, Math.round((e.count / maxCount) * 100));
-    const rc = rankColors[i] || { bg: '#e0dbd8', color: '#999' };
-    const rankBadge = `<span class="lb-rank-badge" style="background:${rc.bg};color:${rc.color}">${i + 1}</span>`;
+    const rankBadge = i < 3
+      ? `<span style="font-size:1.4rem;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:28px">${medalEmojis[i]}</span>`
+      : `<span class="lb-rank-badge" style="background:#e0dbd8;color:#888;width:20px;height:20px;font-size:0.7rem">${i + 1}</span>`;
     return `
       <div class="lb-row${isMe ? ' lb-row-me' : ''}">
         ${rankBadge}
