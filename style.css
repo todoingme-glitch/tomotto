@@ -2458,6 +2458,16 @@ dialog.modal input[type="text"]:focus {
   cursor: not-allowed;
 }
 
+/* v0.1.59 — 인증샷·소감 안내 힌트 */
+.capture-hint {
+  font-size: 12px;
+  color: var(--text-soft);
+  text-align: center;
+  margin-top: 8px;
+  opacity: 0.7;
+  line-height: 1.4;
+}
+
 /* v0.1.29 — 소감 저장 후 비활성 상태 */
 .completion-note:disabled {
   background: var(--bg);

@@ -1145,7 +1145,10 @@ function renderLogDay(dateStr) {
   const $list   = document.getElementById('logDayList');
   if (!$detail || !$title || !$list) return;
 
-  const dayLogs = getLogsFromStorage().filter(l => l.date === dateStr);
+  // v0.1.59 — 오름차순 정렬 (먼저 완료한 것이 위)
+  const dayLogs = getLogsFromStorage()
+    .filter(l => l.date === dateStr)
+    .sort((a, b) => (a.completedAt || 0) - (b.completedAt || 0));
   const [, m, d] = dateStr.split('-');
   $title.textContent = `${parseInt(m)}월 ${parseInt(d)}일 · ${dayLogs.length}회 완료`;
 
