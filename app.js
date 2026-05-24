@@ -3504,11 +3504,10 @@ $battleResultBtn.addEventListener('click', () => {
 });
 
 // ====== v0.1.8 — 인증샷 ======
-// 📷 인증샷 버튼 — 모바일(카카오톡 제외): 인앱 카메라 모달 / 데스크톱·카카오톡: 파일 선택창
+// 📷 인증샷 버튼 — 모바일: 인앱 카메라 모달(셔터 소리 없음) / 데스크톱: 파일 선택창
 const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-const isKakaoTalk = /KAKAOTALK/i.test(navigator.userAgent);
 $captureBtn.addEventListener('click', () => {
-  if (isMobile && !isKakaoTalk) {
+  if (isMobile) {
     openCameraModal();
   } else {
     $captureInput.click();
@@ -3678,32 +3677,14 @@ $cameraRetryBtn.addEventListener('click', retryCamera);
 $cameraSaveBtn.addEventListener('click', saveCameraCapture);
 $cameraCancelBtn.addEventListener('click', closeCameraModal);
 $cameraGalleryBtn.addEventListener('click', () => {
-  openGalleryPicker();
+  // v0.1.57 — 카메라 스트림을 먼저 완전히 해제한 뒤 갤러리 열기
+  // 스트림이 살아있는 채로 file input 클릭하면 Android가 "작업 선택" 시트(카메라+갤러리)를 띄움
+  // 해제 후 300ms 대기하면 accept="image/*" 만으로 갤러리를 바로 엶
+  stopCameraStream();
+  if (typeof $cameraModal.close === 'function') $cameraModal.close();
+  else $cameraModal.removeAttribute('open');
+  setTimeout(() => $captureInput.click(), 300);
 });
-
-// v0.1.56 — 갤러리 선택: showOpenFilePicker(Chrome 86+) 우선 → 카메라 옵션 없는 파일매니저 직접
-// 미지원 브라우저(인앱·Safari·Firefox)는 $captureInput.click() fallback
-async function openGalleryPicker() {
-  if ('showOpenFilePicker' in window) {
-    try {
-      const [fh] = await window.showOpenFilePicker({
-        types: [{ description: '이미지', accept: { 'image/*': ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'] } }],
-        multiple: false,
-      });
-      const file = await fh.getFile();
-      const reader = new FileReader();
-      reader.onload = (ev) => saveCaptureToStorage(ev.target.result);
-      reader.readAsDataURL(file);
-      closeCameraModal();
-      return;
-    } catch (err) {
-      if (err.name === 'AbortError') return; // 사용자가 취소
-      // 그 외 오류는 fallback
-    }
-  }
-  // fallback: 기존 file input (change 핸들러에서 closeCameraModal 호출)
-  $captureInput.click();
-}
 // backdrop 클릭 시 닫기 + stream 정리
 $cameraModal.addEventListener('click', (e) => {
   if (e.target === $cameraModal) closeCameraModal();
@@ -3723,8 +3704,8 @@ $captureInput.addEventListener('change', (e) => {
   };
   reader.readAsDataURL(file);
   $captureInput.value = '';
-  // v0.1.55 — 갤러리 선택 완료 후 카메라 모달 닫기
-  closeCameraModal();
+  // 모달이 아직 열려 있으면 닫기 (인앱 카메라에서 갤러리로 전환한 경우 등)
+  if ($cameraModal.open) closeCameraModal();
 });
 
 $removeCaptureBtn.addEventListener('click', () => {
