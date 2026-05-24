@@ -642,6 +642,14 @@ $settingsStatusToggle?.addEventListener('change', () => {
   localStorage.setItem(STORAGE_STATUS_PUBLIC, String(isStatusPublic));
 });
 
+// 개발자 옵션 — 온보딩 초기화
+document.getElementById('devResetOnboardingBtn')?.addEventListener('click', () => {
+  localStorage.removeItem(STORAGE_ONBOARDED_TT);
+  const btn = document.getElementById('devResetOnboardingBtn');
+  btn.textContent = '✓ 초기화 완료! 새로고침하면 온보딩 시작';
+  btn.disabled = true;
+});
+
 // 배틀 생성 모달
 $battleCreateBtn.addEventListener('click', () => {
   // 닉네임 없으면 먼저 입력받음

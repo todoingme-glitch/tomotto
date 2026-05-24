@@ -1203,6 +1203,24 @@ dialog.modal input[type="text"]:focus {
   border-color: var(--accent);
 }
 
+.btn-mini--danger {
+  color: #c0392b;
+  border-color: #e0b0ad;
+}
+.btn-mini--danger:hover {
+  background: #fdf0f0;
+  color: #c0392b;
+  border-color: #c0392b;
+}
+
+.settings-section--dev {
+  border-top: 1px dashed var(--border);
+  opacity: 0.6;
+}
+.settings-section--dev:hover {
+  opacity: 1;
+}
+
 .btn-danger-mini {
   color: var(--text-muted);
 }
@@ -2956,20 +2974,4 @@ dialog.modal input[type="text"]:focus {
 .lb-bar-wrap {
   width: 70px;
   height: 7px;
-  background: var(--border-soft);
-  border-radius: 4px;
-  overflow: hidden;
-}
-.lb-bar {
-  height: 100%;
-  background: var(--accent);
-  border-radius: 4px;
-  transition: width 0.4s ease;
-}
-
-.lb-count {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: var(--text-main);
-  white-space: nowrap;
-}
+  b
