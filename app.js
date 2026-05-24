@@ -3014,9 +3014,9 @@ function getMonthKey(date = new Date()) {
 let _lastSyncedTimestamp = 0;  // 중복 호출 방지
 async function syncUserStats() {
   if (!sb || !myNickname) return;
-  const now = Date.now();
-  if (now - _lastSyncedTimestamp < 5000) return;  // 5초 이내 재호출 무시
-  _lastSyncedTimestamp = now;
+  const tsNow = Date.now();
+  if (tsNow - _lastSyncedTimestamp < 5000) return;  // 5초 이내 재호출 무시
+  _lastSyncedTimestamp = tsNow;
   const now = new Date();
   const periods = [
     { period_type: 'week',  period_key: getWeekKey(now)  },
