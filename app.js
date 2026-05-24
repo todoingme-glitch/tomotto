@@ -403,39 +403,42 @@ function initOnboardingTooltip(onComplete) {
   }
 
   function position(step) {
+    // 항상 먼저 숨기기 (슬라이드 없이 제자리 페이드아웃)
+    ttEl.style.opacity = '0';
+
     if (!step.target) {
+      // 웰컴 스텝: 중앙 고정, 즉시 페이드인
       highlight.style.display = 'none';
-      ttEl.style.top       = '50%';
-      ttEl.style.left      = '50%';
       ttEl.style.transform = 'translate(-50%, -50%)';
+      ttEl.style.top  = '50%';
+      ttEl.style.left = '50%';
       ttEl.removeAttribute('data-pos');
-      ttEl.style.opacity   = '1';
+      requestAnimationFrame(() => { ttEl.style.opacity = '1'; });
       return;
     }
+
     const el = document.querySelector(step.target);
     if (!el) return;
 
-    // 전환 중: 하이라이트·툴팁 숨기고 스크롤 대기
     highlight.style.display = 'none';
-    ttEl.style.opacity = '0';
+    // transform 초기화 (웰컴 스텝에서 넘어올 때 잔상 방지)
     ttEl.style.transform = 'none';
-    ttEl.removeAttribute('data-pos');
 
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     setTimeout(() => {
       const rect = el.getBoundingClientRect();
       const PAD  = 4;
-      const GAP  = 22;   // 말풍선-테두리 간격
+      const GAP  = 22;
       const TT_W = 272;
 
-      // 하이라이트 — 올바른 크기로 먼저 표시
-      highlight.style.top      = (rect.top  - PAD) + 'px';
-      highlight.style.left     = (rect.left - PAD) + 'px';
-      highlight.style.width    = (rect.width  + PAD * 2) + 'px';
-      highlight.style.height   = (rect.height + PAD * 2) + 'px';
-      highlight.style.display  = 'block';
+      // 하이라이트 정확한 위치/크기로 표시
+      highlight.style.top    = (rect.top  - PAD) + 'px';
+      highlight.style.left   = (rect.left - PAD) + 'px';
+      highlight.style.width  = (rect.width  + PAD * 2) + 'px';
+      highlight.style.height = (rect.height + PAD * 2) + 'px';
+      highlight.style.display = 'block';
 
-      // 툴팁 위치 계산 후 fade in
+      // 툴팁 최종 위치 지정
       ttEl.setAttribute('data-pos', step.pos || 'bottom');
       const ttH = ttEl.offsetHeight || 150;
 
@@ -450,7 +453,7 @@ function initOnboardingTooltip(onComplete) {
 
       ttEl.style.top  = top  + 'px';
       ttEl.style.left = left + 'px';
-      // 위치 확정 후 fade in
+      // 위치 확정 후 페이드인
       requestAnimationFrame(() => { ttEl.style.opacity = '1'; });
     }, 350);
   }

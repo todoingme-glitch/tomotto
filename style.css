@@ -2608,7 +2608,7 @@ dialog.modal input[type="text"]:focus {
   border-radius: 14px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
   font-family: 'Pretendard', sans-serif;
-  transition: top 0.3s ease, left 0.3s ease, opacity 0.2s ease;
+  transition: opacity 0.2s ease;  /* 위치 슬라이드 제거, opacity만 */
   overflow: visible;
 }
 
@@ -2688,6 +2688,7 @@ dialog.modal input[type="text"]:focus {
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px 14px;
+  border-top: none;
   margin-top: 2px;
 }
 .onb-tt-btn {
