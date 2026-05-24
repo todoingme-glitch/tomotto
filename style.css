@@ -105,6 +105,7 @@ header {
 
 @media (max-width: 480px) {
   .logo-svg { width: min(320px, 100%); }
+  .logo-wrap { transform: translateX(-12px); } /* T 하단 공백 보정 — 시각적 중앙정렬 */
 }
 
 /* 각 그룹 transform-origin 기준 (SVG box 내) */
@@ -182,6 +183,10 @@ header {
 .tagline-brand {
   color: var(--accent);
   font-weight: 700;
+  font-size: 16.5px; /* 라틴 폰트 시각적 크기 보정 — 국문과 동일하게 보이도록 */
+}
+@media (max-width: 480px) {
+  .tagline-brand { font-size: 15px; } /* 모바일은 이미 균형 맞음 */
 }
 
 /* Card */
