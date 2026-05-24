@@ -2593,7 +2593,7 @@ dialog.modal input[type="text"]:focus {
   position: fixed;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.08);  /* 박스 안 살짝 밝게 */
-  box-shadow: 0 0 0 9999px rgba(30, 30, 30, 0.45), 0 0 0 3px rgba(255,255,255,0.7);
+  box-shadow: 0 0 0 9999px rgba(30, 30, 30, 0.45), 0 0 0 3px var(--accent);
   z-index: 8950;
   pointer-events: none;
   transition: top 0.3s ease, left 0.3s ease, width 0.3s ease, height 0.3s ease;
@@ -2608,7 +2608,7 @@ dialog.modal input[type="text"]:focus {
   border-radius: 14px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
   font-family: 'Pretendard', sans-serif;
-  transition: top 0.3s ease, left 0.3s ease;
+  transition: top 0.3s ease, left 0.3s ease, opacity 0.2s ease;
   overflow: visible;
 }
 
@@ -2688,8 +2688,7 @@ dialog.modal input[type="text"]:focus {
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px 14px;
-  border-top: 1px solid var(--border-soft);
-  margin-top: 6px;
+  margin-top: 2px;
 }
 .onb-tt-btn {
   background: none;

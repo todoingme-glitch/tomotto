@@ -409,34 +409,33 @@ function initOnboardingTooltip(onComplete) {
       ttEl.style.left      = '50%';
       ttEl.style.transform = 'translate(-50%, -50%)';
       ttEl.removeAttribute('data-pos');
+      ttEl.style.opacity   = '1';
       return;
     }
     const el = document.querySelector(step.target);
     if (!el) return;
 
-    // 전환 중 깜빡임 방지: 하이라이트 숨기고 툴팁 중앙 대기
+    // 전환 중: 하이라이트·툴팁 숨기고 스크롤 대기
     highlight.style.display = 'none';
-    ttEl.style.transform = 'translate(-50%, -50%)';
-    ttEl.style.top  = '50%';
-    ttEl.style.left = '50%';
+    ttEl.style.opacity = '0';
+    ttEl.style.transform = 'none';
     ttEl.removeAttribute('data-pos');
 
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     setTimeout(() => {
       const rect = el.getBoundingClientRect();
       const PAD  = 4;
-      const GAP  = 14;
+      const GAP  = 22;   // 말풍선-테두리 간격
       const TT_W = 272;
 
-      // 하이라이트 — 처음부터 올바른 크기로 표시
+      // 하이라이트 — 올바른 크기로 먼저 표시
       highlight.style.top      = (rect.top  - PAD) + 'px';
       highlight.style.left     = (rect.left - PAD) + 'px';
       highlight.style.width    = (rect.width  + PAD * 2) + 'px';
       highlight.style.height   = (rect.height + PAD * 2) + 'px';
       highlight.style.display  = 'block';
 
-      // 툴팁 위치
-      ttEl.style.transform = 'none';
+      // 툴팁 위치 계산 후 fade in
       ttEl.setAttribute('data-pos', step.pos || 'bottom');
       const ttH = ttEl.offsetHeight || 150;
 
@@ -451,6 +450,8 @@ function initOnboardingTooltip(onComplete) {
 
       ttEl.style.top  = top  + 'px';
       ttEl.style.left = left + 'px';
+      // 위치 확정 후 fade in
+      requestAnimationFrame(() => { ttEl.style.opacity = '1'; });
     }, 350);
   }
 
