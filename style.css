@@ -813,10 +813,14 @@ header {
 }
 
 .completed-counter {
-  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end; /* 숫자 포함 모든 요소를 바닥에 맞춤 */
+  gap: 2px;
   font-size: 14px;
   color: var(--text-soft);
   margin-bottom: 12px;
+  line-height: 1.2;
 }
 
 .completed-counter strong {
@@ -824,8 +828,8 @@ header {
   font-weight: 800;
   color: var(--accent);
   font-variant-numeric: tabular-nums;
-  padding: 0 4px;
-  vertical-align: text-bottom; /* 숫자 하단을 주변 텍스트 하단에 맞춤 */
+  line-height: 1;
+  padding: 0 2px;
 }
 
 .capture-row {
