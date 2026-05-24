@@ -176,6 +176,8 @@ header {
 .tagline {
   color: var(--text-soft);
   font-size: 15px;
+  text-align: center;
+  margin: 0 auto 4px;
 }
 
 /* Card */

@@ -360,20 +360,20 @@ function initOnboardingTooltip(onComplete) {
     {
       target: '#gachaBtn',
       speaker: 'moto', name: '모토',
-      msg: '카테고리를 만들었다면<br><strong>가챠</strong>를 돌려봐!<br>오늘 뭘 할지 랜덤으로 뽑아줄게',
+      msg: '할 일을 정했다면<br><strong>가챠</strong>를 돌려봐!<br>지금 할 작업을 랜덤으로 뽑아줄게',
       pos: 'top'
     },
     {
       target: '#pauseBtn',
       highlightTarget: '.timer-section',
       speaker: 'tom', name: '톰',
-      msg: '뽑힌 할 일로 <strong>뽀모도로 집중!</strong><br>원하는 시간으로<br>조절할 수 있어!',
+      msg: '뽑힌 할 일로 <strong>뽀모도로 집중!</strong><br>기본 25분, 원하는 시간으로<br>조절할 수 있어!',
       pos: 'bottom'
     },
     {
       target: '#bottomTab',
       speaker: 'moto', name: '모토',
-      msg: '<strong>소셜</strong>에서 배틀, <strong>기록</strong>에서 로그!<br>자, 이제 시작해봐',
+      msg: '<strong>소셜</strong>에서 배틀, <strong>기록</strong>에서 로그!<br>자, 이제 시작해봐 🍅',
       pos: 'top'
     }
   ];
