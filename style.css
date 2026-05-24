@@ -1873,11 +1873,13 @@ dialog.modal input[type="text"]:focus {
   letter-spacing: 0.02em;
 }
 
-/* 탭 얼굴 아이콘 — SVG 레이어에서 추출한 단순 원형 아이콘 */
+/* 탭 얼굴 아이콘 — JS가 26px SVG를 직접 삽입하므로 CSS도 26px로 맞춤 */
 .tab-icon {
-  width: 22px;
-  height: 22px;
-  display: block;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -1901,10 +1903,13 @@ dialog.modal input[type="text"]:focus {
   gap: 0px;
   height: 26px;
 }
-/* 20px × 2 = 40px 총 너비, 컨테이너 안에서 세로 중앙정렬 */
+/* 24px × 2 = 48px, 컨테이너(26px 높이) 안에서 세로 중앙정렬 */
 .tab-icon-sm {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .tab-soon-badge {

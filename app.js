@@ -188,13 +188,13 @@ function initTabIcons() {
   const $tabMotto = document.getElementById('tabIconMotto');
   if ($tabMotto) {
     $tabMotto.innerHTML = '';
-    $tabMotto.appendChild(makeTabFace(mottoFaceEl, '237 45 98 95', '20px'));
+    $tabMotto.appendChild(makeTabFace(mottoFaceEl, '237 45 98 95', '24px'));
   }
 
   const $tabTom = document.getElementById('tabIconTom');
   if ($tabTom) {
     $tabTom.innerHTML = '';
-    $tabTom.appendChild(makeTabFace(tomFaceEl, '405 45 98 95', '20px'));
+    $tabTom.appendChild(makeTabFace(tomFaceEl, '405 45 98 95', '24px'));
   }
 }
 
