@@ -3049,7 +3049,8 @@ function finishTimer() {
   $pauseBtn.disabled = true;
   $resetBtn.disabled = false;
   // v0.1.20 — 배틀 모드면 파트너 닉네임 포함
-  const battlePartner = getBattlePartnerInfo();
+  // v0.1.56 — activeBattleId 없으면(배틀 모달만 열었다 닫은 경우) 개인 작업으로 처리
+  const battlePartner = activeBattleId ? getBattlePartnerInfo() : null;
   if (battlePartner) {
     const who = escapeHtml(battlePartner.partnerNick);
     // v0.1.28 — 두 모드 모두 '님과' 통일
@@ -3503,10 +3504,11 @@ $battleResultBtn.addEventListener('click', () => {
 });
 
 // ====== v0.1.8 — 인증샷 ======
-// 📷 인증샷 버튼 — 모바일: 인앱 카메라 모달 / 데스크톱: 파일 선택창
+// 📷 인증샷 버튼 — 모바일(카카오톡 제외): 인앱 카메라 모달 / 데스크톱·카카오톡: 파일 선택창
 const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+const isKakaoTalk = /KAKAOTALK/i.test(navigator.userAgent);
 $captureBtn.addEventListener('click', () => {
-  if (isMobile) {
+  if (isMobile && !isKakaoTalk) {
     openCameraModal();
   } else {
     $captureInput.click();
@@ -3676,10 +3678,32 @@ $cameraRetryBtn.addEventListener('click', retryCamera);
 $cameraSaveBtn.addEventListener('click', saveCameraCapture);
 $cameraCancelBtn.addEventListener('click', closeCameraModal);
 $cameraGalleryBtn.addEventListener('click', () => {
-  // v0.1.55 — 모달 먼저 닫지 않고 파일 선택 → change 핸들러에서 닫음
-  // (모달을 먼저 닫으면 Android가 "작업 선택" 시트에 카메라 옵션을 포함시킴)
-  $captureInput.click();
+  openGalleryPicker();
 });
+
+// v0.1.56 — 갤러리 선택: showOpenFilePicker(Chrome 86+) 우선 → 카메라 옵션 없는 파일매니저 직접
+// 미지원 브라우저(인앱·Safari·Firefox)는 $captureInput.click() fallback
+async function openGalleryPicker() {
+  if ('showOpenFilePicker' in window) {
+    try {
+      const [fh] = await window.showOpenFilePicker({
+        types: [{ description: '이미지', accept: { 'image/*': ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'] } }],
+        multiple: false,
+      });
+      const file = await fh.getFile();
+      const reader = new FileReader();
+      reader.onload = (ev) => saveCaptureToStorage(ev.target.result);
+      reader.readAsDataURL(file);
+      closeCameraModal();
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return; // 사용자가 취소
+      // 그 외 오류는 fallback
+    }
+  }
+  // fallback: 기존 file input (change 핸들러에서 closeCameraModal 호출)
+  $captureInput.click();
+}
 // backdrop 클릭 시 닫기 + stream 정리
 $cameraModal.addEventListener('click', (e) => {
   if (e.target === $cameraModal) closeCameraModal();
