@@ -112,6 +112,7 @@ const BATTLE_STORAGE = {
   completionNote: 'tomotto_completion_note', // v0.1.20 — 완료 소감
   order: 'tomotto_battle_order',           // v0.1.26 — 사용자 정의 드래그 순서 (ID 배열)
   knownPartners: 'tomotto_battle_knownPartners', // v0.1.64 — 배틀카드 삭제 후에도 리더보드 유지
+  completedIds: 'tomotto_battle_completedIds',   // v0.1.65 — 완료된 배틀 ID (새로고침 후에도 필터링)
 };
 
 // 파트너 닉네임을 로컬에 누적 저장 (배틀 삭제 후에도 리더보드에서 조회 가능하도록)
@@ -1032,7 +1033,16 @@ async function loadMyBattles() {
         console.log(`[배틀 정리] ${stale.length}개 완료 배틀 자동 삭제 (24h+)`);
         stale.forEach(b => deleteBattleSilent(b.id));
       }
-      const activeBattles = mapped.filter(b => b.status !== 'done' && !locallyCompletedBattleIds.has(b.id));
+      // DB에서 이미 'done'인 배틀은 localStorage 완료 목록에서 제거 (정리)
+      const confirmedDoneIds = mapped.filter(b => b.status === 'done').map(b => b.id);
+      if (confirmedDoneIds.length > 0) {
+        let stored = [];
+        try { stored = JSON.parse(localStorage.getItem(BATTLE_STORAGE.completedIds) || '[]'); } catch {}
+        const remaining = stored.filter(id => !confirmedDoneIds.includes(id));
+        localStorage.setItem(BATTLE_STORAGE.completedIds, JSON.stringify(remaining));
+      }
+      const completedSet = getLocallyCompletedIds();
+      const activeBattles = mapped.filter(b => b.status !== 'done' && !completedSet.has(b.id));
 
       // v0.1.26 — 저장된 드래그 순서 적용
       return applyBattleOrder(activeBattles);
@@ -1754,6 +1764,24 @@ let currentBattleId = null;
 let currentBattleData = null;
 let activeBattleId = null;   // v0.1.17 — 배틀 타이머 진행 중인 battle ID (인증샷 업로드용)
 const locallyCompletedBattleIds = new Set(); // v0.1.65 — 이번 세션에서 완료된 배틀 ID (Supabase 타이밍 무관하게 필터링)
+
+// v0.1.65 — localStorage에도 완료 ID 저장 (새로고침 후에도 필터링 유지)
+function markBattleCompletedLocally(battleId) {
+  if (!battleId) return;
+  locallyCompletedBattleIds.add(battleId);
+  let ids = [];
+  try { ids = JSON.parse(localStorage.getItem(BATTLE_STORAGE.completedIds) || '[]'); } catch {}
+  if (!ids.includes(battleId)) {
+    ids.push(battleId);
+    localStorage.setItem(BATTLE_STORAGE.completedIds, JSON.stringify(ids));
+  }
+}
+function getLocallyCompletedIds() {
+  let stored = [];
+  try { stored = JSON.parse(localStorage.getItem(BATTLE_STORAGE.completedIds) || '[]'); } catch {}
+  stored.forEach(id => locallyCompletedBattleIds.add(id));
+  return locallyCompletedBattleIds;
+}
 let realtimeChannel = null;    // v0.1.18 — battle_players INSERT 구독 채널 (룸 뷰용)
 let battleStartChannel = null; // v0.1.19 — battles UPDATE 구독 채널 (친구 쪽 동시 시작용)
 let isStartingBattle = false;  // v0.1.19 — 중복 시작 방지 플래그
@@ -3347,7 +3375,7 @@ function finishTimer() {
 
   // v0.1.17 — 배틀 중이었으면 결과 보기 버튼 표시
   if (activeBattleId) {
-    locallyCompletedBattleIds.add(activeBattleId); // v0.1.65 — 로컬 완료 Set에 추가 (리셋해도 카드 숨김 유지)
+    markBattleCompletedLocally(activeBattleId); // v0.1.65 — 로컬 완료 Set+localStorage에 추가 (리셋/새로고침 후에도 숨김 유지)
     $battleResultBtn.hidden = false;
     $battleResultBtn.dataset.battleId = activeBattleId;
     // v0.1.29 — 배틀 완료 시 status 'done' 업데이트 (여러 카드 '진행 중' 버그 수정)
