@@ -51,6 +51,11 @@ const $catEditCancel = document.getElementById('categoryEditCancel');
 const $catEditDelete = document.getElementById('categoryEditDelete');
 
 // v0.1.14 — Supabase 연동 활성화
+// ====== Kakao SDK 초기화 ======
+if (window.Kakao && !window.Kakao.isInitialized()) {
+  window.Kakao.init('0ff430907d39f38f5c4957efca92293b');
+}
+
 const USE_SUPABASE = true;
 const SUPABASE_URL = 'https://xiuwgqmrojvesmxljegm.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhpdXdncW1yb2p2ZXNteGxqZWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0Mjg4OTksImV4cCI6MjA5NTAwNDg5OX0.WdTaoOMkwnBvwWUuNRq-BPcELxQ7Y_ctqG93f-hjq0s';
@@ -1441,7 +1446,26 @@ $shareMenu?.addEventListener('click', async (e) => {
   const type = btn.dataset.share;
 
   if (type === 'kakao') {
-    // 링크 복사 + 안내 (카카오 SDK 없이 URL 공유 불가)
+    if (window.Kakao && window.Kakao.isInitialized()) {
+      // Kakao SDK로 직접 공유 (앱/웹 카카오톡 공유 시트 열림)
+      try {
+        window.Kakao.Share.sendDefault({
+          objectType: 'feed',
+          content: {
+            title: '🍅 Tomotto 친구 배틀',
+            description: '같이 집중 타이머 돌릴래? 배틀에 초대해!',
+            imageUrl: 'https://tomotto.vercel.app/assets/og.png',
+            link: { mobileWebUrl: link, webUrl: link },
+          },
+          buttons: [{ title: '배틀 참가하기', link: { mobileWebUrl: link, webUrl: link } }],
+        });
+        $shareMenu.hidden = true;
+        return;
+      } catch (err) {
+        console.warn('[Kakao Share] 실패, 링크 복사로 폴백:', err);
+      }
+    }
+    // 폴백: 링크 복사
     try { await navigator.clipboard.writeText(link); } catch { /* ignore */ }
     btn.querySelector('span:nth-child(3)').textContent = '복사됐어요 ✓';
     setTimeout(() => {
