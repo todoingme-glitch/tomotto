@@ -3155,4 +3155,30 @@ dialog.modal input[type="text"]:focus {
   gap: 8px;
   padding: 10px 14px;
   font-size: 12px;
-  fon
+  font-family: 'Pretendard', sans-serif;
+}
+.iab-msg {
+  flex: 1;
+  line-height: 1.4;
+}
+.iab-open-btn {
+  background: rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.35);
+  color: #fff;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.iab-close-btn {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.6);
+  font-size: 15px;
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
+  flex-shrink: 0;
+}

@@ -1017,7 +1017,20 @@ async function loadMyBattles() {
         return { ...b, _isCreator: myRow ? myRow.is_creator : false, _myTask: myRow?.task || null };
       });
 
-      // v0.1.64 — done 배틀은 목록에서 숨김 (DB 삭제는 하지 않음 — 인증샷 업로드 보호)
+      // v0.1.65 — done 배틀 자동 정리:
+      //   24시간 이상 경과 → DB 삭제 (백그라운드)
+      //   24시간 미만     → UI 숨김만 (인증샷 업로드 보호)
+      const now = Date.now();
+      const oneDayMs = 24 * 60 * 60 * 1000;
+      const doneBattles = mapped.filter(b => b.status === 'done');
+      const stale = doneBattles.filter(b => {
+        const t = new Date(b.updated_at || b.created_at).getTime();
+        return (now - t) >= oneDayMs;
+      });
+      if (stale.length > 0) {
+        console.log(`[배틀 정리] ${stale.length}개 완료 배틀 자동 삭제 (24h+)`);
+        stale.forEach(b => deleteBattleSilent(b.id));
+      }
       const activeBattles = mapped.filter(b => b.status !== 'done');
 
       // v0.1.26 — 저장된 드래그 순서 적용
@@ -3328,9 +3341,10 @@ function finishTimer() {
     $battleResultBtn.hidden = false;
     $battleResultBtn.dataset.battleId = activeBattleId;
     // v0.1.29 — 배틀 완료 시 status 'done' 업데이트 (여러 카드 '진행 중' 버그 수정)
+    // v0.1.65 — updated_at 함께 기록 (24시간 후 자동 삭제 기준으로 사용)
     if (sb) {
       sb.from('battles')
-        .update({ status: 'done' })
+        .update({ status: 'done', updated_at: new Date().toISOString() })
         .eq('id', activeBattleId)
         .then(({ error }) => {
           if (error) console.warn('[Supabase] battles done 업데이트 실패:', error.message);
