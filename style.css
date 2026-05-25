@@ -3155,4 +3155,44 @@ dialog.modal input[type="text"]:focus {
 
 /* =====================================================
    v0.1.39 — 인앱 브라우저 (카카오톡 등) 안내 배너
-   ============
+   ===================================================== */
+.iab-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10000;
+  background: var(--text);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-family: 'Pretendard', sans-serif;
+}
+.iab-msg {
+  flex: 1;
+  line-height: 1.4;
+}
+.iab-open-btn {
+  background: rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.35);
+  color: #fff;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.iab-close-btn {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.6);
+  font-size: 15px;
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
+  flex-shrink: 0;
+}
