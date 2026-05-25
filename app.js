@@ -3505,31 +3505,31 @@ async function renderLeaderboard() {
     return;
   }
 
-  // 파트너 닉네임 — DB + 로컬 캐시 병합 (배틀 삭제 후에도 유지)
-  let partnerNicks = [...getKnownPartners()]; // 로컬 캐시 먼저 로드
+  // 파트너 닉네임 — v0.1.66: DB 우선, 캐시는 DB 실패 시 fallback
+  let partnerNicks = [...getKnownPartners()]; // 초기값: 캐시
   if (sb) {
     try {
-      // 내가 참여한 배틀 ID 목록
       const { data: myRows } = await sb
         .from('battle_players')
         .select('battle_id')
         .eq('nickname', myNickname);
       if (myRows?.length) {
         const battleIds = myRows.map(r => r.battle_id);
-        // 같은 배틀의 다른 참가자 닉네임
         const { data: partners } = await sb
           .from('battle_players')
           .select('nickname')
           .in('battle_id', battleIds)
           .neq('nickname', myNickname);
         if (partners) {
-          const dbNicks = partners.map(p => p.nickname);
-          // DB 결과를 캐시에 저장하고 병합
-          dbNicks.forEach(n => saveKnownPartner(n));
-          partnerNicks = [...new Set([...partnerNicks, ...dbNicks])];
+          const dbNicks = [...new Set(partners.map(p => p.nickname))];
+          // DB 결과로 캐시 덮어쓰기 (변경된 닉네임 자동 갱신)
+          localStorage.setItem(BATTLE_STORAGE.knownPartners, JSON.stringify(dbNicks));
+          partnerNicks = dbNicks; // DB 데이터만 사용 (캐시 무시)
         }
+      } else {
+        partnerNicks = []; // 내 배틀이 없으면 파트너도 없음
       }
-    } catch {}
+    } catch {} // DB 실패 시 초기값(캐시) 유지
   }
 
   const now = new Date();
@@ -3565,23 +3565,19 @@ async function renderLeaderboard() {
   // 단, 본인은 0이어도 항상 표시
   const displayEntries = entries.filter(e => e.count > 0 || e.nick === myNickname);
 
-  const maxCount = displayEntries[0].count || 1;
   const medalEmojis = ['🥇', '🥈', '🥉'];
   const html = displayEntries.map((e, i) => {
     const isMe = e.nick === myNickname;
-    const pct = e.count > 0 ? Math.max(4, Math.round((e.count / maxCount) * 100)) : 0;
     const rankBadge = i < 3
-      ? `<span style="font-size:1.4rem;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:28px">${medalEmojis[i]}</span>`
+      ? `<span style="font-size:1.4rem;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:28px;flex-shrink:0">${medalEmojis[i]}</span>`
       : `<span class="lb-rank-badge" style="background:#e0dbd8;color:#888">${i + 1}</span>`;
+    const countColor = i < 3 ? 'color:var(--accent);' : '';
     return `
       <div class="lb-row${isMe ? ' lb-row-me' : ''}">
         ${rankBadge}
-        <span class="lb-nick">${e.nick}${isMe ? ' <span class="lb-me-badge">나</span>' : ''}</span>
-        <div class="lb-bar-wrap">
-          <div class="lb-bar" style="width:${pct}%"></div>
-        </div>
-        <span class="lb-count">${e.count}회</span>
-      </div>`;
+        <span class="lb-nick">${escapeHtml(e.nick)}${isMe ? ' <span class="lb-me-badge">나</span>' : ''}</span>
+        <span class="lb-count" style="${countColor}">${e.count}회</span>
+      </div>`; // v0.1.66 — 막대그래프 제거, 1-3위 횟수 강조색
   }).join('');
   $body.innerHTML = html;
 }
