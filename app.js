@@ -2702,6 +2702,13 @@ async function checkPartnerInRoomOnInit() {
 }
 
 // 페이지 로드 시 닉네임 + 내 배틀 복원 + 온보딩 순서 처리
+// PWA 서비스 워커 등록
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js')
+    .then(reg => console.log('[SW] 등록 완료:', reg.scope))
+    .catch(err => console.warn('[SW] 등록 실패:', err));
+}
+
 window.addEventListener('load', () => {
   loadNickname(); // 이미 IIFE 전에 호출됐지만 재호출로 확실히 반영
   // v0.1.65/66 — 탭별 초기 렌더 (닉네임 로드 후)

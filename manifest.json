@@ -1,0 +1,25 @@
+{
+  "name": "Tomotto",
+  "short_name": "Tomotto",
+  "description": "가챠로 작업을 뽑고 친구랑 같이 집중하는 뽀모도로 앱",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fff9f8",
+  "theme_color": "#d94e3a",
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
