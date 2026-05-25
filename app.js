@@ -1292,8 +1292,13 @@ function renderLogDay(dateStr) {
   $detail.hidden = false;
 }
 
+let _renderMyBattlesRunning = false; // v0.1.65 — 동시 호출 방지
 async function renderMyBattles() {
-  const list = await loadMyBattles();
+  if (_renderMyBattlesRunning) return;
+  _renderMyBattlesRunning = true;
+  let list;
+  try { list = await loadMyBattles(); } finally { _renderMyBattlesRunning = false; }
+  if (!list) return;
   if (list.length === 0) {
     battleEditMode = false;
     selectedBattleIds.clear();
@@ -2474,6 +2479,7 @@ function dispatchNickSaved() {
 // 외부(배틀 타이머 등)에서 탭 전환 가능하도록 전역 노출
 let switchTab = () => {};
 
+loadNickname(); // v0.1.65 — IIFE보다 먼저 실행해서 리더보드 첫 렌더에 닉네임 반영
 (function initBottomTab() {
   const tabBtns = document.querySelectorAll('.tab-btn');
   const tabPanels = document.querySelectorAll('.tab-panel');
@@ -2541,8 +2547,15 @@ function checkInAppBrowser() {
 
 // 페이지 로드 시 닉네임 + 내 배틀 복원 + 온보딩 순서 처리
 window.addEventListener('load', () => {
-  loadNickname();
-  renderMyBattles();
+  loadNickname(); // 이미 IIFE 전에 호출됐지만 재호출로 확실히 반영
+  // v0.1.65 — 소셜 탭 활성 시 닉네임 로드 후 리더보드·배틀 재렌더
+  const _activeTab = localStorage.getItem('tomotto_active_tab');
+  if (_activeTab === 'social') {
+    renderMyBattles();
+    renderLeaderboard();
+  } else {
+    renderMyBattles();
+  }
   setTimeout(playHifive, 400);
   initTabIcons();               // v0.1.34 — 탭 아이콘에 실제 로고 얼굴 주입
   checkInAppBrowser();          // v0.1.40 — 인앱 브라우저 감지
