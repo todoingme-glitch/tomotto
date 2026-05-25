@@ -778,7 +778,7 @@ document.getElementById('fullResetBtn')?.addEventListener('click', async () => {
   if (!confirm('정말 모든 데이터를 삭제할까요?\n\n카테고리, 기록, 완료 횟수, 배틀 목록, 닉네임이 모두 사라져요. 되돌릴 수 없어요.')) return;
 
   const btn = document.getElementById('fullResetBtn');
-  btn.textContent = '초기화 중...';
+  btn.textContent = '초기화 중···';
   btn.disabled = true;
 
   // 1. Supabase — 내 닉네임 관련 데이터 삭제
@@ -1837,7 +1837,7 @@ $battleLockDismissBtn.addEventListener('click', () => {
 async function openBattleRoom(battleId) {
   battleRoomUserDismissed = false;  // v0.1.64 — 유저가 직접 열었으므로 dismissal 초기화
   currentBattleId = battleId;
-  $battleRoomSummary.textContent = '불러오는 중...';
+  $battleRoomSummary.textContent = '불러오는 중···';
   $battleRoomPlayers.innerHTML = '';
   $battleRoomTask.textContent = '';
   $battleRoomTask.className = 'battle-room-task empty';
@@ -1882,6 +1882,9 @@ async function openBattleRoom(battleId) {
       .eq('nickname', myNickname)
       .then(() => console.log('[RoomSignal] room_opened_at 업데이트'));
   }
+
+  // v0.1.71 — 배틀룸 열리면 room signal 폴링 중지 (모달 켜졌으니 불필요)
+  stopRoomSignalPolling();
 
   // v0.1.18 — 배틀 룸 열리면 Realtime 구독 시작 (배틀 완료 전까지만)
   console.log('[Realtime] openBattleRoom — status:', currentBattleData?.battle?.status);
@@ -1957,7 +1960,7 @@ function renderBattleRoom() {
     $battleRoomStatus.textContent = '이 배틀에 참여하시겠어요?';
   } else if (alreadyJoined && !friend) {
     // v0.1.18 — LIVE dot: 새로고침 불필요하다는 시각적 표시
-    $battleRoomStatus.innerHTML = '친구가 링크를 열고 수락하길 기다리는 중... <span class="live-dot" title="자동 새로고침 중">●</span>';
+    $battleRoomStatus.innerHTML = '친구가 링크를 열고 수락하길 기다리는 중··· <span class="live-dot" title="자동 새로고침 중">●</span>';
   } else if (alreadyJoined && friend) {
     // v0.1.67 — MOTO MODE 가챠 체크: DB의 battle_players.task 우선
     // v0.1.70 — DB 미싱 시 localStorage currentTask fallback + DB 즉시 동기화
@@ -1977,7 +1980,7 @@ function renderBattleRoom() {
       if (battle.mode === 'separate') {
         const friendHasTask = !!(friend?.task);
         if (!friendHasTask) {
-          $battleRoomStatus.innerHTML = '친구가 가챠를 돌리길 기다리는 중... <span class="live-dot">●</span>';
+          $battleRoomStatus.innerHTML = '친구가 가챠를 돌리길 기다리는 중··· <span class="live-dot">●</span>';
         } else {
           $battleRoomStartBtn.hidden = false;
           $battleRoomStatus.innerHTML = '둘 다 준비됐어요! 시작하면 친구도 동시에 카운트다운돼요. <span class="live-dot">●</span>';
@@ -2001,7 +2004,7 @@ function renderBattleRoom() {
 async function acceptBattle() {
   if (!sb || !currentBattleId || !myNickname) return;
   $battleRoomAcceptBtn.disabled = true;
-  $battleRoomStatus.textContent = '참여 등록 중...';
+  $battleRoomStatus.textContent = '참여 등록 중···';
 
   const { error } = await sb.from('battle_players').insert({
     battle_id: currentBattleId,
@@ -2029,7 +2032,8 @@ async function acceptBattle() {
 }
 
 // v0.1.17 — 3·2·1 카운트다운 (얼굴 양 옆 배치)
-async function startBattleWithCountdown() {
+// v0.1.72 — scheduledStartAt: 양쪽이 동일한 미래 시각에 동시 출발 (스텝 스킵 없음)
+async function startBattleWithCountdown(scheduledStartAt = null) {
   if (!currentBattleData || isStartingBattle || timer.running) return;
   // v0.1.30 — MOTO MODE에서 내 가챠가 아직 안 됐으면 카운트다운 차단
   // v0.1.68 — localStorage currentTask 대신 DB값(battle_players.task) 사용 (stale 방지)
@@ -2039,15 +2043,29 @@ async function startBattleWithCountdown() {
   isStartingBattle = true;
 
   // v0.1.19 — battles 상태 'active'로 업데이트 → 상대방 Realtime 트리거
-  if (sb && currentBattleId) {
-    const { error } = await sb.from('battles')
-      .update({ status: 'active' })
-      .eq('id', currentBattleId);
-    if (error) console.warn('[Supabase] battles UPDATE 실패:', error.message);
+  // v0.1.72 — 창조자: 2초 후 시작 시각을 DB에 저장 → 양쪽이 동일한 시각에 카운트다운 시작
+  if (scheduledStartAt === null) {
+    const futureStart = Date.now() + 2000;
+    if (sb && currentBattleId) {
+      const { error } = await sb.from('battles')
+        .update({ status: 'active', countdown_started_at: new Date(futureStart).toISOString() })
+        .eq('id', currentBattleId);
+      if (error) {
+        await sb.from('battles').update({ status: 'active' }).eq('id', currentBattleId);
+      }
+    }
+    scheduledStartAt = futureStart;
   }
 
   $battleRoomStartBtn.hidden = true;
   $battleRoomCancelBtn.hidden = true;
+
+  // 예약 시각까지 대기 — "준비 중···" 표시
+  const waitMs = scheduledStartAt - Date.now();
+  if (waitMs > 50) {
+    $battleRoomStatus.textContent = '준비 중···';
+    await new Promise(r => setTimeout(r, waitMs));
+  }
   $battleRoomStatus.textContent = '';
 
   const countEl = document.createElement('div');
@@ -2075,18 +2093,16 @@ async function startBattleWithCountdown() {
     countEl.appendChild(row);
   }
 
+  // 양쪽 모두 스킵 없이 3·2·1·시작! 풀 카운트다운
   for (let n = 3; n >= 1; n--) {
     renderCountRow(n);
     await new Promise(r => setTimeout(r, 900));
   }
-
-  // 시작! — 얼굴 양옆 + 가운데 텍스트
   renderCountRow('시작!');
   playHifive();
-
   await new Promise(r => setTimeout(r, 750));
-  countEl.remove();
 
+  countEl.remove();
   startBattleTimer();
 }
 
@@ -2201,6 +2217,11 @@ function subscribeBattleRoom(battleId) {
         if (payload.new?.status !== 'active') return;
         if (isStartingBattle || timer.running) return;  // 내가 이미 시작 중이면 무시
 
+        // v0.1.72 — 예약 시작 시각 전달 (양쪽 동시 출발)
+        const scheduledStartAt = payload.new?.countdown_started_at
+          ? new Date(payload.new.countdown_started_at).getTime()
+          : null;
+
         unsubscribeBattleRoom();  // 중복 트리거 방지
 
         // 배틀 룸 모달이 닫혀있으면 데이터 로드 후 열기
@@ -2211,7 +2232,7 @@ function subscribeBattleRoom(battleId) {
           if (typeof $battleRoomModal.showModal === 'function') $battleRoomModal.showModal();
           else $battleRoomModal.setAttribute('open', '');
         }
-        await startBattleWithCountdown();
+        await startBattleWithCountdown(scheduledStartAt);
       }
     )
     // ④ v0.1.62 — Broadcast: 상대방이 배틀룸을 열면 나도 자동으로 모달 열기
@@ -2289,7 +2310,7 @@ function startBattleRoomPolling(battleId) {
     }
     if (!sb || !battleId) return;
     try {
-      const { data } = await sb.from('battles').select('status').eq('id', battleId).single();
+      const { data } = await sb.from('battles').select('status, countdown_started_at').eq('id', battleId).single();
       if (!data) return;
       if (data.status === 'done') { stopBattleRoomPolling(); return; }
       if (data.status === 'active' && !timer.running && !isStartingBattle) {
@@ -2297,7 +2318,11 @@ function startBattleRoomPolling(battleId) {
         stopBattleRoomPolling();
         const result = await fetchBattle(battleId);
         if (result?.battle) currentBattleData = result;
-        await startBattleWithCountdown();
+        // v0.1.72 — 예약 시작 시각 전달
+        const scheduledStartAt = data.countdown_started_at
+          ? new Date(data.countdown_started_at).getTime()
+          : null;
+        await startBattleWithCountdown(scheduledStartAt);
       }
     } catch (err) { console.warn('[Poll] 폴링 오류:', err); }
   }, 5000);
@@ -2339,6 +2364,11 @@ function subscribeWatchBattle(battleId) {
         if (payload.new?.status !== 'active') return;
         if (isStartingBattle || timer.running) return;
 
+        // v0.1.72 — 예약 시작 시각 전달 (양쪽 동시 출발)
+        const scheduledStartAt = payload.new?.countdown_started_at
+          ? new Date(payload.new.countdown_started_at).getTime()
+          : null;
+
         unsubscribeWatchBattle();  // 중복 트리거 방지
 
         if (!$battleRoomModal.open) {
@@ -2348,7 +2378,7 @@ function subscribeWatchBattle(battleId) {
           if (typeof $battleRoomModal.showModal === 'function') $battleRoomModal.showModal();
           else $battleRoomModal.setAttribute('open', '');
         }
-        await startBattleWithCountdown();
+        await startBattleWithCountdown(scheduledStartAt);
       }
     )
     // v0.1.63 — battle_players UPDATE: 파트너 room_opened_at 감지 (watchChannel 경로)
@@ -2409,7 +2439,7 @@ function updateRealtimeStatusDot(isLive) {
   const dot = $battleRoomStatus.querySelector('.live-dot');
   if (!dot) return;
   dot.style.opacity = isLive ? '1' : '0.3';
-  dot.title = isLive ? '자동 새로고침 중' : '연결 중...';
+  dot.title = isLive ? '자동 새로고침 중' : '연결 중···';
 }
 
 // v0.1.19 — battles UPDATE 구독: 창조자 시작 시 친구 자동 카운트다운
@@ -2471,7 +2501,7 @@ if ($noteUploadBtn) {
     const note = $completionNote?.value?.trim();
     if (!note) return;
     $noteUploadBtn.disabled = true;
-    $noteUploadBtn.textContent = '저장 중...';
+    $noteUploadBtn.textContent = '저장 중···';
 
     if (activeBattleId && sb && myNickname) {
       const { error } = await sb.from('battle_players')
@@ -2599,6 +2629,13 @@ function checkInAppBrowser() {
 
 // v0.1.69 — 앱 초기 로드 시 파트너 배틀룸 입장 여부 DB 직접 확인
 // Realtime 채널 없이도 동작 → 창 닫고 새로 들어온 경우 커버
+// v0.1.71 — 파트너 미입장 시 watchBattle 구독 + 주기적 폴링 추가
+let _roomSignalPollInterval = null;
+
+function stopRoomSignalPolling() {
+  if (_roomSignalPollInterval) { clearInterval(_roomSignalPollInterval); _roomSignalPollInterval = null; }
+}
+
 async function checkPartnerInRoomOnInit() {
   if (!sb || !myNickname) return;
   if ($battleRoomModal?.open || battleRoomUserDismissed) return;
@@ -2607,10 +2644,13 @@ async function checkPartnerInRoomOnInit() {
   try { battles = await loadMyBattles(); } catch (e) { return; }
   if (!battles?.length) return;
 
-  const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+  const activeBattles = battles.filter(b => b.status !== 'done');
+  if (!activeBattles.length) return;
 
-  for (const b of battles) {
-    if (b.status === 'done') continue;
+  const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+  let autoOpened = false;
+
+  for (const b of activeBattles) {
     if ($battleRoomModal?.open || battleRoomUserDismissed) break;
 
     const { data } = await sb.from('battle_players')
@@ -2623,8 +2663,41 @@ async function checkPartnerInRoomOnInit() {
       console.log('[InitCheck] 파트너 배틀룸 감지 → 자동 오픔:', b.id);
       currentBattleId = b.id;
       await openBattleRoom(b.id);
+      autoOpened = true;
       break;
     }
+  }
+
+  if (!autoOpened) {
+    const firstActive = activeBattles[0];
+    // ① watchBattle 구독: 파트너가 나중에 배틀룸 열면 이벤트 수신
+    if (!watchChannel) {
+      console.log('[InitSubscribe] watchBattle 구독 시작:', firstActive.id);
+      subscribeWatchBattle(firstActive.id);
+    }
+    // ② 주기적 DB 폴링 (15s): WebSocket 불안정 환경(카카오톡 등) 백업
+    stopRoomSignalPolling();
+    _roomSignalPollInterval = setInterval(async () => {
+      if ($battleRoomModal?.open || battleRoomUserDismissed || timer.running) {
+        stopRoomSignalPolling(); return;
+      }
+      const freshFiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      for (const b of activeBattles) {
+        if ($battleRoomModal?.open || battleRoomUserDismissed) break;
+        const { data } = await sb.from('battle_players')
+          .select('nickname, room_opened_at')
+          .eq('battle_id', b.id)
+          .neq('nickname', myNickname);
+        const partnerInRoom = data?.some(r => r.room_opened_at && r.room_opened_at > freshFiveMinAgo);
+        if (partnerInRoom) {
+          console.log('[RoomPoll] 파트너 배틀룸 감지 → 자동 오픔:', b.id);
+          stopRoomSignalPolling();
+          currentBattleId = b.id;
+          await openBattleRoom(b.id);
+          break;
+        }
+      }
+    }, 15000);
   }
 }
 
@@ -2828,7 +2901,7 @@ function restoreTimerState() {
       // 남은 시간으로 계속 진행
       timer.remaining = Math.ceil((state.endTime - now) / 1000);
       timer.endTime = state.endTime;
-      $timerStatus.textContent = `⟳ "${currentTask}" 자리 비운 사이도 계속 돌아가는 중...`;
+      $timerStatus.textContent = `⟳ "${currentTask}" 자리 비운 사이도 계속 돌아가는 중···`;
       $timerStatus.classList.add('resumed');
       startTimerInternal();  // 자동 재개
     }
@@ -3311,7 +3384,7 @@ function startTimer() {
     task: currentTask,
   });
 
-  $timerStatus.textContent = `"${currentTask}" 작업 중...`;
+  $timerStatus.textContent = `"${currentTask}" 작업 중···`;
   $timerStatus.classList.remove('success', 'resumed');
 
   // v0.1.28 — 완료 후 새 타이머 시작 시 소감·인증샷 초기화 (captureRow가 보이는 상태 = 완료 직후)
@@ -3614,7 +3687,7 @@ async function renderLeaderboard() {
   const periodKey = lbPeriod === 'week' ? getWeekKey(now) : getMonthKey(now);
   const allNicks = [myNickname, ...partnerNicks];
 
-  $body.innerHTML = '<p class="lb-loading">불러오는 중…</p>';
+  $body.innerHTML = '<p class="lb-loading">불러오는 중···</p>';
 
   let rows = [];
   if (sb) {
@@ -3790,7 +3863,7 @@ async function uploadProofToSupabase(dataUrl, battleId) {
 // ====== v0.1.17 — 배틀 결과 화면 ======
 
 async function openBattleResult(battleId) {
-  $battleResultSummary.textContent = '결과 불러오는 중...';
+  $battleResultSummary.textContent = '결과 불러오는 중···';
   $battleResultPlayers.innerHTML = '';
   if (typeof $battleResultModal.showModal === 'function') $battleResultModal.showModal();
   else $battleResultModal.setAttribute('open', '');
@@ -3904,7 +3977,7 @@ async function openCameraModal() {
   $cameraShootBtn.hidden = false;
   $cameraRetryBtn.hidden = true;
   $cameraSaveBtn.hidden = true;
-  $cameraHint.textContent = '카메라 준비 중...';
+  $cameraHint.textContent = '카메라 준비 중···';
   $cameraHint.classList.remove('error');
 
   if (typeof $cameraModal.showModal === 'function') {
@@ -4032,7 +4105,7 @@ function saveCaptureToStorage(dataUrl) {
     }
     // v0.1.17 — 배틀 중이면 Supabase Storage에도 업로드
     if (activeBattleId && sb) {
-      $captureBtn.textContent = '📤 업로드 중...';
+      $captureBtn.textContent = '📤 업로드 중···';
       $captureBtn.disabled = true;
       const result = await uploadProofToSupabase(compressedUrl, activeBattleId);
       if (result.ok) {
