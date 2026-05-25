@@ -2768,7 +2768,7 @@ function restoreTimerState() {
       // 이미 끝났음
       timer.remaining = 0;
       timer.endTime = null;
-      $timerStatus.textContent = `✓ "${currentTask}" 자리 비운 사이 시간이 끝났어요`;
+      $timerStatus.textContent = `✓ "${currentTask}" 완료! 수고하셨어요`;
       $timerStatus.classList.add('success');
       $timerDisplay.classList.add('finished');
       $startBtn.disabled = true;
