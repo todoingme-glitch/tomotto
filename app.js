@@ -2623,7 +2623,7 @@ $battleRoomGachaBtn.addEventListener('click', () => {
   switchTab('personal');  // v0.1.17 — 개인 탭 자동 전환
   document.querySelector('.category-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
-$battleRoomStartBtn.addEventListener('click', startBattleWithCountdown);
+$battleRoomStartBtn.addEventListener('click', () => startBattleWithCountdown());  // v0.1.77 — MouseEvent 전달 방지 (scheduledStartAt=null 보장)
 
 // 닉네임 저장 후 이벤트 (배틀 룸 열기 재시도용)
 function dispatchNickSaved() {
