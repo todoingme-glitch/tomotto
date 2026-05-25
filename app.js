@@ -2024,8 +2024,10 @@ async function acceptBattle() {
 async function startBattleWithCountdown() {
   if (!currentBattleData || isStartingBattle || timer.running) return;
   // v0.1.30 — MOTO MODE에서 내 가챠가 아직 안 됐으면 카운트다운 차단
-  // renderBattleRoom()이 이미 '가챠 먼저 돌리기' 버튼을 보여주고 있으므로 UI는 정상
-  if (currentBattleData.battle?.mode === 'separate' && !currentTask) return;
+  // v0.1.68 — localStorage currentTask 대신 DB값(battle_players.task) 사용 (stale 방지)
+  const _meRow = currentBattleData?.players?.find(p => p.nickname === myNickname);
+  const _myDbTask = _meRow?.task || null;
+  if (currentBattleData.battle?.mode === 'separate' && !_myDbTask) return;
   isStartingBattle = true;
 
   // v0.1.19 — battles 상태 'active'로 업데이트 → 상대방 Realtime 트리거
@@ -2174,11 +2176,8 @@ function subscribeBattleRoom(battleId) {
         if (payload.new?.room_opened_at && payload.new?.nickname !== myNickname && !$battleRoomModal.open && !battleRoomUserDismissed) {
           console.log('[RoomSignal] 파트너 배틀룸 열림 → 자동 오픔:', payload.new?.nickname);
           currentBattleId = battleId;
-          const result = await fetchBattle(battleId);
-          if (result?.battle) currentBattleData = result;
-          if (typeof $battleRoomModal.showModal === 'function') $battleRoomModal.showModal();
-          else $battleRoomModal.setAttribute('open', '');
-          await refreshBattleRoom();
+          // v0.1.68 — subscribeWatchBattle과 동일하게 openBattleRoom() 직접 호출
+          await openBattleRoom(battleId);
           return;
         }
         if ($battleRoomModal.open && currentBattleId === battleId) {
