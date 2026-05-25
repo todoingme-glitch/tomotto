@@ -771,19 +771,13 @@ br.mobile-br { display: none; }
 .timer-settings select {
   font-family: inherit;
   font-size: 13px;
-  padding: 6px 34px 6px 10px; /* 오른쪽 화살표 공간 확보 */
+  padding: 6px 10px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--bg);
   color: var(--text);
   margin-left: 8px;
   cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath fill='%23888' d='M5 7l5 5 5-5'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
-  background-size: 20px 20px;
 }
 
 /* 커스텀 시간 입력 — select에서 "직접 입력" 선택 시 (인라인, 약간 띄움) */
@@ -2128,6 +2122,7 @@ dialog.modal input[type="text"]:focus {
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 10px 12px;
+  position: relative; /* chevron absolute 기준 */
 }
 /* 배틀 로그 — 주황 테두리만 */
 .log-item--battle {
@@ -2263,10 +2258,17 @@ dialog.modal input[type="text"]:focus {
   opacity: 0.8;
 }
 .log-item-chevron {
-  font-size: 10px;
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: 18px;
   color: var(--text-muted);
-  margin-left: 2px;
-  flex-shrink: 0;
+  line-height: 1;
+  pointer-events: none; /* 클릭은 row에서 처리 */
+}
+/* chevron 공간 확보: time이 chevron 아래로 안 들어가도록 */
+.log-item.has-detail .log-item-row {
+  padding-right: 26px;
 }
 .log-item-detail {
   padding-top: 4px;
@@ -3114,14 +3116,9 @@ dialog.modal input[type="text"]:focus {
   color: var(--text-main);
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: clip;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  min-width: 0; /* grid 1fr 컬럼에서 잘림 작동 필수 */
-  /* 끝 쪽 페이드 아웃 */
-  -webkit-mask-image: linear-gradient(to right, black 70%, transparent 98%);
-  mask-image: linear-gradient(to right, black 70%, transparent 98%);
+  text-overflow: ellipsis;
+  display: block; /* ellipsis는 block/inline-block에서만 작동 */
+  min-width: 0; /* grid 1fr 컬럼에서 말줄임표 작동 필수 */
 }
 .lb-me-badge {
   display: inline-block;

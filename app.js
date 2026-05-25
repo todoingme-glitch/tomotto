@@ -1959,17 +1959,17 @@ function renderBattleRoom() {
     // v0.1.18 — LIVE dot: 새로고침 불필요하다는 시각적 표시
     $battleRoomStatus.innerHTML = '친구가 링크를 열고 수락하길 기다리는 중... <span class="live-dot" title="자동 새로고침 중">●</span>';
   } else if (alreadyJoined && friend) {
-    if (battle.mode === 'separate' && !currentTask) {
-      // MOTO MODE: 내 가챠 결과 없음 → 가챠 유도
+    // v0.1.67 — MOTO MODE 가챠 체크: currentTask 대신 DB의 battle_players.task 사용
+    const myDbTask = meIsCreator ? creator?.task : friend?.task;
+
+    if (battle.mode === 'separate' && !myDbTask) {
       $battleRoomGachaBtn.hidden = false;
       $battleRoomStatus.textContent = '가챠를 먼저 돌려서 내 작업을 정해주세요!';
     } else if (meIsCreator) {
-      // 창조자: TOM MODE이거나 MOTO MODE에서 친구도 가챠 완료했을 때만 시작 가능
       if (battle.mode === 'separate') {
-        const friendHasTask = !!(friend?.task);  // v0.1.22 — 친구 가챠 완료 여부
+        const friendHasTask = !!(friend?.task);
         if (!friendHasTask) {
           $battleRoomStatus.innerHTML = '친구가 가챠를 돌리길 기다리는 중... <span class="live-dot">●</span>';
-          // 시작 버튼 숨김 유지
         } else {
           $battleRoomStartBtn.hidden = false;
           $battleRoomStatus.innerHTML = '둘 다 준비됐어요! 시작하면 친구도 동시에 카운트다운돼요. <span class="live-dot">●</span>';
@@ -1979,16 +1979,10 @@ function renderBattleRoom() {
         $battleRoomStatus.textContent = '둘 다 준비됐어요. 시작하면 친구도 동시에 시작돼요.';
       }
     } else {
-      // v0.1.28 — 친구: 창조자 닉네임 표시 + TOM MODE는 창조자와 동일한 버튼
-      if (battle.mode === 'separate' && !currentTask) {
-        $battleRoomGachaBtn.hidden = false;
-        $battleRoomStatus.textContent = '가챠를 먼저 돌려서 내 작업을 정해주세요!';
-      } else {
-        // v0.1.30 — 가챠 완료 상태: TOM/MOTO 모두 동일 문구·버튼으로 통일
-        $battleRoomStatus.innerHTML = '둘 다 준비됐어요. 시작하면 친구도 동시에 시작돼요. <span class="live-dot">●</span>';
-        $battleRoomStartBtn.hidden = false;
-        $battleRoomStartBtn.textContent = '▶ 타이머 시작';
-      }
+      // v0.1.28/30 — 친구: 가챠 완료 or TOM MODE
+      $battleRoomStatus.innerHTML = '둘 다 준비됐어요. 시작하면 친구도 동시에 시작돼요. <span class="live-dot">●</span>';
+      $battleRoomStartBtn.hidden = false;
+      $battleRoomStartBtn.textContent = '▶ 타이머 시작';
     }
   } else if (!alreadyJoined && friend) {
     $battleRoomStatus.textContent = '이미 두 사람이 참여한 배틀이에요. 새 배틀을 만들어주세요.';
@@ -2273,14 +2267,18 @@ function unsubscribeBattleRoom() {
   }
 }
 
-// v0.1.67 — 폴링 백업: Realtime WebSocket이 불안정한 브라우저(카카오톡 등)에서 타이머 동기화 보장
+// v0.1.67 — 폴링 백업: Realtime WebSocket 불안정 시 타이머 동기화 보장 (카카오톡 등)
 function startBattleRoomPolling(battleId) {
   stopBattleRoomPolling();
-  console.log('[Poll] 배틀룸 폴링 시작 | battleId:', battleId);
+  const knownStatus = currentBattleData?.battle?.status;
+  if (knownStatus === 'active' || knownStatus === 'done') {
+    console.log('[Poll] status가 이미', knownStatus, '— 폴링 건너뜀');
+    return;
+  }
+  console.log('[Poll] 배틀룸 폴링 시작 | battleId:', battleId, '| 초기 status:', knownStatus);
   battleRoomPollInterval = setInterval(async () => {
     if (timer.running || isStartingBattle || !$battleRoomModal.open) {
-      stopBattleRoomPolling();
-      return;
+      stopBattleRoomPolling(); return;
     }
     if (!sb || !battleId) return;
     try {
@@ -2288,7 +2286,7 @@ function startBattleRoomPolling(battleId) {
       if (!data) return;
       if (data.status === 'done') { stopBattleRoomPolling(); return; }
       if (data.status === 'active' && !timer.running && !isStartingBattle) {
-        console.log('[Poll] battles.status=active 감지 → 카운트다운 시작');
+        console.log('[Poll] battles.status=active 전환 감지 → 카운트다운 시작');
         stopBattleRoomPolling();
         const result = await fetchBattle(battleId);
         if (result?.battle) currentBattleData = result;
