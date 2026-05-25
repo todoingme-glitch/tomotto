@@ -647,20 +647,26 @@ function closeNickModal() {
   else $nickModal.removeAttribute('open');
 }
 
-function saveNickname() {
+async function saveNickname() {
   const v = $nickInput.value.trim();
-  if (!v) {
-    alert('닉네임을 입력해주세요.');
-    return;
-  }
-  if (v.length > 12) {
-    alert('12자 이내로 적어주세요.');
-    return;
-  }
+  if (!v) { alert('닉네임을 입력해주세요.'); return; }
+  if (v.length > 20) { alert('20자 이내로 적어주세요.'); return; }
+  const oldNickname = myNickname;
   myNickname = v;
   localStorage.setItem(BATTLE_STORAGE.nickname, v);
   renderBattleNickname();
   closeNickModal();
+  // v0.1.66 — 닉네임 변경 시 DB 기존 데이터 마이그레이션 (리더보드 횟수 유지)
+  if (sb && oldNickname && oldNickname !== v) {
+    try {
+      await sb.from('user_stats').update({ nickname: v }).eq('nickname', oldNickname);
+      await sb.from('battle_players').update({ nickname: v }).eq('nickname', oldNickname);
+      console.log('[닉네임 변경] DB 마이그레이션:', oldNickname, '→', v);
+    } catch (err) {
+      console.warn('[닉네임 변경] DB 마이그레이션 실패:', err);
+    }
+    renderLeaderboard();
+  }
   // v0.1.14 — 닉네임 저장 후 대기 중인 곳(배틀 룸 등)에 알림
   document.dispatchEvent(new CustomEvent('nick-saved'));
 }
@@ -669,6 +675,10 @@ $nickSaveBtn.addEventListener('click', saveNickname);
 $nickCancelBtn.addEventListener('click', closeNickModal);
 $nickInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') { e.preventDefault(); saveNickname(); }
+});
+// v0.1.66 — 카카오톡 인앱 브라우저 IME 조합 중 maxlength 무시 문제 대응
+$nickInput.addEventListener('input', () => {
+  if ($nickInput.value.length > 20) $nickInput.value = $nickInput.value.slice(0, 20);
 });
 
 $battleNickEditBtn.addEventListener('click', () => openNickModal('edit'));
@@ -2548,11 +2558,13 @@ function checkInAppBrowser() {
 // 페이지 로드 시 닉네임 + 내 배틀 복원 + 온보딩 순서 처리
 window.addEventListener('load', () => {
   loadNickname(); // 이미 IIFE 전에 호출됐지만 재호출로 확실히 반영
-  // v0.1.65 — 소셜 탭 활성 시 닉네임 로드 후 리더보드·배틀 재렌더
+  // v0.1.65/66 — 탭별 초기 렌더 (닉네임 로드 후)
   const _activeTab = localStorage.getItem('tomotto_active_tab');
   if (_activeTab === 'social') {
     renderMyBattles();
     renderLeaderboard();
+  } else if (_activeTab === 'log') {
+    renderLogCalendar(); // v0.1.66 — 기록 탭 새로고침 시 즉시 렌더
   } else {
     renderMyBattles();
   }
