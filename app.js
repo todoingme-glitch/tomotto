@@ -1959,10 +1959,18 @@ function renderBattleRoom() {
     // v0.1.18 — LIVE dot: 새로고침 불필요하다는 시각적 표시
     $battleRoomStatus.innerHTML = '친구가 링크를 열고 수락하길 기다리는 중... <span class="live-dot" title="자동 새로고침 중">●</span>';
   } else if (alreadyJoined && friend) {
-    // v0.1.67 — MOTO MODE 가챠 체크: currentTask 대신 DB의 battle_players.task 사용
+    // v0.1.67 — MOTO MODE 가챠 체크: DB의 battle_players.task 우선
+    // v0.1.70 — DB 미싱 시 localStorage currentTask fallback + DB 즉시 동기화
     const myDbTask = meIsCreator ? creator?.task : friend?.task;
+    const effectiveMyTask = myDbTask || (battle.mode === 'separate' ? currentTask : null);
+    if (battle.mode === 'separate' && !myDbTask && effectiveMyTask && currentBattleId && sb && myNickname) {
+      // localStorage에 가챠 결과 있는데 DB에 없으면 동기화 (재수락 후 task null 케이스)
+      sb.from('battle_players').update({ task: effectiveMyTask })
+        .eq('battle_id', currentBattleId).eq('nickname', myNickname)
+        .then(() => console.log('[Sync] currentTask → battle_players.task 동기화'));
+    }
 
-    if (battle.mode === 'separate' && !myDbTask) {
+    if (battle.mode === 'separate' && !effectiveMyTask) {
       $battleRoomGachaBtn.hidden = false;
       $battleRoomStatus.textContent = '가챠를 먼저 돌려서 내 작업을 정해주세요!';
     } else if (meIsCreator) {
@@ -2642,7 +2650,10 @@ window.addEventListener('load', () => {
 
   if (battleId) {
     // 배틀 링크로 진입: 온보딩 먼저 → 완료 후 배틀 룸
-    showBattleLock(battleId);
+    // v0.1.70 — 실제 참여자인 경우에만 잠금 배너 표시 (카드 삭제 후 재진입 버그 방지)
+    loadMyBattles().then(list => {
+      if (list?.some(b => b.id === battleId)) showBattleLock(battleId);
+    });
     // initOnboarding();        // v0.1.34 — Shepherd.js 버전 (보관)
     initOnboardingTooltip(() => {
       switchTab('social');
