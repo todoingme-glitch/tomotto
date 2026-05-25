@@ -771,13 +771,19 @@ br.mobile-br { display: none; }
 .timer-settings select {
   font-family: inherit;
   font-size: 13px;
-  padding: 6px 10px;
+  padding: 6px 34px 6px 10px; /* 오른쪽 화살표 공간 확보 */
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--bg);
   color: var(--text);
   margin-left: 8px;
   cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath fill='%23888' d='M5 7l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 20px 20px;
 }
 
 /* 커스텀 시간 입력 — select에서 "직접 입력" 선택 시 (인라인, 약간 띄움) */
@@ -1487,11 +1493,17 @@ dialog.modal input[type="text"]:focus {
   width: 100%;
   font-family: inherit;
   font-size: 14px;
-  padding: 10px 14px;
+  padding: 10px 42px 10px 14px; /* 오른쪽 화살표 공간 */
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--bg);
   color: var(--text);
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath fill='%23888' d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 24px 24px;
 }
 
 .battle-time-row select:focus {
@@ -3068,10 +3080,10 @@ dialog.modal input[type="text"]:focus {
 
 .lb-row {
   display: grid;
-  grid-template-columns: 28px 1fr auto;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
+  gap: 12px;
+  padding: 8px 12px;
   border-radius: 10px;
   background: var(--bg-surface, #fafafa);
   border: 1.5px solid var(--border-soft);
@@ -3102,11 +3114,14 @@ dialog.modal input[type="text"]:focus {
   color: var(--text-main);
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
+  text-overflow: clip;
   display: flex;
   align-items: center;
   gap: 5px;
-  min-width: 0; /* grid 1fr 컬럼에서 말줄임표 작동 필수 */
+  min-width: 0; /* grid 1fr 컬럼에서 잘림 작동 필수 */
+  /* 끝 쪽 페이드 아웃 */
+  -webkit-mask-image: linear-gradient(to right, black 70%, transparent 98%);
+  mask-image: linear-gradient(to right, black 70%, transparent 98%);
 }
 .lb-me-badge {
   display: inline-block;
@@ -3138,6 +3153,7 @@ dialog.modal input[type="text"]:focus {
   font-weight: 700;
   color: var(--text);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* =====================================================
