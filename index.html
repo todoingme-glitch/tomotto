@@ -5,6 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Tomotto — 가챠 뽀모도로</title>
 
+  <!-- 카카오톡 Android WebView → 크롬 즉시 전환 (다른 스크립트보다 먼저 실행) -->
+  <script>
+    (function () {
+      var ua = navigator.userAgent || '';
+      if (/KAKAOTALK/i.test(ua) && /Android/i.test(ua)) {
+        var intentUrl =
+          'intent://' + location.host + location.pathname + location.search +
+          '#Intent;scheme=https;action=android.intent.action.VIEW;' +
+          'category=android.intent.category.BROWSABLE;end';
+        location.replace(intentUrl);
+      }
+    })();
+  </script>
+
   <!-- PWA -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#d94e3a">
@@ -320,7 +334,7 @@
     </div><!-- /tab-panel#tab-league -->
 
     <footer>
-      <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1.73 · PWA + 카카오톡 크롬 자동 전환</span></small>
+      <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1.74 · 카카오톡 → 크롬 즉시 전환 (head 스크립트)</span></small>
     </footer>
   </div>
 

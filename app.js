@@ -2609,16 +2609,10 @@ function checkInAppBrowser() {
 
   const isAndroid = /Android/i.test(ua);
 
-  // v0.1.73 — Android 카카오톡: intent:// 스킴으로 크롬 자동 전환 시도
+  // Android 카카오톡은 <head> 인라인 스크립트에서 이미 처리
+  // 여기까지 왔다면 intent 실패(크롬 없음 등) → 배너로 안내
   if (isKakao && isAndroid) {
-    const intentUrl =
-      'intent://' + location.host + location.pathname + location.search +
-      '#Intent;scheme=https;action=android.intent.action.VIEW;' +
-      'category=android.intent.category.BROWSABLE;end';
-    location.href = intentUrl;
-
-    // 리다이렉트 실패(크롬 없음 등) 시 1.2초 후 배너 표시
-    setTimeout(() => showIabBanner(true), 1200);
+    showIabBanner(true);
     return;
   }
 
@@ -2736,6 +2730,48 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js')
     .then(reg => console.log('[SW] 등록 완료:', reg.scope))
     .catch(err => console.warn('[SW] 등록 실패:', err));
+}
+
+// v0.1.74 — PWA 홈 화면 추가 배너 (크롬 + 삼성인터넷 등 beforeinstallprompt 지원 브라우저)
+let _deferredInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  _deferredInstallPrompt = e;
+  // 이미 설치했거나 닫은 적 있으면 스킵
+  if (localStorage.getItem('tomotto_pwa_dismissed')) return;
+  showPwaInstallBanner();
+});
+
+window.addEventListener('appinstalled', () => {
+  localStorage.setItem('tomotto_pwa_dismissed', '1');
+  document.getElementById('pwaInstallBanner')?.remove();
+});
+
+function showPwaInstallBanner() {
+  if (document.getElementById('pwaInstallBanner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'pwaInstallBanner';
+  banner.className = 'iab-banner pwa-install-banner';
+  banner.innerHTML =
+    '<span class="iab-msg">홈 화면에 추가하면 앱처럼 쓸 수 있어요 🍅</span>' +
+    '<button class="iab-open-btn" id="pwaInstallBtn">홈에 추가</button>' +
+    '<button class="iab-close-btn" id="pwaInstallCloseBtn">✕</button>';
+  document.body.prepend(banner);
+
+  document.getElementById('pwaInstallBtn').addEventListener('click', async () => {
+    if (!_deferredInstallPrompt) return;
+    _deferredInstallPrompt.prompt();
+    const { outcome } = await _deferredInstallPrompt.userChoice;
+    _deferredInstallPrompt = null;
+    banner.remove();
+    if (outcome === 'accepted') localStorage.setItem('tomotto_pwa_dismissed', '1');
+  });
+
+  document.getElementById('pwaInstallCloseBtn').addEventListener('click', () => {
+    banner.remove();
+    localStorage.setItem('tomotto_pwa_dismissed', '1');
+  });
 }
 
 window.addEventListener('load', () => {

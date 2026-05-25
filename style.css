@@ -3196,3 +3196,7 @@ dialog.modal input[type="text"]:focus {
   line-height: 1;
   flex-shrink: 0;
 }
+/* PWA 홈 화면 추가 배너 — 토마토 색 */
+.pwa-install-banner {
+  background: var(--accent);
+}
