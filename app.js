@@ -2043,18 +2043,30 @@ async function startBattleWithCountdown(scheduledStartAt = null) {
   isStartingBattle = true;
 
   // v0.1.19 — battles 상태 'active'로 업데이트 → 상대방 Realtime 트리거
-  // v0.1.72 — 창조자: 2초 후 시작 시각을 DB에 저장 → 양쪽이 동일한 시각에 카운트다운 시작
+  // v0.1.72 — 창조자: 예약 시각을 DB에 저장 → 양쪽 동시 출발
+  // v0.1.75 — DB await 제거 (시간 소진 방지) + Broadcast로 futureStart 즉시 공유
   if (scheduledStartAt === null) {
-    const futureStart = Date.now() + 2000;
-    if (sb && currentBattleId) {
-      const { error } = await sb.from('battles')
-        .update({ status: 'active', countdown_started_at: new Date(futureStart).toISOString() })
-        .eq('id', currentBattleId);
-      if (error) {
-        await sb.from('battles').update({ status: 'active' }).eq('id', currentBattleId);
-      }
-    }
+    const futureStart = Date.now() + 3500;  // 3.5초 예약 (DB 이벤트 도달 여유)
     scheduledStartAt = futureStart;
+
+    // Broadcast로 즉시 공유 (DB Realtime보다 훨씬 빠름, 채널 연결만 되면 <200ms)
+    const _bcastPayload = { type: 'broadcast', event: 'countdown-start', payload: { futureStart } };
+    realtimeChannel?.send(_bcastPayload);
+    watchChannel?.send(_bcastPayload);
+    console.log('[Countdown] futureStart 예약:', new Date(futureStart).toISOString(), '| Broadcast 전송');
+
+    // DB 업데이트는 비동기 fire-and-forget (await 없음 — scheduledStartAt 이미 결정됨)
+    if (sb && currentBattleId) {
+      sb.from('battles')
+        .update({ status: 'active', countdown_started_at: new Date(futureStart).toISOString() })
+        .eq('id', currentBattleId)
+        .then(({ error }) => {
+          if (error) {
+            console.warn('[Countdown] countdown_started_at 컬럼 없음, status만 업데이트');
+            sb.from('battles').update({ status: 'active' }).eq('id', currentBattleId);
+          }
+        });
+    }
   }
 
   $battleRoomStartBtn.hidden = true;
@@ -2247,7 +2259,22 @@ function subscribeBattleRoom(battleId) {
       else $battleRoomModal.setAttribute('open', '');
       await refreshBattleRoom();
     })
-    .subscribe((status) => {
+    // ⑤ v0.1.75 — Broadcast: 카운트다운 시작 시각 공유 (DB 이벤트보다 빠름)
+    .on('broadcast', { event: 'countdown-start' }, async ({ payload }) => {
+      if (isStartingBattle || timer.running) return;
+      const futureStart = payload?.futureStart;
+      if (!futureStart) return;
+      console.log('[Broadcast] countdown-start 수신 | futureStart:', new Date(futureStart).toISOString());
+      if (!$battleRoomModal.open) {
+        currentBattleId = battleId;
+        const result = await fetchBattle(battleId);
+        if (result?.battle) currentBattleData = result;
+        if (typeof $battleRoomModal.showModal === 'function') $battleRoomModal.showModal();
+        else $battleRoomModal.setAttribute('open', '');
+      }
+      await startBattleWithCountdown(futureStart);
+    })
+    .subscribe(async (status) => {
       console.log('[Realtime] 구독 상태:', status, '/ battleId:', battleId);
       if (status === 'SUBSCRIBED') {
         updateRealtimeStatusDot(true);
@@ -2272,6 +2299,22 @@ function subscribeBattleRoom(battleId) {
                 });
               }
             });
+        }
+        // v0.1.75 — 구독 시점에 이미 battles.status = active인 경우 즉시 시작
+        // (구독 연결 전에 창조자가 시작 버튼을 눌렀을 때 미스 방지)
+        if (sb && $battleRoomModal.open && !timer.running && !isStartingBattle) {
+          try {
+            const { data: bData } = await sb.from('battles')
+              .select('status, countdown_started_at')
+              .eq('id', battleId).single();
+            if (bData?.status === 'active') {
+              console.log('[Realtime] 구독 시 battles.status=active 감지 → 즉시 카운트다운');
+              const _sat = bData.countdown_started_at
+                ? new Date(bData.countdown_started_at).getTime()
+                : null;
+              await startBattleWithCountdown(_sat);
+            }
+          } catch (_e) { /* 무시 */ }
         }
         // v0.1.62 — Broadcast (보조 수단 유지)
         if (myNickname) {
@@ -2325,7 +2368,7 @@ function startBattleRoomPolling(battleId) {
         await startBattleWithCountdown(scheduledStartAt);
       }
     } catch (err) { console.warn('[Poll] 폴링 오류:', err); }
-  }, 5000);
+  }, 2000);  // v0.1.75 — 5초→2초 (타이머 동기화 반응성 개선)
 }
 
 function stopBattleRoomPolling() {
@@ -2401,7 +2444,22 @@ function subscribeWatchBattle(battleId) {
       currentBattleId = battleId;
       await openBattleRoom(battleId);
     })
-    .subscribe((status) => {
+    // v0.1.75 — Broadcast: 카운트다운 시작 시각 수신 (watchChannel 경로)
+    .on('broadcast', { event: 'countdown-start' }, async ({ payload }) => {
+      if (isStartingBattle || timer.running) return;
+      const futureStart = payload?.futureStart;
+      if (!futureStart) return;
+      console.log('[Watch Broadcast] countdown-start 수신 | futureStart:', new Date(futureStart).toISOString());
+      if (!$battleRoomModal.open) {
+        currentBattleId = battleId;
+        const result = await fetchBattle(battleId);
+        if (result?.battle) currentBattleData = result;
+        if (typeof $battleRoomModal.showModal === 'function') $battleRoomModal.showModal();
+        else $battleRoomModal.setAttribute('open', '');
+      }
+      await startBattleWithCountdown(futureStart);
+    })
+    .subscribe(async (status) => {
       console.log('[Watch] 구독 상태:', status, '/ battleId:', battleId);
       if (status === 'SUBSCRIBED' && myNickname) {
         // v0.1.63 — 구독 직후 파트너 room_opened_at 확인
@@ -2418,6 +2476,21 @@ function subscribeWatchBattle(battleId) {
                 openBattleRoom(battleId);
               }
             });
+        }
+        // v0.1.75 — 구독 시점에 이미 battles.status = active인 경우 즉시 시작
+        if (sb && $battleRoomModal.open && !timer.running && !isStartingBattle) {
+          try {
+            const { data: bData } = await sb.from('battles')
+              .select('status, countdown_started_at')
+              .eq('id', battleId).single();
+            if (bData?.status === 'active') {
+              console.log('[Watch] 구독 시 battles.status=active 감지 → 즉시 카운트다운');
+              const _sat = bData.countdown_started_at
+                ? new Date(bData.countdown_started_at).getTime()
+                : null;
+              await startBattleWithCountdown(_sat);
+            }
+          } catch (_e) { /* 무시 */ }
         }
         // Broadcast (보조)
         watchChannel?.send({
@@ -2732,45 +2805,82 @@ if ('serviceWorker' in navigator) {
     .catch(err => console.warn('[SW] 등록 실패:', err));
 }
 
-// v0.1.74 — PWA 홈 화면 추가 배너 (크롬 + 삼성인터넷 등 beforeinstallprompt 지원 브라우저)
+// v0.1.74/75 — PWA 홈 화면 추가 배너
+// beforeinstallprompt: 크롬·삼성인터넷 설치 프롬프트 (참여도 조건 충족 시 발동)
+// 폴백: 모바일 안드로이드에서 조건 미충족 시 수동 안내 배너
 let _deferredInstallPrompt = null;
+
+function _isPwaInstallDismissed() {
+  const ts = localStorage.getItem('tomotto_pwa_dismissed');
+  if (!ts) return false;
+  // v0.1.75 — 영구 차단 대신 24시간만 유지 (테스트/재설치 고려)
+  return Date.now() - Number(ts) < 24 * 60 * 60 * 1000;
+}
 
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   _deferredInstallPrompt = e;
-  // 이미 설치했거나 닫은 적 있으면 스킵
-  if (localStorage.getItem('tomotto_pwa_dismissed')) return;
-  showPwaInstallBanner();
+  if (_isPwaInstallDismissed()) return;
+  showPwaInstallBanner(true);  // 설치 프롬프트 가능
 });
 
 window.addEventListener('appinstalled', () => {
-  localStorage.setItem('tomotto_pwa_dismissed', '1');
+  localStorage.setItem('tomotto_pwa_dismissed', String(Date.now() + 365 * 24 * 60 * 60 * 1000));  // 1년
   document.getElementById('pwaInstallBanner')?.remove();
 });
 
-function showPwaInstallBanner() {
+// v0.1.75 — 폴백: beforeinstallprompt 3초 안에 안 뜨면 수동 안내 배너 (안드로이드 한정)
+window.addEventListener('load', () => {
+  if (_isPwaInstallDismissed()) return;
+  const ua = navigator.userAgent || '';
+  const isAndroid = /Android/i.test(ua);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone;
+  if (!isAndroid || isStandalone) return;  // 이미 설치됐거나 iOS/Desktop이면 스킵
+  setTimeout(() => {
+    if (_deferredInstallPrompt) return;  // beforeinstallprompt 이미 처리됨
+    if (document.getElementById('pwaInstallBanner')) return;
+    if (_isPwaInstallDismissed()) return;
+    showPwaInstallBanner(false);  // 수동 안내 모드
+  }, 3000);
+}, { once: true });
+
+function showPwaInstallBanner(canPrompt) {
   if (document.getElementById('pwaInstallBanner')) return;
   const banner = document.createElement('div');
   banner.id = 'pwaInstallBanner';
   banner.className = 'iab-banner pwa-install-banner';
-  banner.innerHTML =
-    '<span class="iab-msg">홈 화면에 추가하면 앱처럼 쓸 수 있어요 🍅</span>' +
-    '<button class="iab-open-btn" id="pwaInstallBtn">홈에 추가</button>' +
-    '<button class="iab-close-btn" id="pwaInstallCloseBtn">✕</button>';
-  document.body.prepend(banner);
 
-  document.getElementById('pwaInstallBtn').addEventListener('click', async () => {
-    if (!_deferredInstallPrompt) return;
-    _deferredInstallPrompt.prompt();
-    const { outcome } = await _deferredInstallPrompt.userChoice;
-    _deferredInstallPrompt = null;
-    banner.remove();
-    if (outcome === 'accepted') localStorage.setItem('tomotto_pwa_dismissed', '1');
-  });
+  if (canPrompt) {
+    // beforeinstallprompt 받은 경우: 버튼 클릭 → 설치 프롬프트
+    banner.innerHTML =
+      '<span class="iab-msg">홈 화면에 추가하면 앱처럼 쓸 수 있어요 🍅</span>' +
+      '<button class="iab-open-btn" id="pwaInstallBtn">홈에 추가</button>' +
+      '<button class="iab-close-btn" id="pwaInstallCloseBtn">✕</button>';
+    document.body.prepend(banner);
+
+    document.getElementById('pwaInstallBtn').addEventListener('click', async () => {
+      if (!_deferredInstallPrompt) return;
+      _deferredInstallPrompt.prompt();
+      const { outcome } = await _deferredInstallPrompt.userChoice;
+      _deferredInstallPrompt = null;
+      banner.remove();
+      if (outcome === 'accepted') {
+        localStorage.setItem('tomotto_pwa_dismissed', String(Date.now() + 365 * 24 * 60 * 60 * 1000));
+      }
+    });
+  } else {
+    // 폴백: 수동 안내
+    banner.innerHTML =
+      '<span class="iab-msg">홈 화면에 추가하면 앱처럼 쓸 수 있어요 🍅<br>' +
+      '<small style="opacity:.8">브라우저 메뉴 → 홈 화면에 추가</small></span>' +
+      '<button class="iab-close-btn" id="pwaInstallCloseBtn">✕</button>';
+    document.body.prepend(banner);
+  }
 
   document.getElementById('pwaInstallCloseBtn').addEventListener('click', () => {
     banner.remove();
-    localStorage.setItem('tomotto_pwa_dismissed', '1');
+    localStorage.setItem('tomotto_pwa_dismissed', String(Date.now()));
   });
 }
 
