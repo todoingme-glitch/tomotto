@@ -2679,18 +2679,7 @@ function checkInAppBrowser() {
   const isKakao = /KAKAOTALK/i.test(ua);
   const isOtherInApp = /NAVER|Instagram|FB_IAB|FBAN|Line\/|Snapchat/i.test(ua);
   if (!isKakao && !isOtherInApp) return;
-
-  const isAndroid = /Android/i.test(ua);
-
-  // Android 카카오톡은 <head> 인라인 스크립트에서 이미 처리
-  // 여기까지 왔다면 intent 실패(크롬 없음 등) → 배너로 안내
-  if (isKakao && isAndroid) {
-    showIabBanner(true);
-    return;
-  }
-
-  // 그 외 인앱 브라우저 (네이버, 인스타 등): 배너만 표시
-  if (!localStorage.getItem('tomotto_iab_ok')) showIabBanner(false);
+  if (!localStorage.getItem('tomotto_iab_ok')) showIabBanner(isKakao);
 }
 
 function showIabBanner(isKakao) {
@@ -2798,89 +2787,10 @@ async function checkPartnerInRoomOnInit() {
 }
 
 // 페이지 로드 시 닉네임 + 내 배틀 복원 + 온보딩 순서 처리
-// PWA 서비스 워커 등록
+// v0.1.76 — PWA 롤백: 이전에 등록된 서비스 워커 제거 (캐시 충돌 방지)
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js')
-    .then(reg => console.log('[SW] 등록 완료:', reg.scope))
-    .catch(err => console.warn('[SW] 등록 실패:', err));
-}
-
-// v0.1.74/75 — PWA 홈 화면 추가 배너
-// beforeinstallprompt: 크롬·삼성인터넷 설치 프롬프트 (참여도 조건 충족 시 발동)
-// 폴백: 모바일 안드로이드에서 조건 미충족 시 수동 안내 배너
-let _deferredInstallPrompt = null;
-
-function _isPwaInstallDismissed() {
-  const ts = localStorage.getItem('tomotto_pwa_dismissed');
-  if (!ts) return false;
-  // v0.1.75 — 영구 차단 대신 24시간만 유지 (테스트/재설치 고려)
-  return Date.now() - Number(ts) < 24 * 60 * 60 * 1000;
-}
-
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  _deferredInstallPrompt = e;
-  if (_isPwaInstallDismissed()) return;
-  showPwaInstallBanner(true);  // 설치 프롬프트 가능
-});
-
-window.addEventListener('appinstalled', () => {
-  localStorage.setItem('tomotto_pwa_dismissed', String(Date.now() + 365 * 24 * 60 * 60 * 1000));  // 1년
-  document.getElementById('pwaInstallBanner')?.remove();
-});
-
-// v0.1.75 — 폴백: beforeinstallprompt 3초 안에 안 뜨면 수동 안내 배너 (안드로이드 한정)
-window.addEventListener('load', () => {
-  if (_isPwaInstallDismissed()) return;
-  const ua = navigator.userAgent || '';
-  const isAndroid = /Android/i.test(ua);
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-    || window.navigator.standalone;
-  if (!isAndroid || isStandalone) return;  // 이미 설치됐거나 iOS/Desktop이면 스킵
-  setTimeout(() => {
-    if (_deferredInstallPrompt) return;  // beforeinstallprompt 이미 처리됨
-    if (document.getElementById('pwaInstallBanner')) return;
-    if (_isPwaInstallDismissed()) return;
-    showPwaInstallBanner(false);  // 수동 안내 모드
-  }, 3000);
-}, { once: true });
-
-function showPwaInstallBanner(canPrompt) {
-  if (document.getElementById('pwaInstallBanner')) return;
-  const banner = document.createElement('div');
-  banner.id = 'pwaInstallBanner';
-  banner.className = 'iab-banner pwa-install-banner';
-
-  if (canPrompt) {
-    // beforeinstallprompt 받은 경우: 버튼 클릭 → 설치 프롬프트
-    banner.innerHTML =
-      '<span class="iab-msg">홈 화면에 추가하면 앱처럼 쓸 수 있어요 🍅</span>' +
-      '<button class="iab-open-btn" id="pwaInstallBtn">홈에 추가</button>' +
-      '<button class="iab-close-btn" id="pwaInstallCloseBtn">✕</button>';
-    document.body.prepend(banner);
-
-    document.getElementById('pwaInstallBtn').addEventListener('click', async () => {
-      if (!_deferredInstallPrompt) return;
-      _deferredInstallPrompt.prompt();
-      const { outcome } = await _deferredInstallPrompt.userChoice;
-      _deferredInstallPrompt = null;
-      banner.remove();
-      if (outcome === 'accepted') {
-        localStorage.setItem('tomotto_pwa_dismissed', String(Date.now() + 365 * 24 * 60 * 60 * 1000));
-      }
-    });
-  } else {
-    // 폴백: 수동 안내
-    banner.innerHTML =
-      '<span class="iab-msg">홈 화면에 추가하면 앱처럼 쓸 수 있어요 🍅<br>' +
-      '<small style="opacity:.8">브라우저 메뉴 → 홈 화면에 추가</small></span>' +
-      '<button class="iab-close-btn" id="pwaInstallCloseBtn">✕</button>';
-    document.body.prepend(banner);
-  }
-
-  document.getElementById('pwaInstallCloseBtn').addEventListener('click', () => {
-    banner.remove();
-    localStorage.setItem('tomotto_pwa_dismissed', String(Date.now()));
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(r => r.unregister());
   });
 }
 
