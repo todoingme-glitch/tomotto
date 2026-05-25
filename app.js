@@ -2589,6 +2589,37 @@ function checkInAppBrowser() {
   });
 }
 
+// v0.1.69 — 앱 초기 로드 시 파트너 배틀룸 입장 여부 DB 직접 확인
+// Realtime 채널 없이도 동작 → 창 닫고 새로 들어온 경우 커버
+async function checkPartnerInRoomOnInit() {
+  if (!sb || !myNickname) return;
+  if ($battleRoomModal?.open || battleRoomUserDismissed) return;
+
+  let battles;
+  try { battles = await loadMyBattles(); } catch (e) { return; }
+  if (!battles?.length) return;
+
+  const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+
+  for (const b of battles) {
+    if (b.status === 'done') continue;
+    if ($battleRoomModal?.open || battleRoomUserDismissed) break;
+
+    const { data } = await sb.from('battle_players')
+      .select('nickname, room_opened_at')
+      .eq('battle_id', b.id)
+      .neq('nickname', myNickname);
+
+    const partnerInRoom = data?.some(r => r.room_opened_at && r.room_opened_at > fiveMinAgo);
+    if (partnerInRoom) {
+      console.log('[InitCheck] 파트너 배틀룸 감지 → 자동 오픔:', b.id);
+      currentBattleId = b.id;
+      await openBattleRoom(b.id);
+      break;
+    }
+  }
+}
+
 // 페이지 로드 시 닉네임 + 내 배틀 복원 + 온보딩 순서 처리
 window.addEventListener('load', () => {
   loadNickname(); // 이미 IIFE 전에 호출됐지만 재호출로 확실히 반영
@@ -2619,9 +2650,11 @@ window.addEventListener('load', () => {
       setTimeout(() => openBattleRoom(battleId), 300);
     });
   } else {
-    // 일반 진입: 온보딩만
+    // 일반 진입: 온보딩 + v0.1.69 파트너 배틀룸 입장 확인
     // initOnboarding();        // v0.1.34 — Shepherd.js 버전 (보관)
     initOnboardingTooltip();
+    // 배틀 카드 로드 완료 후 파트너 room_opened_at 체크
+    setTimeout(() => checkPartnerInRoomOnInit(), 1500);
   }
 });
 if ($logoWrap) {
