@@ -1645,14 +1645,13 @@ function openInviteModal(battle) {
 }
 
 function makeInviteLink(battleId) {
-  // Vercel preview URL(커밋 해시 포함)에서 생성하면 로그인 요구됨.
-  // preview URL 패턴: {project}-{8~12alphanum}-{team}.vercel.app
-  // → 해시 제거해서 production URL로 교체
   const h = location.hostname;
-  const previewMatch = h.match(/^(.+?)-[a-z0-9]{8,12}-(.+\.vercel\.app)$/);
-  const base = previewMatch
-    ? `https://${previewMatch[1]}-${previewMatch[2]}${location.pathname}`
-    : location.origin + location.pathname;
+  const isLocal = h === 'localhost' || h === '127.0.0.1';
+  // 로컬 외 모든 환경(Vercel preview 포함)은 production URL 고정
+  // — preview URL은 Vercel 로그인 요구 + 카카오 도메인 미등록 문제 발생
+  const base = isLocal
+    ? (location.origin + location.pathname)
+    : 'https://tomotto.vercel.app/';
   return `${base}?battle=${battleId}`;
 }
 
@@ -1962,6 +1961,17 @@ function renderBattleRoom() {
     // v0.1.18 — LIVE dot: 새로고침 불필요하다는 시각적 표시
     $battleRoomStatus.innerHTML = '친구가 링크를 열고 수락하길 기다리는 중··· <span class="live-dot" title="자동 새로고침 중">●</span>';
   } else if (alreadyJoined && friend) {
+    // 배틀이 이미 진행 중인 경우 — 재접속한 유저가 모달을 열었을 때
+    if (battle.status === 'active') {
+      if (timer.isRunning && activeBattleId === battle.id) {
+        $battleRoomStatus.textContent = '⏱ 배틀 진행 중이에요. 타이머 화면으로 이동하세요.';
+      } else {
+        $battleRoomStatus.innerHTML = '⏱ 배틀 진행 중! 타이머 동기화 중··· <span class="live-dot">●</span>';
+        setTimeout(() => syncActiveBattleTimer(battle), 0);
+      }
+      return;
+    }
+
     // v0.1.67 — MOTO MODE 가챠 체크: DB의 battle_players.task 우선
     // v0.1.70 — DB 미싱 시 localStorage currentTask fallback + DB 즉시 동기화
     const myDbTask = meIsCreator ? creator?.task : friend?.task;
@@ -2037,7 +2047,7 @@ async function acceptBattle() {
 //   null  → 창조자(버튼 클릭): DB 업데이트 + Broadcast 신호 발송 후 즉시 카운트다운
 //   1     → 수신자(상대방 신호 받은 쪽): 신호 수신 후 즉시 카운트다운 (DB/Broadcast 재발송 없음)
 async function startBattleWithCountdown(scheduledStartAt = null) {
-  if (!currentBattleData || isStartingBattle || timer.running) return;
+  if (!currentBattleData || isStartingBattle || timer.isRunning) return;
   // v0.1.30 — MOTO MODE에서 내 가챠가 아직 안 됐으면 카운트다운 차단
   // v0.1.68 — localStorage currentTask 대신 DB값(battle_players.task) 사용 (stale 방지)
   const _meRow = currentBattleData?.players?.find(p => p.nickname === myNickname);
@@ -2106,7 +2116,20 @@ async function startBattleWithCountdown(scheduledStartAt = null) {
   startBattleTimer();
 }
 
-function startBattleTimer() {
+// 재접속 동기화: countdown_started_at 기준으로 남은 시간 계산 후 타이머 직접 시작
+// 카운트다운 애니메이션 없이 현재 진행 시점에서 합류
+function syncActiveBattleTimer(battle) {
+  if (!battle?.countdown_started_at || isStartingBattle || timer.isRunning) return false;
+  const battleStartMs = new Date(battle.countdown_started_at).getTime() + 4000; // 3-2-1-GO ≈ 4초
+  const remainingMs = (battleStartMs + battle.duration_sec * 1000) - Date.now();
+  if (remainingMs <= 0) return false;
+  console.log('[Sync] 재접속 타이머 동기화:', Math.ceil(remainingMs / 1000), '초 남음');
+  isStartingBattle = true;
+  startBattleTimer(Math.ceil(remainingMs / 1000));
+  return true;
+}
+
+function startBattleTimer(overrideRemaining = null) {
   if (!currentBattleData) return;
   stopBattleRoomPolling(); // v0.1.67
   hideBattleLock();  // v0.1.15 — 배틀 시작 시 타이머 잠금 해제
@@ -2130,9 +2153,9 @@ function startBattleTimer() {
   localStorage.setItem(STORAGE.currentTask, task);
   showGachaResult(task, false);
 
-  // 시간 설정
+  // 시간 설정 — overrideRemaining은 재접속 동기화 시 경과 시간을 제외한 실제 남은 시간
   timer.duration = battle.duration_sec;
-  timer.remaining = battle.duration_sec;
+  timer.remaining = overrideRemaining ?? battle.duration_sec;
   updateTimerDisplay();
 
   closeBattleRoom();
@@ -2215,7 +2238,7 @@ function subscribeBattleRoom(battleId) {
       async (payload) => {
         console.log('[Realtime] battles UPDATE 감지:', payload);
         if (payload.new?.status !== 'active') return;
-        if (isStartingBattle || timer.running) return;  // 내가 이미 시작 중이면 무시
+        if (isStartingBattle || timer.isRunning) return;  // 내가 이미 시작 중이면 무시
 
         unsubscribeBattleRoom();  // 중복 트리거 방지
 
@@ -2244,7 +2267,7 @@ function subscribeBattleRoom(battleId) {
     })
     // ⑤ v0.1.75/78 — Broadcast: 카운트다운 시작 신호 수신
     .on('broadcast', { event: 'countdown-start' }, async () => {
-      if (isStartingBattle || timer.running) return;
+      if (isStartingBattle || timer.isRunning) return;
       console.log('[Broadcast] countdown-start 수신 → 즉시 시작');
       if (!$battleRoomModal.open) {
         currentBattleId = battleId;
@@ -2281,9 +2304,9 @@ function subscribeBattleRoom(battleId) {
               }
             });
         }
-        // v0.1.75/78 — 구독 시점에 이미 battles.status = active인 경우 즉시 시작
-        // 단, countdown_started_at이 최근 10초 이내인 경우만 (재진입 시 자동 카운트다운 방지)
-        if (sb && $battleRoomModal.open && !timer.running && !isStartingBattle) {
+        // 구독 시점에 이미 battles.status = active인 경우
+        // 10초 이내: 카운트다운 애니메이션 포함 시작 / 이후: 남은 시간으로 직접 동기화
+        if (sb && $battleRoomModal.open && !timer.isRunning && !isStartingBattle) {
           try {
             const { data: bData } = await sb.from('battles')
               .select('status, countdown_started_at')
@@ -2295,6 +2318,9 @@ function subscribeBattleRoom(battleId) {
               if (_isRecent) {
                 console.log('[Realtime] 구독 시 battles.status=active (최근) 감지 → 즉시 카운트다운');
                 await startBattleWithCountdown(1);
+              } else if (_satMs && currentBattleData?.battle) {
+                console.log('[Realtime] 구독 시 배틀 진행 중 감지 → 재접속 타이머 동기화');
+                syncActiveBattleTimer(currentBattleData.battle);
               }
             }
           } catch (_e) { /* 무시 */ }
@@ -2331,7 +2357,7 @@ function startBattleRoomPolling(battleId) {
   }
   console.log('[Poll] 배틀룸 폴링 시작 | battleId:', battleId, '| 초기 status:', knownStatus);
   battleRoomPollInterval = setInterval(async () => {
-    if (timer.running || isStartingBattle || !$battleRoomModal.open) {
+    if (timer.isRunning || isStartingBattle || !$battleRoomModal.open) {
       stopBattleRoomPolling(); return;
     }
     if (!sb || !battleId) return;
@@ -2339,18 +2365,20 @@ function startBattleRoomPolling(battleId) {
       const { data } = await sb.from('battles').select('status, countdown_started_at').eq('id', battleId).single();
       if (!data) return;
       if (data.status === 'done') { stopBattleRoomPolling(); return; }
-      if (data.status === 'active' && !timer.running && !isStartingBattle) {
-        // v0.1.78 — countdown_started_at이 최근 10초 이내인 경우만 카운트다운 시작
-        // (재진입 시 오래된 active 배틀에 의한 자동 카운트다운 방지)
+      if (data.status === 'active' && !timer.isRunning && !isStartingBattle) {
         const _satMs = data.countdown_started_at
           ? new Date(data.countdown_started_at).getTime() : 0;
         const _isRecent = _satMs && (Date.now() - _satMs < 10000);
-        if (!_isRecent) { stopBattleRoomPolling(); return; }
-        console.log('[Poll] battles.status=active (최근) 감지 → 카운트다운 시작');
         stopBattleRoomPolling();
         const result = await fetchBattle(battleId);
         if (result?.battle) currentBattleData = result;
-        await startBattleWithCountdown(1);  // v0.1.78 — 수신자: 즉시 시작
+        if (_isRecent) {
+          console.log('[Poll] battles.status=active (최근) 감지 → 카운트다운 시작');
+          await startBattleWithCountdown(1);
+        } else if (_satMs) {
+          console.log('[Poll] 배틀 진행 중 감지 → 재접속 타이머 동기화');
+          syncActiveBattleTimer(currentBattleData?.battle);
+        }
       }
     } catch (err) { console.warn('[Poll] 폴링 오류:', err); }
   }, 2000);  // v0.1.75 — 5초→2초 (타이머 동기화 반응성 개선)
@@ -2390,7 +2418,7 @@ function subscribeWatchBattle(battleId) {
       async (payload) => {
         console.log('[Watch] battles UPDATE 감지:', payload);
         if (payload.new?.status !== 'active') return;
-        if (isStartingBattle || timer.running) return;
+        if (isStartingBattle || timer.isRunning) return;
 
         unsubscribeWatchBattle();  // 중복 트리거 방지
 
@@ -2426,7 +2454,7 @@ function subscribeWatchBattle(battleId) {
     })
     // v0.1.75/78 — Broadcast: 카운트다운 시작 신호 수신 (watchChannel 경로)
     .on('broadcast', { event: 'countdown-start' }, async () => {
-      if (isStartingBattle || timer.running) return;
+      if (isStartingBattle || timer.isRunning) return;
       console.log('[Watch Broadcast] countdown-start 수신 → 즉시 시작');
       if (!$battleRoomModal.open) {
         currentBattleId = battleId;
@@ -2455,9 +2483,9 @@ function subscribeWatchBattle(battleId) {
               }
             });
         }
-        // v0.1.75/78 — 구독 시점에 이미 battles.status = active인 경우 즉시 시작
-        // countdown_started_at이 최근 10초 이내인 경우만 (재진입 시 자동 카운트다운 방지)
-        if (sb && $battleRoomModal.open && !timer.running && !isStartingBattle) {
+        // 구독 시점에 이미 battles.status = active인 경우
+        // 10초 이내: 카운트다운 / 이후: 재접속 타이머 동기화
+        if (sb && $battleRoomModal.open && !timer.isRunning && !isStartingBattle) {
           try {
             const { data: bData } = await sb.from('battles')
               .select('status, countdown_started_at')
@@ -2469,6 +2497,9 @@ function subscribeWatchBattle(battleId) {
               if (_isRecent) {
                 console.log('[Watch] 구독 시 battles.status=active (최근) 감지 → 즉시 카운트다운');
                 await startBattleWithCountdown(1);
+              } else if (_satMs && currentBattleData?.battle) {
+                console.log('[Watch] 배틀 진행 중 감지 → 재접속 타이머 동기화');
+                syncActiveBattleTimer(currentBattleData.battle);
               }
             }
           } catch (_e) { /* 무시 */ }
@@ -2513,7 +2544,7 @@ function subscribeBattleStart(battleId) {
       async (payload) => {
         console.log('[Realtime] battles UPDATE 감지:', payload);
         if (payload.new?.status !== 'active') return;
-        if (isStartingBattle || timer.running) return;  // 이미 시작 중이면 무시
+        if (isStartingBattle || timer.isRunning) return;  // 이미 시작 중이면 무시
 
         // 구독 즉시 해제 (중복 트리거 방지)
         unsubscribeBattleStart();
@@ -2744,7 +2775,7 @@ async function checkPartnerInRoomOnInit() {
     // ② 주기적 DB 폴링 (15s): WebSocket 불안정 환경(카카오톡 등) 백업
     stopRoomSignalPolling();
     _roomSignalPollInterval = setInterval(async () => {
-      if ($battleRoomModal?.open || battleRoomUserDismissed || timer.running) {
+      if ($battleRoomModal?.open || battleRoomUserDismissed || timer.isRunning) {
         stopRoomSignalPolling(); return;
       }
       const freshFiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
