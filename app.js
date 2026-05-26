@@ -1807,20 +1807,26 @@ let battleRoomUserDismissed = false;
 function showBattleLock(battleId) {
   lockedBattleId = battleId;
   $battleLockBanner.hidden = false;
-  $startBtn.disabled = true;
+  $startBtn.disabled = !currentTask;
+  updateBattleLockBanner();
 }
 
 function hideBattleLock() {
   lockedBattleId = null;
   $battleLockBanner.hidden = true;
-  // currentTask 있으면 시작 버튼 복원, 없으면 그대로 비활성
   $startBtn.disabled = !currentTask;
 }
 
-// v0.1.15 — 가챠 완료 후 배너를 "준비됐어요! 배틀 시작" 상태로 전환
-function updateBattleLockReady() {
-  $battleLockBanner.querySelector('.battle-lock-text').textContent = '✓ 가챠 완료! 이제 배틀을 시작할 수 있어요';
-  $battleLockOpenBtn.textContent = '배틀 시작 ▶';
+function updateBattleLockBanner() {
+  if (!lockedBattleId) return;
+  const lockText = $battleLockBanner.querySelector('.battle-lock-text');
+  if (currentTask) {
+    lockText.textContent = '✓ 가챠 완료! 이제 배틀을 시작할 수 있어요';
+    $battleLockOpenBtn.textContent = '배틀 시작 ▶';
+  } else {
+    lockText.textContent = '⚔️ 배틀 연결됨 — 가챠 후 [배틀 열기] 버튼을 눌러주세요';
+    $battleLockOpenBtn.textContent = '배틀 열기';
+  }
 }
 
 // v0.1.32 — 잠금 배너 버튼: 항상 배틀 룸 모달만 열기
@@ -1983,7 +1989,7 @@ function renderBattleRoom() {
         .then(() => console.log('[Sync] currentTask → battle_players.task 동기화'));
     }
 
-    if (battle.mode === 'separate' && !effectiveMyTask) {
+    if (battle.mode === 'separate' && !currentTask) {
       $battleRoomGachaBtn.hidden = false;
       $battleRoomStatus.textContent = '가챠를 먼저 돌려서 내 작업을 정해주세요!';
     } else if (meIsCreator) {
@@ -3084,6 +3090,7 @@ function renderCategories() {
     $gachaResult.className = 'gacha-result';
     $gachaResult.innerHTML = '<p class="gacha-placeholder">아직 안 돌렸어요. 할 일 등록 후 버튼을 눌러보세요.</p>';
     $startBtn.disabled = true;
+    updateBattleLockBanner();
   }
 }
 
@@ -3247,7 +3254,7 @@ function showGachaResult(task, animate = true) {
   if (animate) {
     spawnConfetti();
     // v0.1.15 — 배틀 초대 링크로 들어온 사람이 가챠 완료 시 배너 상태 전환
-    if (lockedBattleId) updateBattleLockReady();
+    if (lockedBattleId) updateBattleLockBanner();
     // v0.1.22 — MOTO MODE 친구: 가챠 완료 시 task를 Supabase에 저장 (창조자가 준비 상태 감지용)
     const battleIdForTask = lockedBattleId || currentBattleId;
     if (battleIdForTask && sb && myNickname) {
