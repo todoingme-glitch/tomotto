@@ -2136,8 +2136,9 @@ dialog.modal input[type="text"]:focus {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   flex-shrink: 0;
+  position: relative;
 }
 .log-item-icon { font-size: 13px; }
 .log-item-task {
@@ -2276,21 +2277,17 @@ dialog.modal input[type="text"]:focus {
   opacity: 0.8;
 }
 .log-item-chevron {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
   width: 11px;
   height: 10px;
-  flex-shrink: 0;
   color: var(--accent);
   pointer-events: none;
   transition: transform 0.2s ease;
-  margin-bottom: 3px;
-}
-@media (max-width: 480px) {
-  .log-item-chevron {
-    margin-bottom: 8px;
-  }
+  position: absolute;
+  bottom: 3px;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
 }
 .log-item-chevron svg {
   width: 100%;
