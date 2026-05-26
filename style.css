@@ -2122,18 +2122,24 @@ dialog.modal input[type="text"]:focus {
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 10px 12px;
-  position: relative; /* chevron absolute 기준 */
 }
-/* 배틀 로그 — 주황 테두리만 */
+/* 배틀 로그 — 테두리 색상 accent와 통일 */
 .log-item--battle {
-  border-color: #e8751a;
+  border-color: var(--accent);
 }
 .log-item-row {
   display: flex;
   align-items: flex-start;
   gap: 6px;
 }
-.log-item-icon { font-size: 13px; flex-shrink: 0; padding-top: 1px; }
+.log-item-icon-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 4px;
+}
+.log-item-icon { font-size: 13px; }
 .log-item-task {
   font-size: 14px;
   font-weight: 600;
@@ -2262,19 +2268,16 @@ dialog.modal input[type="text"]:focus {
 .log-strip-dot { display: none; }
 
 /* v0.1.61 — 아코디언 로그 */
-.log-item.has-detail .log-item-header {
+.log-item.has-detail .log-item-row {
   cursor: pointer;
   user-select: none;
 }
-.log-item.has-detail .log-item-header:hover {
+.log-item.has-detail .log-item-row:hover {
   opacity: 0.8;
 }
 .log-item-chevron {
-  display: block;
-  font-size: 11px;
-  color: var(--text-muted);
-  padding-left: 20px;
-  margin-top: 3px;
+  font-size: 16px;
+  color: var(--accent);
   line-height: 1;
   pointer-events: none;
 }
