@@ -1269,15 +1269,17 @@ function renderLogDay(dateStr) {
       const detailHtml = hasDetail
         ? `<div class="log-item-detail" id="log-detail-${log.id}">${captureHtml}${noteHtml}</div>`
         : '';
-      const toggleAttr = hasDetail ? ` data-log-toggle="${log.id}"` : '';
+      const headerToggleAttr = hasDetail ? ` data-log-toggle="${log.id}"` : '';
       const chevron = hasDetail ? `<span class="log-item-chevron">▾</span>` : '';
       return `<div class="log-item${log.type === 'battle' ? ' log-item--battle' : ''}${hasDetail ? ' has-detail' : ''}" data-log-id="${log.id}">
-        <div class="log-item-row"${toggleAttr}>
-          <span class="log-item-icon">${icon}</span>
-          <span class="log-item-task">${escapeHtml(log.task || '무제')}</span>
-          <div class="log-item-right">
-            <span class="log-item-meta">${mins}분${partnerText}</span>
-            <span class="log-item-time">${timeStr}</span>
+        <div class="log-item-header"${headerToggleAttr}>
+          <div class="log-item-row">
+            <span class="log-item-icon">${icon}</span>
+            <span class="log-item-task">${escapeHtml(log.task || '무제')}</span>
+            <div class="log-item-right">
+              <span class="log-item-meta">${mins}분${partnerText}</span>
+              <span class="log-item-time">${timeStr}</span>
+            </div>
           </div>
           ${chevron}
         </div>
@@ -1286,15 +1288,15 @@ function renderLogDay(dateStr) {
     }).join('');
 
     // 아코디언 토글 이벤트
-    $list.querySelectorAll('[data-log-toggle]').forEach(row => {
-      row.addEventListener('click', () => {
-        const id = row.dataset.logToggle;
+    $list.querySelectorAll('[data-log-toggle]').forEach(header => {
+      header.addEventListener('click', () => {
+        const id = header.dataset.logToggle;
         const detail = document.getElementById(`log-detail-${id}`);
-        const item = row.closest('.log-item');
+        const item = header.closest('.log-item');
         if (!detail) return;
         const isOpen = item.classList.toggle('log-item--open');
         detail.hidden = !isOpen;
-        row.querySelector('.log-item-chevron').textContent = isOpen ? '▴' : '▾';
+        item.querySelector('.log-item-chevron').textContent = isOpen ? '▴' : '▾';
       });
     });
     // 기본 닫힘 상태
