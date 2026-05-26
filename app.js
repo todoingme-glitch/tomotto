@@ -1270,7 +1270,7 @@ function renderLogDay(dateStr) {
         ? `<div class="log-item-detail" id="log-detail-${log.id}">${captureHtml}${noteHtml}</div>`
         : '';
       const toggleAttr = hasDetail ? ` data-log-toggle="${log.id}"` : '';
-      const chevron = hasDetail ? `<span class="log-item-chevron"></span>` : '';
+      const chevron = hasDetail ? `<span class="log-item-chevron"><svg viewBox="17.36 24.85 105.76 95.08" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M58.9,111.8c6.26,10.85,16.42,10.85,22.68,0l38.86-67.3c6.26-10.85,1.18-19.64-11.34-19.64H31.38c-12.52,0-17.6,8.79-11.34,19.64l38.86,67.3Z"/></svg></span>` : '';
       return `<div class="log-item${log.type === 'battle' ? ' log-item--battle' : ''}${hasDetail ? ' has-detail' : ''}" data-log-id="${log.id}">
         <div class="log-item-row"${toggleAttr}>
           <div class="log-item-icon-col">
