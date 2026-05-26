@@ -2129,15 +2129,15 @@ dialog.modal input[type="text"]:focus {
 }
 .log-item-row {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 6px;
 }
 .log-item-icon-col {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: space-between;
   flex-shrink: 0;
-  gap: 4px;
 }
 .log-item-icon { font-size: 13px; }
 .log-item-task {
@@ -2154,9 +2154,9 @@ dialog.modal input[type="text"]:focus {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+  justify-content: space-between;
   flex-shrink: 0;
   max-width: 55%;
-  gap: 2px;
 }
 .log-item-meta {
   font-size: 12px;
@@ -2276,9 +2276,12 @@ dialog.modal input[type="text"]:focus {
   opacity: 0.8;
 }
 .log-item-chevron {
-  font-size: 16px;
+  font-size: 30px;
   color: var(--accent);
   line-height: 1;
+  background: var(--accent-soft);
+  border-radius: 6px;
+  padding: 0 3px;
   pointer-events: none;
 }
 .log-item-detail {
