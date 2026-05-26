@@ -1300,6 +1300,15 @@ function renderLogDay(dateStr) {
     });
     // 기본 닫힘 상태
     $list.querySelectorAll('.log-item-detail').forEach(d => { d.hidden = true; });
+    // 짧은 닉네임으로 카드 높이가 작은 경우 compact 클래스 부여
+    requestAnimationFrame(() => {
+      $list.querySelectorAll('.log-item').forEach(item => {
+        const right = item.querySelector('.log-item-right');
+        if (right && right.getBoundingClientRect().height < 42) {
+          item.classList.add('log-item--compact');
+        }
+      });
+    });
   }
 
   $detail.hidden = false;

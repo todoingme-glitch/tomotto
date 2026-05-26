@@ -2291,6 +2291,9 @@ dialog.modal input[type="text"]:focus {
   .log-item-chevron {
     margin-bottom: 8px;
   }
+  .log-item--compact .log-item-chevron {
+    margin-bottom: 4px;
+  }
 }
 .log-item-chevron svg {
   width: 100%;
