@@ -2276,13 +2276,29 @@ dialog.modal input[type="text"]:focus {
   opacity: 0.8;
 }
 .log-item-chevron {
-  font-size: 30px;
-  color: var(--accent);
-  line-height: 1;
-  background: var(--accent-soft);
-  border-radius: 6px;
-  padding: 0 3px;
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  position: relative;
   pointer-events: none;
+}
+.log-item-chevron::before {
+  content: '';
+  display: block;
+  width: 11px;
+  height: 11px;
+  border-right: 3px solid var(--accent);
+  border-bottom: 3px solid var(--accent);
+  border-radius: 0 0 4px 0;
+  transform: rotate(45deg);
+  position: absolute;
+  top: 1px;
+  left: 4px;
+}
+.log-item--open .log-item-chevron::before {
+  transform: rotate(-135deg);
+  top: 7px;
 }
 .log-item-detail {
   padding-top: 4px;

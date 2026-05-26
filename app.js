@@ -1270,7 +1270,7 @@ function renderLogDay(dateStr) {
         ? `<div class="log-item-detail" id="log-detail-${log.id}">${captureHtml}${noteHtml}</div>`
         : '';
       const toggleAttr = hasDetail ? ` data-log-toggle="${log.id}"` : '';
-      const chevron = hasDetail ? `<span class="log-item-chevron">▾</span>` : '';
+      const chevron = hasDetail ? `<span class="log-item-chevron"></span>` : '';
       return `<div class="log-item${log.type === 'battle' ? ' log-item--battle' : ''}${hasDetail ? ' has-detail' : ''}" data-log-id="${log.id}">
         <div class="log-item-row"${toggleAttr}>
           <div class="log-item-icon-col">
@@ -1296,7 +1296,6 @@ function renderLogDay(dateStr) {
         if (!detail) return;
         const isOpen = item.classList.toggle('log-item--open');
         detail.hidden = !isOpen;
-        row.querySelector('.log-item-chevron').textContent = isOpen ? '▴' : '▾';
       });
     });
     // 기본 닫힘 상태
