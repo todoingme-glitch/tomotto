@@ -1175,7 +1175,7 @@ function renderLogCalendar() {
     const dateStr  = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const isFuture = new Date(year, month, d) > today;
     const cnt      = countMap[dateStr] || 0;
-    const level    = isFuture ? 'f' : cnt === 0 ? '0' : cnt === 1 ? '1' : cnt <= 3 ? '2' : '3';
+    const level    = isFuture ? 'f' : cnt === 0 ? '0' : '3';
     const hasBattle = battleDates.has(dateStr);
     days.push({ d, dateStr, level, cnt, isToday: dateStr === todayStr, isFuture, hasBattle });
   }
@@ -1275,8 +1275,10 @@ function renderLogDay(dateStr) {
         <div class="log-item-row"${toggleAttr}>
           <span class="log-item-icon">${icon}</span>
           <span class="log-item-task">${escapeHtml(log.task || '무제')}</span>
-          <span class="log-item-meta">${mins}분${partnerText}</span>
-          <span class="log-item-time">${timeStr}</span>
+          <div class="log-item-right">
+            <span class="log-item-meta">${mins}분${partnerText}</span>
+            <span class="log-item-time">${timeStr}</span>
+          </div>
           ${chevron}
         </div>
         ${detailHtml}

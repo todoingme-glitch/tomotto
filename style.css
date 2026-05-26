@@ -2132,7 +2132,6 @@ dialog.modal input[type="text"]:focus {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-wrap: wrap;
 }
 .log-item-icon { font-size: 13px; flex-shrink: 0; }
 .log-item-task {
@@ -2140,16 +2139,24 @@ dialog.modal input[type="text"]:focus {
   font-weight: 600;
   color: var(--text);
   flex: 1;
-  min-width: 60px;
+  min-width: 0;
+}
+.log-item-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+  gap: 1px;
 }
 .log-item-meta {
   font-size: 12px;
   color: var(--text-soft);
+  text-align: right;
 }
 .log-item-time {
   font-size: 11px;
   color: var(--text-muted);
-  margin-left: auto;
+  text-align: right;
 }
 .log-item-note {
   font-size: 12px;
