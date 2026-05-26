@@ -2279,13 +2279,18 @@ dialog.modal input[type="text"]:focus {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 13px;
-  height: 12px;
+  width: 11px;
+  height: 10px;
   flex-shrink: 0;
   color: var(--accent);
   pointer-events: none;
   transition: transform 0.2s ease;
   margin-bottom: 3px;
+}
+@media (max-width: 480px) {
+  .log-item-chevron {
+    margin-bottom: 8px;
+  }
 }
 .log-item-chevron svg {
   width: 100%;
