@@ -2285,6 +2285,7 @@ dialog.modal input[type="text"]:focus {
   color: var(--accent);
   pointer-events: none;
   transition: transform 0.2s ease;
+  margin-bottom: 3px;
 }
 .log-item-chevron svg {
   width: 100%;
