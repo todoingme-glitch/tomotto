@@ -727,6 +727,13 @@ $settingsNickEditBtn?.addEventListener('click', () => {
 $settingsStatusToggle?.addEventListener('change', () => {
   isStatusPublic = $settingsStatusToggle.checked;
   localStorage.setItem(STORAGE_STATUS_PUBLIC, String(isStatusPublic));
+  // DB에도 즉시 반영
+  if (sb && myNickname) {
+    sb.from('user_presence')
+      .upsert({ nickname: myNickname, status_public: isStatusPublic, updated_at: new Date().toISOString() },
+               { onConflict: 'nickname' })
+      .then(({ error }) => { if (error) console.warn('[presence] status_public 업데이트 실패:', error.message); });
+  }
 });
 
 // 데이터 숨기기 토글
@@ -3457,6 +3464,22 @@ function saveTimerState(state) {
   }
 }
 
+// ── 활동 상태 업서트 ──────────────────────────────────────────
+// isFocusing: true = 타이머 시작, false = 종료/리셋
+async function upsertPresence(isFocusing) {
+  if (!sb || !myNickname) return;
+  const payload = {
+    nickname: myNickname,
+    is_focusing: isFocusing,
+    updated_at: new Date().toISOString(),
+  };
+  // 시작 시엔 status_public도 함께 기록
+  if (isFocusing) payload.status_public = isStatusPublic;
+  const { error } = await sb.from('user_presence')
+    .upsert(payload, { onConflict: 'nickname' });
+  if (error) console.warn('[presence] upsert 실패:', error.message);
+}
+
 // 내부 함수 — 실제 인터벌 시작 (endTime 기반)
 function startTimerInternal() {
   if (timer.intervalId) clearInterval(timer.intervalId);
@@ -3533,6 +3556,9 @@ function startTimer() {
   $battleResultBtn.hidden = true;
   $battleResultBtn.dataset.battleId = '';
 
+  // 활동 상태 표시 — 집중 시작
+  upsertPresence(true);
+
   startTimerInternal();
 }
 
@@ -3574,6 +3600,9 @@ function resetTimer() {
   // v0.1.28 — 리셋 시 소감/인증샷 유지 (시작 버튼 누를 때까지 보존)
   // $captureRow.hidden = true; ← 제거됨
   // v0.1.17 — 배틀 결과 버튼은 리셋 시 숨기지 않음 (새 배틀 시작 전까지 유지)
+
+  // 활동 상태 표시 — 타이머 취소 시에도 집중 종료로 처리
+  upsertPresence(false);
 
   saveTimerState(null);
   const prevBattleId = activeBattleId;
@@ -3629,6 +3658,9 @@ function finishTimer() {
   // v0.1.65 — 인증샷 버튼 항상 초기화 (이전 배틀 '업로드 완료' 문구 잔류 방지)
   $captureBtn.textContent = '📷 인증샷 첨부 (선택)';
   $captureBtn.disabled = false;
+
+  // 활동 상태 표시 — 집중 종료
+  upsertPresence(false);
 
   // v0.1.36 — 소셜 리더보드 통계 동기화
   syncUserStats();
@@ -3839,6 +3871,29 @@ async function renderLeaderboard() {
   // 단, 본인은 0이어도 항상 표시
   const displayEntries = entries.filter(e => e.count > 0 || e.nick === myNickname);
 
+  // 활동 상태 조회
+  let presenceMap = {};
+  if (sb) {
+    try {
+      const { data: presRows } = await sb
+        .from('user_presence')
+        .select('nickname, is_focusing, status_public, updated_at')
+        .in('nickname', displayEntries.map(e => e.nick));
+      if (presRows) {
+        presRows.forEach(r => { presenceMap[r.nickname] = r; });
+      }
+    } catch {}
+  }
+
+  function getStatusBadge(nick) {
+    const p = presenceMap[nick];
+    if (!p || !p.status_public) return '';
+    if (p.is_focusing) return '<span class="lb-status-badge lb-status-focus">⏱ 집중 중</span>';
+    const diffMin = (Date.now() - new Date(p.updated_at).getTime()) / 60000;
+    if (diffMin < 60) return '<span class="lb-status-badge lb-status-idle">💤 대기 중</span>';
+    return ''; // 1시간 초과는 표시 없음
+  }
+
   const medalEmojis = ['🥇', '🥈', '🥉'];
   const html = displayEntries.map((e, i) => {
     const isMe = e.nick === myNickname;
@@ -3846,10 +3901,12 @@ async function renderLeaderboard() {
       ? `<span style="font-size:1.4rem;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:28px;flex-shrink:0">${medalEmojis[i]}</span>`
       : `<span class="lb-rank-badge" style="background:#e0dbd8;color:#888">${i + 1}</span>`;
     const countColor = i < 3 ? 'color:var(--accent);' : '';
+    const meBadge = isMe ? '<span class="lb-me-badge">나</span>' : '';
+    const statusBadge = getStatusBadge(e.nick);
     return `
       <div class="lb-row${isMe ? ' lb-row-me' : ''}">
         ${rankBadge}
-        <span class="lb-nick">${escapeHtml(e.nick)}${isMe ? ' <span class="lb-me-badge">나</span>' : ''}</span>
+        <span class="lb-nick"><span class="lb-nick-text">${escapeHtml(e.nick)}</span>${meBadge}${statusBadge}</span>
         <span class="lb-count" style="${countColor}">${e.count}회</span>
       </div>`; // v0.1.66 — 막대그래프 제거, 1-3위 횟수 강조색
   }).join('');

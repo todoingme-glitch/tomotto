@@ -3146,11 +3146,18 @@ dialog.modal input[type="text"]:focus {
   font-size: 0.88rem;
   font-weight: 600;
   color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0; /* grid 1fr 컬럼에서 말줄임표 작동 필수 */
+  overflow: hidden;
+}
+.lb-nick-text {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  display: block; /* ellipsis는 block/inline-block에서만 작동 */
-  min-width: 0; /* grid 1fr 컬럼에서 말줄임표 작동 필수 */
+  flex-shrink: 1;
+  min-width: 0;
 }
 .lb-me-badge {
   display: inline-block;
@@ -3162,6 +3169,24 @@ dialog.modal input[type="text"]:focus {
   color: #fff;
   line-height: 1.4;
   vertical-align: middle;
+}
+.lb-status-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 8px;
+  line-height: 1.4;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.lb-status-focus {
+  background: #fff3ee;
+  color: var(--accent);
+}
+.lb-status-idle {
+  background: #f0f0f0;
+  color: #888;
 }
 
 .lb-bar-wrap {
