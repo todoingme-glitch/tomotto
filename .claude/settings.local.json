@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc -l /mnt/c/Users/tong/Desktop/Tomotto/app.js)",
+      "PowerShell(\\(Get-Content \"C:\\\\Users\\\\tong\\\\Desktop\\\\Tomotto\\\\app.js\" | Measure-Object -Line\\).Lines)",
+      "PowerShell(git -C \"C:\\\\Users\\\\tong\\\\Desktop\\\\Tomotto\" diff --stat)"
+    ]
+  }
+}
