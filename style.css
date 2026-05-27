@@ -3163,11 +3163,15 @@ dialog.modal input[type="text"]:focus {
   overflow: hidden;
 }
 .lb-nick-text {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   flex-shrink: 1;
   min-width: 0;
+}
+@media (max-width: 480px) {
+  .lb-nick-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 .lb-me-badge {
   display: inline-block;
