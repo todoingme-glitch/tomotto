@@ -1151,6 +1151,7 @@ function updateLatestLogCapture(dataUrl) {
   if (keys.length > 20) keys.slice(0, keys.length - 20).forEach(k => delete captures[k]);
   try {
     localStorage.setItem(STORAGE.logCaptures, JSON.stringify(captures));
+    checkAchievementsOnCapture(); // v0.1.70 — B-8
   } catch (e) {
     console.warn('인증샷 로그 저장 실패 (용량 부족):', e);
   }
@@ -1649,6 +1650,9 @@ async function cdTouchEnd() {
 
 // 초대 링크 모달
 function openInviteModal(battle) {
+  // v0.1.70 — A-5 초대장 발송: 처음 초대 링크를 생성하는 순간 달성
+  unlockAchievement('A-5');
+
   const link = makeInviteLink(battle.id);
   const modeLabel = battle.mode === 'common' ? '🍅 TOM MODE' : '🎲 MOTO MODE';
   const taskLabel = battle.mode === 'common' ? ` · "${battle.task_common}"` : '';
@@ -2907,6 +2911,9 @@ const STORAGE = {
   achievements: 'tomotto_achievements',      // v0.1.69 — 업적 달성 상태
   totalGachaCount: 'tomotto_total_gacha',    // v0.1.69 — 전체 가챠 누적 횟수
   noRerollStreak: 'tomotto_noreroll_streak', // v0.1.69 — 연속 리롤 없이 완료 횟수
+  noRerollTotal:  'tomotto_noreroll_total',  // v0.1.70 — 누적 리롤 없이 완료 횟수 (C-2)
+  pauseFreeCount: 'tomotto_pause_free',      // v0.1.70 — 일시정지 없이 완료 횟수 (B-4/B-5)
+  hiddenTabCount: 'tomotto_hidden_tab',      // v0.1.70 — 타이머 중 탭 이탈 횟수 (E-1)
 };
 
 // ====== localStorage 마이그레이션 (pomocha_* → tomotto_*) ======
@@ -2937,6 +2944,7 @@ let categories = [];
 let gachaCount = 0;
 let totalGachaCount = 0;            // v0.1.69 — 전체 누적 가챠 횟수 (업적용)
 let _spinsSinceReset = 0;           // v0.1.69 — 리셋 후 가챠 횟수 (A-3 판별)
+let _pausedThisSession = false;     // v0.1.70 — 이번 세션 일시정지 여부 (B-4/B-5)
 let currentTask = null;
 let completedCount = 0;             // v0.1.8 — 누적 완료
 let editingCategoryIndex = -1;      // v0.1.8 — 카테고리 인라인 편집 진행 중인 인덱스
@@ -3053,6 +3061,7 @@ function restoreTimerState() {
     timer.duration = state.duration;
     timer.remaining = state.remaining;
     currentTask = state.task || currentTask;
+    _pausedThisSession = true;  // v0.1.70 — 이미 일시정지했었으므로 플래그 복원
     $startBtn.disabled = false;
     $pauseBtn.disabled = true;
     $resetBtn.disabled = false;
@@ -3578,6 +3587,10 @@ function startTimer() {
   // 활동 상태 표시 — 집중 시작
   upsertPresence(true);
 
+  // v0.1.70 — B-4/B-5: 새 세션(풀 타이머) 시작 시에만 _pausedThisSession 리셋
+  // 일시정지 후 Resume은 remaining < duration이므로 리셋 안 함
+  if (timer.remaining === timer.duration) _pausedThisSession = false;
+
   // v0.1.69 — A-3 고민 끝! : 가챠 1회 후 바로 시작 (리롤 없음)
   if (_spinsSinceReset === 1) unlockAchievement('A-3');
   _spinsSinceReset = 0; // 체크 직후 초기화 (spinGacha 내부 resetTimer 호출과 분리)
@@ -3587,6 +3600,7 @@ function startTimer() {
 
 function pauseTimer() {
   if (!timer.isRunning) return;
+  _pausedThisSession = true;  // v0.1.70 — B-4/B-5 무결점 판별
   clearInterval(timer.intervalId);
   timer.intervalId = null;
   timer.isRunning = false;
@@ -3957,8 +3971,16 @@ document.querySelectorAll('.lb-period-btn').forEach(btn => {
   });
 });
 
-// 탭이 다시 보일 때 즉시 업데이트 (백그라운드 throttle 보정)
+// 탭 이탈/복귀 처리
 document.addEventListener('visibilitychange', () => {
+  // E-1 몰래 딴짓: 타이머 진행 중 탭 숨김 5회 누적
+  if (document.hidden && timer.isRunning) {
+    const cnt = parseInt(localStorage.getItem(STORAGE.hiddenTabCount) || '0', 10) + 1;
+    localStorage.setItem(STORAGE.hiddenTabCount, String(cnt));
+    if (cnt >= 5) unlockAchievement('E-1');
+  }
+
+  // 탭이 다시 보일 때 즉시 업데이트 (백그라운드 throttle 보정)
   if (document.visibilityState === 'visible' && timer.isRunning && timer.endTime) {
     const now = Date.now();
     const remainingMs = timer.endTime - now;
@@ -4441,24 +4463,52 @@ function compressImage(dataUrl, maxDim, quality) {
 // ═══════════════════════════════════════════════════════════
 
 const ACHIEVEMENT_DEFS = {
-  // id: { name, desc(토스트용), cond(카드 조건 설명), icon, hidden }
-  'A-1': { name: '첫 수확',        desc: '첫 뽀모도로를 끝냈어요!',             cond: '타이머 1회 완료',              icon: '🌱', hidden: false },
-  'A-2': { name: '가챠의 시작',    desc: '처음으로 가챠를 돌렸어요',             cond: '가챠 첫 사용',                 icon: '🎰', hidden: false },
-  'A-3': { name: '고민 끝!',       desc: '나온 대로 리롤 없이 바로 시작했어요',  cond: '가챠 후 리롤 없이 바로 시작',  icon: '⚡', hidden: false },
-  'A-4': { name: '이름표 달기',    desc: '닉네임을 설정했어요',                  cond: '닉네임 첫 설정',               icon: '🏷️', hidden: false },
-  'B-1': { name: '3연타',          desc: '3일 연속으로 집중했어요',              cond: '3일 연속 타이머 완료',         icon: '🔥', hidden: false },
-  'B-2': { name: '일주일 농부',    desc: '7일을 꾸준히 수확했어요',              cond: '7일 연속 타이머 완료',         icon: '📅', hidden: false },
-  'B-6': { name: '카테고리 수집가', desc: '할 일을 10개나 등록했어요',           cond: '카테고리 10개 이상 등록',      icon: '📁', hidden: false },
-  'B-7': { name: '소감가',         desc: '완료 후 소감을 10번 남겼어요',         cond: '완료 소감 10회 작성',          icon: '📓', hidden: false },
-  'C-1': { name: '일단 돌려!',     desc: '가챠를 10번 돌렸어요',                cond: '가챠 누적 10회',               icon: '🎲', hidden: false },
-  'C-3': { name: '다양한 수확',    desc: '5가지 다른 일을 완료했어요',           cond: '서로 다른 작업 5가지 완료',    icon: '🌈', hidden: false },
-  'E-2': { name: '토마토 탈주',    desc: '10초 남기고 도망쳤어요',              cond: null, icon: '🏃', hidden: true  },
-  'E-3': { name: '완전한 하루',    desc: '하루에 4번이나 집중했어요!',           cond: null, icon: '☀️', hidden: true  },
-  'E-4': { name: '새벽 감성',      desc: '새벽 4~6시에 혼자 집중했어요',        cond: null, icon: '⭐', hidden: true  },
-  'E-5': { name: '마지막 한 판',   desc: '자정 넘어서도 멈추지 않았어요',        cond: null, icon: '🕛', hidden: true  },
-  'E-6': { name: '전설의 토마토',  desc: '100회 수확의 전설',                   cond: null, icon: '👑', hidden: true  },
-  'E-7': { name: '광고 거부자',    desc: '리롤 없이 10번 연속 바로 시작',        cond: null, icon: '✨', hidden: true  },
-  'E-8': { name: '수집 광',        desc: '카테고리를 20개나 만들었어요',         cond: null, icon: '📚', hidden: true  },
+  // id: { name, desc(토스트용), cond(카드 조건 설명, null=hidden), icon, hidden }
+
+  // ── A. 온보딩 ─────────────────────────────────────────
+  'A-1': { name: '첫 수확',         desc: '첫 뽀모도로를 끝냈어요!',              cond: '타이머 1회 완료',               icon: '🌱', hidden: false },
+  'A-2': { name: '가챠의 시작',     desc: '처음으로 가챠를 돌렸어요',              cond: '가챠 첫 사용',                  icon: '🎰', hidden: false },
+  'A-3': { name: '고민 끝!',        desc: '나온 대로 리롤 없이 바로 시작했어요',   cond: '가챠 후 리롤 없이 바로 시작',   icon: '⚡', hidden: false },
+  'A-4': { name: '이름표 달기',     desc: '닉네임을 설정했어요',                   cond: '닉네임 첫 설정',                icon: '🏷️', hidden: false },
+  'A-5': { name: '초대장 발송',     desc: '친구에게 배틀을 제안했어요',            cond: '배틀 초대 링크 첫 생성',        icon: '✉️', hidden: false },
+
+  // ── B. Tom 계열 — 집중·꾸준함 ────────────────────────
+  'B-1': { name: '3연타',           desc: '3일 연속으로 집중했어요',               cond: '3일 연속 타이머 완료',          icon: '🔥', hidden: false },
+  'B-2': { name: '일주일 농부',     desc: '7일을 꾸준히 수확했어요',               cond: '7일 연속 타이머 완료',          icon: '📅', hidden: false },
+  'B-3': { name: '한 달 수확',      desc: '30일 연속 집중의 기록!',                cond: '30일 연속 타이머 완료',         icon: '🏅', hidden: false },
+  'B-4': { name: '무결점 수확',     desc: '멈추지 않고 끝냈어요',                  cond: '일시정지 없이 완료 5회',        icon: '🛡️', hidden: false },
+  'B-5': { name: '타이머 수호자',   desc: '단 한 번도 멈추지 않았어요',            cond: '일시정지 없이 완료 10회',       icon: '⚔️', hidden: false },
+  'B-6': { name: '카테고리 수집가', desc: '할 일을 10개나 등록했어요',             cond: '카테고리 10개 이상 등록',       icon: '📁', hidden: false },
+  'B-7': { name: '소감가',          desc: '완료 후 소감을 10번 남겼어요',           cond: '완료 소감 10회 작성',           icon: '📓', hidden: false },
+  'B-8': { name: '인증왕',          desc: '열심히 한 걸 사진으로 증명했어요',       cond: '인증샷 5회 업로드',             icon: '📷', hidden: false },
+
+  // ── C. Moto 계열 — 랜덤·즉흥 ─────────────────────────
+  'C-1': { name: '일단 돌려!',      desc: '가챠를 10번 돌렸어요',                  cond: '가챠 누적 10회',                icon: '🎲', hidden: false },
+  'C-2': { name: '운명에 맡겨',     desc: '나온 대로 다 해냈어요',                 cond: '리롤 없이 완료 5회 누적',       icon: '🎯', hidden: false },
+  'C-3': { name: '다양한 수확',     desc: '5가지 다른 일을 완료했어요',            cond: '서로 다른 작업 5가지 완료',     icon: '🌈', hidden: false },
+  'C-4': { name: '가챠 중독',       desc: '멈출 수가 없어요',                      cond: '가챠 누적 50회',                icon: '🃏', hidden: false },
+  'C-5': { name: '혼돈의 철학자',   desc: '랜덤을 진심으로 믿어요',                cond: '가챠 누적 100회',               icon: '🔮', hidden: false },
+  'C-6': { name: '굴러도 완성',     desc: 'MOTO 배틀도 해냈어요',                  cond: 'MOTO MODE 배틀 완료 3회',       icon: '🎳', hidden: false },
+
+  // ── D. 배틀 계열 — 친구와 함께 ───────────────────────
+  'D-1': { name: '첫 하이파이브',   desc: '첫 배틀을 완주했어요!',                 cond: '배틀 첫 완료',                  icon: '🙌', hidden: false },
+  'D-2': { name: 'Tom 콤비',        desc: '함께 집중하고 함께 완료!',              cond: 'TOM MODE 배틀 첫 완료',         icon: '👓', hidden: false },
+  'D-3': { name: 'Moto 듀오',       desc: '운명을 같이 받아들였어요',              cond: 'MOTO MODE 배틀 첫 완료',        icon: '🎮', hidden: false },
+  'D-4': { name: '단골손님',        desc: '이 친구랑 자주 만나네요',               cond: '같은 파트너와 5회 배틀 완료',   icon: '🎟️', hidden: false },
+  'D-5': { name: '단짝',            desc: '진짜 단짝을 찾았어요',                  cond: '같은 파트너와 10회 배틀 완료',  icon: '💕', hidden: false },
+  'D-6': { name: '한 판 더!',       desc: '끝나자마자 바로 또 시작했어요',         cond: '24시간 이내 같은 파트너 재도전', icon: '🔁', hidden: false },
+  'D-7': { name: '새벽 농장',       desc: '새벽에도 함께 집중했어요',              cond: '새벽 1~5시 배틀 완료',          icon: '🌙', hidden: false },
+  'D-8': { name: '오늘도 같이',     desc: '7일 안에 3번 배틀했어요',               cond: '7일 이내 배틀 완료 3회',        icon: '🗓️', hidden: false },
+
+  // ── E. 숨겨진 업적 ────────────────────────────────────
+  'E-1': { name: '몰래 딴짓 중',   desc: '타이머 켜놓고 딴 짓 했죠?',            cond: null, icon: '👀', hidden: true  },
+  'E-2': { name: '토마토 탈주',    desc: '10초 남기고 도망쳤어요',               cond: null, icon: '🏃', hidden: true  },
+  'E-3': { name: '완전한 하루',    desc: '하루에 4번이나 집중했어요!',            cond: null, icon: '☀️', hidden: true  },
+  'E-4': { name: '새벽 감성',      desc: '새벽 4~6시에 혼자 집중했어요',         cond: null, icon: '⭐', hidden: true  },
+  'E-5': { name: '마지막 한 판',   desc: '자정 넘어서도 멈추지 않았어요',         cond: null, icon: '🕛', hidden: true  },
+  'E-6': { name: '전설의 토마토',  desc: '100회 수확의 전설',                    cond: null, icon: '👑', hidden: true  },
+  'E-7': { name: '광고 거부자',    desc: '리롤 없이 10번 연속 바로 시작',         cond: null, icon: '✨', hidden: true  },
+  'E-8': { name: '수집 광',        desc: '카테고리를 20개나 만들었어요',          cond: null, icon: '📚', hidden: true  },
 };
 
 // ── 데이터 읽기/쓰기 ──────────────────────────────────────
@@ -4636,8 +4686,18 @@ function renderAchievementsTab() {
 
 // 가챠 돌린 후
 function checkAchievementsOnGacha() {
-  if (totalGachaCount === 1) unlockAchievement('A-2');
-  if (totalGachaCount >= 10) unlockAchievement('C-1');
+  if (totalGachaCount === 1)   unlockAchievement('A-2');
+  if (totalGachaCount >= 10)   unlockAchievement('C-1');
+  if (totalGachaCount >= 50)   unlockAchievement('C-4');
+  if (totalGachaCount >= 100)  unlockAchievement('C-5');
+}
+
+// 인증샷 저장 후
+function checkAchievementsOnCapture() {
+  try {
+    const captures = JSON.parse(localStorage.getItem(STORAGE.logCaptures) || '{}');
+    if (Object.keys(captures).length >= 5) unlockAchievement('B-8');
+  } catch {}
 }
 
 // 카테고리 추가/삭제 후
@@ -4653,31 +4713,49 @@ function checkAchievementsOnNote() {
   if (noteCount >= 10) unlockAchievement('B-7');
 }
 
+// 배틀 로그 통계 헬퍼 (checkAchievementsOnTimerComplete에서 사용)
+function _battleLogsWithPartner(logs, partnerNick) {
+  return logs.filter(l => l.type === 'battle' && l.partner === partnerNick);
+}
+
 // 타이머 완료 후
 function checkAchievementsOnTimerComplete() {
+  // 주의: saveLog()가 이 함수 다음에 실행됨 → 현재 완료는 logs에 아직 없음
   const logs = getLogsFromStorage();
   const now = new Date();
+  const h   = now.getHours();
 
-  // A-1: 첫 완료
+  // ── A-1: 첫 완료 ──────────────────────────────────────
   if (completedCount === 1) unlockAchievement('A-1');
 
-  // B-1, B-2: 스트릭
+  // ── B: 스트릭 & 꾸준함 ──────────────────────────────
   const streak = getCompletionStreak();
-  if (streak >= 3) unlockAchievement('B-1');
-  if (streak >= 7) unlockAchievement('B-2');
+  if (streak >= 3)  unlockAchievement('B-1');
+  if (streak >= 7)  unlockAchievement('B-2');
+  if (streak >= 30) unlockAchievement('B-3');
 
-  // C-3: 다양한 카테고리 5개 이상 완료
+  // B-4, B-5: 일시정지 없이 완료
+  if (!_pausedThisSession) {
+    const pfc = parseInt(localStorage.getItem(STORAGE.pauseFreeCount) || '0', 10) + 1;
+    localStorage.setItem(STORAGE.pauseFreeCount, String(pfc));
+    if (pfc >= 5)  unlockAchievement('B-4');
+    if (pfc >= 10) unlockAchievement('B-5');
+  }
+
+  // ── C: 다양성 & 가챠 ──────────────────────────────────
+  // C-2: 리롤 없이 누적 5회
+  // C-3: 다양한 카테고리
   const uniqueTasks = new Set(logs.map(l => l.task).filter(Boolean));
   if (uniqueTasks.size >= 5) unlockAchievement('C-3');
 
-  // E-3: 오늘 4회 이상 완료
+  // ── E 계열 (숨겨진) ───────────────────────────────────
+  // E-3: 오늘 4회 이상
   const todayStr = formatDateStr(now);
   const todayCount = logs.filter(l => (l.date || formatDateStr(new Date(l.completedAt))) === todayStr).length;
-  if (todayCount >= 4) unlockAchievement('E-3');
+  if (todayCount >= 3) unlockAchievement('E-3'); // 기존 로그 3개 + 현재 = 4회
 
-  // E-4: 새벽 4~6시
-  const h = now.getHours();
-  if (h >= 4 && h < 6) unlockAchievement('E-4');
+  // E-4: 새벽 4~6시 (솔로만)
+  if (h >= 4 && h < 6 && !activeBattleId) unlockAchievement('E-4');
 
   // E-5: 23:30 이후
   if (h === 23 && now.getMinutes() >= 30) unlockAchievement('E-5');
@@ -4685,14 +4763,65 @@ function checkAchievementsOnTimerComplete() {
   // E-6: 100회 달성
   if (completedCount >= 100) unlockAchievement('E-6');
 
-  // E-7: 연속 리롤 없이 완료 (startTimer에서 A-3 체크가 있을 때만 카운트)
+  // E-7: 연속 리롤 없이 완료
   const noRerollStreak = parseInt(localStorage.getItem(STORAGE.noRerollStreak) || '0', 10);
   if (_spinsSinceReset === 1) {
+    // C-2: 누적 리롤 없이 5회
+    const nrt = parseInt(localStorage.getItem(STORAGE.noRerollTotal) || '0', 10) + 1;
+    localStorage.setItem(STORAGE.noRerollTotal, String(nrt));
+    if (nrt >= 5) unlockAchievement('C-2');
+
+    // E-7: 연속 10회
     const next = noRerollStreak + 1;
     localStorage.setItem(STORAGE.noRerollStreak, String(next));
     if (next >= 10) unlockAchievement('E-7');
   } else {
     localStorage.setItem(STORAGE.noRerollStreak, '0');
+  }
+
+  // ── D + C-6: 배틀 계열 ────────────────────────────────
+  if (activeBattleId && currentBattleData?.battle) {
+    const battle = currentBattleData.battle;
+    const partnerInfo = getBattlePartnerInfo();
+    const battleLogs = logs.filter(l => l.type === 'battle');  // 이전 배틀 로그들
+
+    // D-1: 첫 배틀 완료
+    if (battleLogs.length === 0) unlockAchievement('D-1');
+
+    // D-2: Tom 콤비 (common 모드)
+    if (battle.mode === 'common') unlockAchievement('D-2');
+
+    // D-3: Moto 듀오 (separate 모드)
+    if (battle.mode === 'separate') unlockAchievement('D-3');
+
+    // C-6: MOTO MODE 배틀 3회
+    if (battle.mode === 'separate') {
+      const motoBattles = logs.filter(l => l.type === 'battle' && l.battleMode === 'separate').length;
+      if (motoBattles + 1 >= 3) unlockAchievement('C-6');
+    }
+
+    // D-4, D-5: 같은 파트너와 N회
+    if (partnerInfo) {
+      const withPartner = _battleLogsWithPartner(logs, partnerInfo.partnerNick).length;
+      if (withPartner + 1 >= 5)  unlockAchievement('D-4');
+      if (withPartner + 1 >= 10) unlockAchievement('D-5');
+
+      // D-6: 24시간 이내 같은 파트너 재도전
+      const recent = logs.find(l =>
+        l.type === 'battle' &&
+        l.partner === partnerInfo.partnerNick &&
+        (Date.now() - (l.completedAt || 0)) < 24 * 3600 * 1000
+      );
+      if (recent) unlockAchievement('D-6');
+    }
+
+    // D-7: 새벽 1~5시 배틀
+    if (h >= 1 && h < 5) unlockAchievement('D-7');
+
+    // D-8: 7일 이내 배틀 3회
+    const sevenDaysAgo = Date.now() - 7 * 24 * 3600 * 1000;
+    const recentBattles = logs.filter(l => l.type === 'battle' && (l.completedAt || 0) >= sevenDaysAgo).length;
+    if (recentBattles + 1 >= 3) unlockAchievement('D-8');
   }
 
   // 완료 후 스핀 카운터 리셋
