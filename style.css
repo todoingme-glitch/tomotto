@@ -3296,7 +3296,7 @@ dialog.modal input[type="text"]:focus {
 .achievement-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
+  align-items: center;
   cursor: pointer;
   user-select: none;
   gap: 8px;
@@ -3316,7 +3316,7 @@ dialog.modal input[type="text"]:focus {
   height: 12px;
   color: var(--text-sub, #bbb);
   flex-shrink: 0;
-  margin-bottom: 2px;
+  margin-right: 6px;
   transition: transform 0.25s ease, color 0.2s;
 }
 .achievement-header:hover .ach-chevron {
