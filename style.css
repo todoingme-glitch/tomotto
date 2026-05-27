@@ -1201,6 +1201,15 @@ dialog.modal input[type="text"]:focus {
   font-size: 12px;
   color: var(--text-muted);
   font-weight: 500;
+  flex-shrink: 0;
+}
+
+.battle-me-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .battle-me-nick {
@@ -1208,9 +1217,12 @@ dialog.modal input[type="text"]:focus {
   font-weight: 700;
   color: var(--accent);
   cursor: pointer;
-  /* 탭/클릭 시 직접 수정 가능 — 모바일 터치 영역 확보 */
   padding: 4px 0;
   -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .btn-mini {

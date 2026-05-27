@@ -3284,6 +3284,13 @@ function escapeHtml(s) {
   })[c]);
 }
 
+function truncMid(str, max = 13) {
+  if (str.length <= max) return str;
+  const left = Math.ceil((max - 1) / 2);
+  const right = Math.floor((max - 1) / 2);
+  return str.slice(0, left) + '…' + str.slice(-right);
+}
+
 // v0.1.9 — 가챠 카운트는 "이번 사이클 N/3" 표시. 3 도달 → 다음엔 광고 사이클 시작.
 function updateGachaCounter() {
   $gachaCount.textContent = String(gachaCount);
@@ -3961,7 +3968,8 @@ async function renderLeaderboard() {
     const meBadge = isMe ? '<span class="lb-me-badge">나</span>' : '';
     const statusBadge = getStatusBadge(e.nick);
     const titleEmoji = isMe ? (getCurrentTitle()?.emoji || '') : '';
-    const nickText = titleEmoji ? `${titleEmoji} ${escapeHtml(e.nick)}` : escapeHtml(e.nick);
+    const dispNick = truncMid(e.nick, 13);
+    const nickText = titleEmoji ? `${titleEmoji} ${escapeHtml(dispNick)}` : escapeHtml(dispNick);
     return `
       <div class="lb-row${isMe ? ' lb-row-me' : ''}">
         ${rankBadge}
