@@ -3349,29 +3349,6 @@ dialog.modal input[type="text"]:focus {
   gap: 8px;
   margin-top: 12px;
 }
-@media (max-width: 480px) {
-  .achievement-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-    grid-auto-rows: minmax(96px, auto);
-  }
-  .ach-card {
-    min-height: 96px;
-    gap: 0;
-  }
-  .ach-card-icon {
-    margin-bottom: 5px;
-  }
-  .ach-card-name {
-    font-size: 0.75rem;
-    min-height: calc(1.2 * 0.75rem * 2);
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    margin-bottom: 2px;
-  }
-}
 .ach-card {
   display: flex;
   flex-direction: column;
@@ -3450,6 +3427,29 @@ dialog.modal input[type="text"]:focus {
 .ach-card--unlocked .ach-card-date {
   color: var(--accent);
   font-weight: 600;
+}
+@media (max-width: 480px) {
+  .achievement-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    grid-auto-rows: minmax(96px, auto);
+  }
+  .ach-card {
+    min-height: 96px;
+    gap: 0;
+  }
+  .ach-card-icon {
+    margin-bottom: 5px;
+  }
+  .ach-card-name {
+    font-size: 0.75rem;
+    min-height: calc(1.2 * 0.75rem * 2);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 2px;
+  }
 }
 
 /* ── 도전과제 토스트 알림 (v0.1.69) ─────────────────────── */
