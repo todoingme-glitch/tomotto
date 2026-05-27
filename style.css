@@ -1207,7 +1207,6 @@ dialog.modal input[type="text"]:focus {
   font-size: 15px;
   font-weight: 700;
   color: var(--accent);
-  flex: 1;
   cursor: pointer;
   /* 탭/클릭 시 직접 수정 가능 — 모바일 터치 영역 확보 */
   padding: 4px 0;

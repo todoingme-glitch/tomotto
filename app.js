@@ -4499,9 +4499,13 @@ const ACHIEVEMENT_DEFS = {
   'B-3': { name: '한 달 수확',      desc: '30일 연속 집중의 기록!',                cond: '30일 연속 타이머 완료',         icon: '🏅', tier: 'rare',   hidden: false },
   'B-4': { name: '무결점 수확',     desc: '멈추지 않고 끝냈어요',                  cond: '일시정지 없이 완료 5회',        icon: '🛡️', tier: 'normal', hidden: false },
   'B-5': { name: '시간의 지배자',   desc: '단 한 번도 멈추지 않았어요',            cond: '일시정지 없이 완료 10회',       icon: '⚔️', tier: 'rare',   hidden: false },
-  'B-6': { name: '할 일이 너무 많아', desc: '할 일을 10개나 등록했어요',           cond: '할 일 10개 이상 등록',          icon: '📁', tier: 'normal', hidden: false },
+  'B-6': { name: '바쁘다 바빠',        desc: '할 일을 10개나 등록했어요',           cond: '할 일 10개 이상 등록',          icon: '📁', tier: 'normal', hidden: false },
   'B-7': { name: '전원일기',         desc: '완료 후 소감을 10번 남겼어요',           cond: '완료 소감 10회 작성',           icon: '📓', tier: 'normal', hidden: false },
   'B-8': { name: '남는 건 사진 뿐', desc: '열심히 한 걸 사진으로 증명했어요',       cond: '인증샷 5회 업로드',             icon: '📷', tier: 'normal', hidden: false },
+  'B-9': { name: '장거리 러너',    desc: '쉬지 않고 60분을 달렸어요',              cond: '60분 이상 타이머 완료 1회',     icon: '🏃', tier: 'rare',   hidden: false },
+  'B-10':{ name: '주말도 반납',    desc: '주말에도 열심히 달려왔어요',              cond: '주말에 완료 10회',              icon: '📅', tier: 'rare',   hidden: false },
+  'B-11':{ name: '점심은 다음에', desc: '밥도 미루면서 집중했어요',                cond: '12~13시 완료 5회',              icon: '🍜', tier: 'rare',   hidden: false },
+  'B-12':{ name: '오늘 좀 쉬어요', desc: '하루에 6번이나 집중했어요',              cond: '하루 완료 6회',                 icon: '😅', tier: 'rare',   hidden: false },
 
   // ── C. Moto 계열 — 랜덤·즉흥 ─────────────────────────
   'C-1': { name: '일단 돌려!',      desc: '가챠를 10번 돌렸어요',                  cond: '가챠 누적 10회',                icon: '🎲', tier: 'normal', hidden: false },
@@ -4510,6 +4514,7 @@ const ACHIEVEMENT_DEFS = {
   'C-4': { name: '가챠 중독',       desc: '멈출 수가 없어요',                      cond: '가챠 누적 50회',                icon: '🃏', tier: 'rare',   hidden: false },
   'C-5': { name: '국번 없이 1336',   desc: '랜덤을 진심으로 믿어요',                cond: '가챠 누적 100회',               icon: '🔮', tier: 'rare',   hidden: false },
   'C-6': { name: '굴러도 완성',     desc: 'MOTO 배틀도 해냈어요',                  cond: 'MOTO MODE 배틀 완료 3회',       icon: '🎳', tier: 'normal', hidden: false },
+  'C-7': { name: '외길 인생',      desc: '하나만 파는 사람이 있었어요',             cond: '같은 작업 10회 완료',           icon: '🎯', tier: 'rare',   hidden: false },
 
   // ── D. 배틀 계열 — 친구와 함께 ───────────────────────
   'D-1': { name: '첫 하이파이브',   desc: '첫 배틀을 완주했어요!',                 cond: '배틀 첫 완료',                  icon: '🙌', tier: 'normal', hidden: false },
@@ -4868,6 +4873,29 @@ function checkAchievementsOnTimerComplete() {
     const sevenDaysAgo = Date.now() - 7 * 24 * 3600 * 1000;
     const recentBattles = logs.filter(l => l.type === 'battle' && (l.completedAt || 0) >= sevenDaysAgo).length;
     if (recentBattles + 1 >= 3) unlockAchievement('D-8');
+  }
+
+  // ── B-9~12 / C-7: 추가 희귀 업적 ────────────────────────
+
+  // B-9: 60분 이상 타이머 완료
+  if (timer.duration >= 3600) unlockAchievement('B-9');
+
+  // B-10: 주말(토/일) 완료 10회
+  const isWeekend = (d) => { const day = d.getDay(); return day === 0 || day === 6; };
+  const weekendCount = logs.filter(l => l.completedAt && isWeekend(new Date(l.completedAt))).length;
+  if (weekendCount + (isWeekend(now) ? 1 : 0) >= 10) unlockAchievement('B-10');
+
+  // B-11: 12~13시 완료 5회
+  const noonCount = logs.filter(l => { const lh = new Date(l.completedAt).getHours(); return lh >= 12 && lh < 13; }).length;
+  if (noonCount + (h >= 12 && h < 13 ? 1 : 0) >= 5) unlockAchievement('B-11');
+
+  // B-12: 하루 6회 완료 (기존 로그 5개 + 현재)
+  if (todayCount >= 5) unlockAchievement('B-12');
+
+  // C-7: 같은 작업 10회 완료
+  if (currentTask) {
+    const sameTaskCount = logs.filter(l => l.task === currentTask).length;
+    if (sameTaskCount + 1 >= 10) unlockAchievement('C-7');
   }
 
   // 완료 후 스핀 카운터 리셋
