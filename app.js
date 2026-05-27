@@ -2849,6 +2849,7 @@ window.addEventListener('load', () => {
   setTimeout(playHifive, 400);
   initTabIcons();               // v0.1.34 — 탭 아이콘에 실제 로고 얼굴 주입
   checkInAppBrowser();          // v0.1.40 — 인앱 브라우저 감지
+  initAchievementAccordion();   // v0.1.69 — 업적 아코디언 상태 복원
 
   const params = new URLSearchParams(location.search);
   const battleId = params.get('battle');
@@ -4440,23 +4441,24 @@ function compressImage(dataUrl, maxDim, quality) {
 // ═══════════════════════════════════════════════════════════
 
 const ACHIEVEMENT_DEFS = {
-  'A-1': { name: '첫 수확',       desc: '첫 뽀모도로를 끝냈어요!',              icon: '🌱', hidden: false },
-  'A-2': { name: '가챠의 시작',   desc: '처음으로 가챠를 돌렸어요',              icon: '🎰', hidden: false },
-  'A-3': { name: '고민 끝!',      desc: '나온 대로 리롤 없이 바로 시작했어요',   icon: '⚡', hidden: false },
-  'A-4': { name: '이름표 달기',   desc: '닉네임을 설정했어요',                   icon: '🏷️', hidden: false },
-  'B-1': { name: '3연타',         desc: '3일 연속으로 집중했어요',               icon: '🔥', hidden: false },
-  'B-2': { name: '일주일 농부',   desc: '7일을 꾸준히 수확했어요',               icon: '📅', hidden: false },
-  'B-6': { name: '카테고리 수집가', desc: '할 일을 10개나 등록했어요',           icon: '📁', hidden: false },
-  'B-7': { name: '소감가',        desc: '완료 후 소감을 10번 남겼어요',          icon: '📓', hidden: false },
-  'C-1': { name: '일단 돌려!',    desc: '가챠를 10번 돌렸어요',                 icon: '🎲', hidden: false },
-  'C-3': { name: '다양한 수확',   desc: '5가지 다른 일을 완료했어요',            icon: '🌈', hidden: false },
-  'E-2': { name: '토마토 탈주',   desc: '10초 남기고 도망쳤어요',               icon: '🏃', hidden: true  },
-  'E-3': { name: '완전한 하루',   desc: '하루에 4번이나 집중했어요!',            icon: '☀️', hidden: true  },
-  'E-4': { name: '새벽 감성',     desc: '새벽 4~6시에 혼자 집중했어요',         icon: '⭐', hidden: true  },
-  'E-5': { name: '마지막 한 판',  desc: '자정 넘어서도 멈추지 않았어요',         icon: '🕛', hidden: true  },
-  'E-6': { name: '전설의 토마토', desc: '100회 수확의 전설',                    icon: '👑', hidden: true  },
-  'E-7': { name: '광고 거부자',   desc: '리롤 없이 10번 연속 바로 시작',         icon: '✨', hidden: true  },
-  'E-8': { name: '수집 광',       desc: '카테고리를 20개나 만들었어요',          icon: '📚', hidden: true  },
+  // id: { name, desc(토스트용), cond(카드 조건 설명), icon, hidden }
+  'A-1': { name: '첫 수확',        desc: '첫 뽀모도로를 끝냈어요!',             cond: '타이머 1회 완료',              icon: '🌱', hidden: false },
+  'A-2': { name: '가챠의 시작',    desc: '처음으로 가챠를 돌렸어요',             cond: '가챠 첫 사용',                 icon: '🎰', hidden: false },
+  'A-3': { name: '고민 끝!',       desc: '나온 대로 리롤 없이 바로 시작했어요',  cond: '가챠 후 리롤 없이 바로 시작',  icon: '⚡', hidden: false },
+  'A-4': { name: '이름표 달기',    desc: '닉네임을 설정했어요',                  cond: '닉네임 첫 설정',               icon: '🏷️', hidden: false },
+  'B-1': { name: '3연타',          desc: '3일 연속으로 집중했어요',              cond: '3일 연속 타이머 완료',         icon: '🔥', hidden: false },
+  'B-2': { name: '일주일 농부',    desc: '7일을 꾸준히 수확했어요',              cond: '7일 연속 타이머 완료',         icon: '📅', hidden: false },
+  'B-6': { name: '카테고리 수집가', desc: '할 일을 10개나 등록했어요',           cond: '카테고리 10개 이상 등록',      icon: '📁', hidden: false },
+  'B-7': { name: '소감가',         desc: '완료 후 소감을 10번 남겼어요',         cond: '완료 소감 10회 작성',          icon: '📓', hidden: false },
+  'C-1': { name: '일단 돌려!',     desc: '가챠를 10번 돌렸어요',                cond: '가챠 누적 10회',               icon: '🎲', hidden: false },
+  'C-3': { name: '다양한 수확',    desc: '5가지 다른 일을 완료했어요',           cond: '서로 다른 작업 5가지 완료',    icon: '🌈', hidden: false },
+  'E-2': { name: '토마토 탈주',    desc: '10초 남기고 도망쳤어요',              cond: null, icon: '🏃', hidden: true  },
+  'E-3': { name: '완전한 하루',    desc: '하루에 4번이나 집중했어요!',           cond: null, icon: '☀️', hidden: true  },
+  'E-4': { name: '새벽 감성',      desc: '새벽 4~6시에 혼자 집중했어요',        cond: null, icon: '⭐', hidden: true  },
+  'E-5': { name: '마지막 한 판',   desc: '자정 넘어서도 멈추지 않았어요',        cond: null, icon: '🕛', hidden: true  },
+  'E-6': { name: '전설의 토마토',  desc: '100회 수확의 전설',                   cond: null, icon: '👑', hidden: true  },
+  'E-7': { name: '광고 거부자',    desc: '리롤 없이 10번 연속 바로 시작',        cond: null, icon: '✨', hidden: true  },
+  'E-8': { name: '수집 광',        desc: '카테고리를 20개나 만들었어요',         cond: null, icon: '📚', hidden: true  },
 };
 
 // ── 데이터 읽기/쓰기 ──────────────────────────────────────
@@ -4550,6 +4552,35 @@ function getCompletionStreak() {
   return streak;
 }
 
+// ── 업적 아코디언 토글 ────────────────────────────────────
+
+function initAchievementAccordion() {
+  const ACH_OPEN_KEY = 'tomotto_ach_open';
+  const $toggle = document.getElementById('achievementToggle');
+  const $grid   = document.getElementById('achievementGrid');
+  if (!$toggle || !$grid) return;
+
+  // 저장된 상태 복원 (기본값: 열림)
+  const saved = localStorage.getItem(ACH_OPEN_KEY);
+  if (saved === 'false') {
+    $grid.hidden = true;
+    $toggle.setAttribute('aria-expanded', 'false');
+  }
+
+  function toggle() {
+    const isOpen = $toggle.getAttribute('aria-expanded') !== 'false';
+    const nextOpen = !isOpen;
+    $toggle.setAttribute('aria-expanded', String(nextOpen));
+    $grid.hidden = !nextOpen;
+    localStorage.setItem(ACH_OPEN_KEY, String(nextOpen));
+  }
+
+  $toggle.addEventListener('click', toggle);
+  $toggle.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+  });
+}
+
 // ── 기록 탭 업적 렌더 ─────────────────────────────────────
 
 function renderAchievementsTab() {
@@ -4571,18 +4602,28 @@ function renderAchievementsTab() {
       : null;
 
     if (unlocked) {
+      // 달성: 이름 + 달성 조건(있으면) + 날짜
+      const condHtml = def.cond
+        ? `<div class="ach-card-cond">${def.cond}</div>`
+        : '';
       return `
         <div class="ach-card ach-card--unlocked${def.hidden ? ' ach-card--secret' : ''}">
           <div class="ach-card-icon">${def.icon}</div>
           <div class="ach-card-name">${def.name}</div>
+          ${condHtml}
           <div class="ach-card-date">${dateStr}</div>
         </div>`;
     } else {
-      // 숨김 업적은 잠긴 상태에서 이름/설명 비공개
+      // 미달성: 일반 업적은 이름+조건 공개, 숨김 업적은 전부 비공개
+      const isSecret = def.hidden;
+      const condHtml = (!isSecret && def.cond)
+        ? `<div class="ach-card-cond">${def.cond}</div>`
+        : '';
       return `
-        <div class="ach-card ach-card--locked">
-          <div class="ach-card-icon">🔒</div>
-          <div class="ach-card-name">${def.hidden ? '???' : def.name}</div>
+        <div class="ach-card ach-card--locked${isSecret ? ' ach-card--secret-locked' : ''}">
+          <div class="ach-card-icon">${isSecret ? '🔒' : '🔒'}</div>
+          <div class="ach-card-name">${isSecret ? '???' : def.name}</div>
+          ${condHtml}
           <div class="ach-card-date">미달성</div>
         </div>`;
     }
