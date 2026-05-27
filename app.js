@@ -3960,10 +3960,12 @@ async function renderLeaderboard() {
     const countColor = i < 3 ? 'color:var(--accent);' : '';
     const meBadge = isMe ? '<span class="lb-me-badge">나</span>' : '';
     const statusBadge = getStatusBadge(e.nick);
+    const titleEmoji = isMe ? (getCurrentTitle()?.emoji || '') : '';
+    const nickText = titleEmoji ? `${titleEmoji} ${escapeHtml(e.nick)}` : escapeHtml(e.nick);
     return `
       <div class="lb-row${isMe ? ' lb-row-me' : ''}">
         ${rankBadge}
-        <span class="lb-nick"><span class="lb-nick-text">${escapeHtml(e.nick)}</span>${meBadge}${statusBadge}</span>
+        <span class="lb-nick"><span class="lb-nick-text">${nickText}</span>${meBadge}${statusBadge}</span>
         <span class="lb-count" style="${countColor}">${e.count}회</span>
       </div>`; // v0.1.66 — 막대그래프 제거, 1-3위 횟수 강조색
   }).join('');
@@ -4690,7 +4692,10 @@ function renderAchievementsTab() {
 
   if ($count) $count.textContent = `${unlockedCount} / ${total}`;
 
-  const html = Object.entries(ACHIEVEMENT_DEFS).map(([id, def]) => {
+  const TIER_ORDER = { normal: 0, rare: 1, hidden: 2 };
+  const html = Object.entries(ACHIEVEMENT_DEFS)
+    .sort(([, a], [, b]) => TIER_ORDER[a.tier] - TIER_ORDER[b.tier])
+    .map(([id, def]) => {
     const state = all[id];
     const unlocked = !!state?.unlocked;
     const dateStr = unlocked
