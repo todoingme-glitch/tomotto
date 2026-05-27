@@ -633,8 +633,7 @@ function renderBattleNickname() {
     const isLong = myNickname.length > 10;
     $battleMeEl?.classList.toggle('battle-me--long', isMobileNow && isLong);
     if (isMobileNow && isLong) {
-      const len = myNickname.length;
-      $battleNick.style.fontSize = len > 16 ? '11px' : len > 12 ? '13px' : '';
+      $battleNick.style.fontSize = '12px';
     } else {
       $battleNick.style.fontSize = '';
     }
