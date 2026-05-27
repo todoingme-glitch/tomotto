@@ -628,9 +628,16 @@ function renderBattleNickname() {
   if (myNickname) {
     $battleNick.textContent = myNickname;
     $battleNick.style.color = '';
+    if (window.matchMedia('(max-width: 480px)').matches) {
+      const len = myNickname.length;
+      $battleNick.style.fontSize = len > 16 ? '11px' : len > 12 ? '13px' : '';
+    } else {
+      $battleNick.style.fontSize = '';
+    }
   } else {
     $battleNick.textContent = '(미설정)';
     $battleNick.style.color = 'var(--text-muted)';
+    $battleNick.style.fontSize = '';
   }
 }
 
@@ -3291,6 +3298,14 @@ function truncMid(str, max = 13) {
   return str.slice(0, left) + '…' + str.slice(-right);
 }
 
+function splitCond(cond) {
+  if (!cond) return '';
+  const words = cond.split(' ');
+  if (words.length < 3) return cond;
+  const mid = Math.ceil(words.length / 2);
+  return words.slice(0, mid).join(' ') + '<br>' + words.slice(mid).join(' ');
+}
+
 // v0.1.9 — 가챠 카운트는 "이번 사이클 N/3" 표시. 3 도달 → 다음엔 광고 사이클 시작.
 function updateGachaCounter() {
   $gachaCount.textContent = String(gachaCount);
@@ -4717,7 +4732,7 @@ function renderAchievementsTab() {
     const tierClass = def.tier === 'rare' ? ' ach-card--rare' : def.tier === 'hidden' ? ' ach-card--secret' : '';
 
     if (unlocked) {
-      const condHtml = def.cond ? `<div class="ach-card-cond">${def.cond}</div>` : '';
+      const condHtml = def.cond ? `<div class="ach-card-cond">${splitCond(def.cond)}</div>` : '';
       return `
         <div class="ach-card ach-card--unlocked${tierClass}">
           <div class="ach-card-icon">${def.icon}</div>
@@ -4727,7 +4742,7 @@ function renderAchievementsTab() {
         </div>`;
     } else {
       const isSecret = def.hidden;
-      const condHtml = (!isSecret && def.cond) ? `<div class="ach-card-cond">${def.cond}</div>` : '';
+      const condHtml = (!isSecret && def.cond) ? `<div class="ach-card-cond">${splitCond(def.cond)}</div>` : '';
       return `
         <div class="ach-card ach-card--locked${tierClass}">
           <div class="ach-card-icon">🔒</div>

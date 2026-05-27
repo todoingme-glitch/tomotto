@@ -1213,22 +1213,18 @@ dialog.modal input[type="text"]:focus {
   gap: 6px;
 }
 
-.battle-me-sub {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-  margin-left: auto;
-}
-
 @media (max-width: 480px) {
+  .battle-me {
+    align-items: flex-start;
+  }
   .battle-me-info {
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
   }
-  .battle-me-sub {
-    margin-left: 0;
+  .battle-me-nick {
+    white-space: nowrap;
+    overflow: hidden;
   }
 }
 
@@ -3190,6 +3186,7 @@ dialog.modal input[type="text"]:focus {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-align: center;
   }
 }
 .lb-me-badge {
@@ -3343,7 +3340,6 @@ dialog.modal input[type="text"]:focus {
   }
   .ach-card {
     min-height: 96px;
-    justify-content: space-between;
   }
   .ach-card-name {
     font-size: 0.75rem;
