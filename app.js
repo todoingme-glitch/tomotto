@@ -4527,14 +4527,14 @@ const ACHIEVEMENT_DEFS = {
   'D-8': { name: '오늘도 같이',     desc: '7일 안에 3번 배틀했어요',               cond: '7일 이내 배틀 완료 3회',        icon: '🗓️', tier: 'normal', hidden: false },
 
   // ── E. 숨겨진 업적 ────────────────────────────────────
-  'E-1': { name: '잠깐만요 진짜 잠깐', desc: '타이머 켜놓고 딴 짓 했죠?',          cond: null, icon: '👀', tier: 'hidden', hidden: true  },
-  'E-2': { name: '거의 다 왔는데',  desc: '10초 남기고 도망쳤어요',               cond: null, icon: '🏃', tier: 'hidden', hidden: true  },
-  'E-3': { name: '완전한 하루',    desc: '하루에 4번이나 집중했어요!',            cond: null, icon: '☀️', tier: 'hidden', hidden: true  },
-  'E-4': { name: '새벽 감성',      desc: '새벽 4~6시에 혼자 집중했어요',         cond: null, icon: '⭐', tier: 'hidden', hidden: true  },
-  'E-5': { name: '마지막 한 판',   desc: '자정 넘어서도 멈추지 않았어요',         cond: null, icon: '🕛', tier: 'hidden', hidden: true  },
-  'E-6': { name: '전설의 토마토',  desc: '100회 수확의 전설',                    cond: null, icon: '👑', tier: 'hidden', hidden: true  },
-  'E-7': { name: '그냥 간다',       desc: '리롤 없이 10번 연속 바로 시작',         cond: null, icon: '✨', tier: 'hidden', hidden: true  },
-  'E-8': { name: '폴더 안에 폴더', desc: '카테고리를 20개나 만들었어요',          cond: null, icon: '📚', tier: 'hidden', hidden: true  },
+  'E-1': { name: '잠깐만요 진짜 잠깐', desc: '타이머 켜놓고 딴 짓 했죠?',          cond: '타이머 실행 중 탭 전환 5회',       icon: '👀', tier: 'hidden', hidden: true  },
+  'E-2': { name: '거의 다 왔는데',  desc: '10초 남기고 도망쳤어요',               cond: '10초 이하 남기고 취소',            icon: '🏃', tier: 'hidden', hidden: true  },
+  'E-3': { name: '완전한 하루',    desc: '하루에 4번이나 집중했어요!',            cond: '하루 4회 이상 타이머 완료',        icon: '☀️', tier: 'hidden', hidden: true  },
+  'E-4': { name: '새벽 감성',      desc: '새벽 4~6시에 혼자 집중했어요',         cond: '새벽 4~6시에 타이머 완료',        icon: '⭐', tier: 'hidden', hidden: true  },
+  'E-5': { name: '마지막 한 판',   desc: '밤 11시 반이 넘어서도 멈추지 않았어요', cond: '밤 11시 30분 이후 타이머 완료',   icon: '🕛', tier: 'hidden', hidden: true  },
+  'E-6': { name: '전설의 토마토',  desc: '100회 수확의 전설',                    cond: '타이머 완료 100회',               icon: '👑', tier: 'hidden', hidden: true  },
+  'E-7': { name: '그냥 간다',       desc: '리롤 없이 10번 연속 바로 시작',         cond: '가챠 리롤 없이 10회 연속 시작',   icon: '✨', tier: 'hidden', hidden: true  },
+  'E-8': { name: '폴더 안에 폴더', desc: '카테고리를 20개나 만들었어요',          cond: '카테고리 20개 생성',              icon: '📚', tier: 'hidden', hidden: true  },
 };
 
 // ── 칭호 시스템 ───────────────────────────────────────────

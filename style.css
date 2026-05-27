@@ -3305,6 +3305,11 @@ dialog.modal input[type="text"]:focus {
   .achievement-grid {
     grid-template-columns: repeat(3, 1fr);
     gap: 6px;
+    grid-auto-rows: minmax(88px, auto);
+  }
+  .ach-card {
+    min-height: 88px;
+    justify-content: space-between;
   }
 }
 .ach-card {
