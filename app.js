@@ -656,6 +656,8 @@ async function saveNickname() {
   localStorage.setItem(BATTLE_STORAGE.nickname, v);
   renderBattleNickname();
   closeNickModal();
+  // v0.1.69 — 첫 닉네임 설정 업적
+  if (!oldNickname) unlockAchievement('A-4');
   // v0.1.66 — 닉네임 변경 시 DB 기존 데이터 마이그레이션 (리더보드 횟수 유지)
   if (sb && oldNickname && oldNickname !== v) {
     try {
@@ -1132,6 +1134,7 @@ function updateLatestLogNote(note) {
   if (logs.length > 0) {
     logs[0].note = note;
     localStorage.setItem(STORAGE.logs, JSON.stringify(logs));
+    checkAchievementsOnNote(); // v0.1.69
   }
 }
 
@@ -2900,6 +2903,9 @@ const STORAGE = {
   lastCapture: 'tomotto_lastCapture',        // v0.1.8 — 마지막 인증샷 (data URL, 작게 압축)
   logs: 'tomotto_logs',                      // v0.1.33 — 완료 로그 (기록 탭)
   logCaptures: 'tomotto_log_captures',       // v0.1.34 — 로그ID → 인증샷 data URL 맵
+  achievements: 'tomotto_achievements',      // v0.1.69 — 업적 달성 상태
+  totalGachaCount: 'tomotto_total_gacha',    // v0.1.69 — 전체 가챠 누적 횟수
+  noRerollStreak: 'tomotto_noreroll_streak', // v0.1.69 — 연속 리롤 없이 완료 횟수
 };
 
 // ====== localStorage 마이그레이션 (pomocha_* → tomotto_*) ======
@@ -2928,6 +2934,8 @@ function migrateStorage() {
 // 상태
 let categories = [];
 let gachaCount = 0;
+let totalGachaCount = 0;            // v0.1.69 — 전체 누적 가챠 횟수 (업적용)
+let _spinsSinceReset = 0;           // v0.1.69 — 리셋 후 가챠 횟수 (A-3 판별)
 let currentTask = null;
 let completedCount = 0;             // v0.1.8 — 누적 완료
 let editingCategoryIndex = -1;      // v0.1.8 — 카테고리 인라인 편집 진행 중인 인덱스
@@ -2954,6 +2962,10 @@ window.addEventListener('load', () => {
   const savedGacha = parseInt(localStorage.getItem(STORAGE.gachaCount) || '0', 10);
   gachaCount = Number.isFinite(savedGacha) && savedGacha >= 0 ? savedGacha : 0;
   updateGachaCounter();
+
+  // v0.1.69 — 전체 가챠 횟수 복원
+  const savedTotalGacha = parseInt(localStorage.getItem(STORAGE.totalGachaCount) || '0', 10);
+  totalGachaCount = Number.isFinite(savedTotalGacha) && savedTotalGacha >= 0 ? savedTotalGacha : 0;
 
   // 타이머 길이 — 새로고침 시 항상 25분(1500초)으로 초기화
   // (직접 입력 등 이전 설정값은 복원하지 않음)
@@ -3219,6 +3231,7 @@ function addCategory() {
   categories.push(v);
   $catInput.value = '';
   renderCategories();
+  checkAchievementsOnCategoryChange(); // v0.1.69
   const newLi = $catList.lastElementChild;
   if (newLi) {
     newLi.classList.add('highlight');
@@ -3426,6 +3439,11 @@ async function spinGacha() {
   // 결과 박스로 전환 (폭죽 + 글로우 발사)
   gachaCount++;
   updateGachaCounter();
+  // v0.1.69 — 전체 가챠 횟수 + 업적
+  totalGachaCount++;
+  _spinsSinceReset++;
+  localStorage.setItem(STORAGE.totalGachaCount, String(totalGachaCount));
+  checkAchievementsOnGacha();
   showGachaResult(winner, true);
 
   // 타이머 리셋 (새 작업)
@@ -3559,6 +3577,9 @@ function startTimer() {
   // 활동 상태 표시 — 집중 시작
   upsertPresence(true);
 
+  // v0.1.69 — A-3 고민 끝! : 가챠 1회 후 바로 시작
+  if (_spinsSinceReset === 1) unlockAchievement('A-3');
+
   startTimerInternal();
 }
 
@@ -3583,6 +3604,12 @@ function pauseTimer() {
 }
 
 function resetTimer() {
+  // v0.1.69 — E-2 토마토 탈주: 실행 중이었고 10초 이하 남겼을 때 리셋
+  if (timer.isRunning && timer.remaining > 0 && timer.remaining <= 10) {
+    unlockAchievement('E-2');
+  }
+  _spinsSinceReset = 0; // 가챠 카운터 초기화
+
   if (timer.intervalId) clearInterval(timer.intervalId);
   timer.intervalId = null;
   timer.isRunning = false;
@@ -3661,6 +3688,9 @@ function finishTimer() {
 
   // 활동 상태 표시 — 집중 종료
   upsertPresence(false);
+
+  // v0.1.69 — 타이머 완료 업적 체크
+  checkAchievementsOnTimerComplete();
 
   // v0.1.36 — 소셜 리더보드 통계 동기화
   syncUserStats();
@@ -4400,4 +4430,182 @@ function compressImage(dataUrl, maxDim, quality) {
     img.onerror = () => resolve(dataUrl);  // 실패 시 원본
     img.src = dataUrl;
   });
+}
+
+// ═══════════════════════════════════════════════════════════
+// 도전과제 시스템 v0.1.69
+// ═══════════════════════════════════════════════════════════
+
+const ACHIEVEMENT_DEFS = {
+  'A-1': { name: '첫 수확',       desc: '첫 뽀모도로를 끝냈어요!',              icon: '🌱', hidden: false },
+  'A-2': { name: '가챠의 시작',   desc: '처음으로 가챠를 돌렸어요',              icon: '🎰', hidden: false },
+  'A-3': { name: '고민 끝!',      desc: '나온 대로 리롤 없이 바로 시작했어요',   icon: '⚡', hidden: false },
+  'A-4': { name: '이름표 달기',   desc: '닉네임을 설정했어요',                   icon: '🏷️', hidden: false },
+  'B-1': { name: '3연타',         desc: '3일 연속으로 집중했어요',               icon: '🔥', hidden: false },
+  'B-2': { name: '일주일 농부',   desc: '7일을 꾸준히 수확했어요',               icon: '📅', hidden: false },
+  'B-6': { name: '카테고리 수집가', desc: '할 일을 10개나 등록했어요',           icon: '📁', hidden: false },
+  'B-7': { name: '소감가',        desc: '완료 후 소감을 10번 남겼어요',          icon: '📓', hidden: false },
+  'C-1': { name: '일단 돌려!',    desc: '가챠를 10번 돌렸어요',                 icon: '🎲', hidden: false },
+  'C-3': { name: '다양한 수확',   desc: '5가지 다른 일을 완료했어요',            icon: '🌈', hidden: false },
+  'E-2': { name: '토마토 탈주',   desc: '10초 남기고 도망쳤어요',               icon: '🏃', hidden: true  },
+  'E-3': { name: '완전한 하루',   desc: '하루에 4번이나 집중했어요!',            icon: '☀️', hidden: true  },
+  'E-4': { name: '새벽 감성',     desc: '새벽 4~6시에 혼자 집중했어요',         icon: '⭐', hidden: true  },
+  'E-5': { name: '마지막 한 판',  desc: '자정 넘어서도 멈추지 않았어요',         icon: '🕛', hidden: true  },
+  'E-6': { name: '전설의 토마토', desc: '100회 수확의 전설',                    icon: '👑', hidden: true  },
+  'E-7': { name: '광고 거부자',   desc: '리롤 없이 10번 연속 바로 시작',         icon: '✨', hidden: true  },
+  'E-8': { name: '수집 광',       desc: '카테고리를 20개나 만들었어요',          icon: '📚', hidden: true  },
+};
+
+// ── 데이터 읽기/쓰기 ──────────────────────────────────────
+
+function getAchievements() {
+  try { return JSON.parse(localStorage.getItem(STORAGE.achievements) || '{}'); } catch { return {}; }
+}
+
+function isUnlocked(id) {
+  return !!getAchievements()[id]?.unlocked;
+}
+
+function unlockAchievement(id) {
+  if (!ACHIEVEMENT_DEFS[id] || isUnlocked(id)) return;
+  const all = getAchievements();
+  all[id] = { unlocked: true, unlockedAt: Date.now() };
+  localStorage.setItem(STORAGE.achievements, JSON.stringify(all));
+  _showAchievementToast(id);
+}
+
+// ── 토스트 알림 ───────────────────────────────────────────
+
+let _toastQueue = [];
+let _toastShowing = false;
+
+function _showAchievementToast(id) {
+  _toastQueue.push(id);
+  if (!_toastShowing) _processToastQueue();
+}
+
+function _processToastQueue() {
+  if (_toastQueue.length === 0) { _toastShowing = false; return; }
+  _toastShowing = true;
+  const id = _toastQueue.shift();
+  const def = ACHIEVEMENT_DEFS[id];
+  if (!def) { _processToastQueue(); return; }
+
+  const toast = document.createElement('div');
+  toast.className = 'achievement-toast' + (def.hidden ? ' achievement-toast--secret' : '');
+  toast.innerHTML = `
+    <span class="achievement-toast-icon">${def.icon}</span>
+    <div class="achievement-toast-body">
+      <div class="achievement-toast-label">${def.hidden ? '🔍 숨겨진 업적 발견!' : '🏅 업적 달성!'}</div>
+      <div class="achievement-toast-name">${def.name}</div>
+      <div class="achievement-toast-desc">${def.desc}</div>
+    </div>
+  `;
+  document.body.appendChild(toast);
+
+  // 애니메이션 진입 — rAF 두 번으로 브라우저 paint cycle 확보
+  setTimeout(() => toast.classList.add('achievement-toast--show'), 30);
+
+  setTimeout(() => {
+    toast.classList.remove('achievement-toast--show');
+    toast.classList.add('achievement-toast--hide');
+    setTimeout(() => { toast.remove(); setTimeout(_processToastQueue, 150); }, 350);
+  }, 4000);
+}
+
+// ── 스트릭 계산 ───────────────────────────────────────────
+
+function getCompletionStreak() {
+  const logs = getLogsFromStorage();
+  if (!logs.length) return 0;
+
+  // 완료 날짜 Set 만들기
+  const dateCounts = {};
+  for (const log of logs) {
+    const d = log.date || formatDateStr(new Date(log.completedAt));
+    dateCounts[d] = true;
+  }
+
+  let streak = 0;
+  const msPerDay = 86400000;
+  let check = new Date();
+  const todayStr = formatDateStr(check);
+
+  // 오늘 완료가 없어도 어제부터 streak 계산
+  if (!dateCounts[todayStr]) check = new Date(check.getTime() - msPerDay);
+
+  while (true) {
+    const ds = formatDateStr(check);
+    if (!dateCounts[ds]) break;
+    streak++;
+    check = new Date(check.getTime() - msPerDay);
+  }
+  return streak;
+}
+
+// ── 체크 함수들 ───────────────────────────────────────────
+
+// 가챠 돌린 후
+function checkAchievementsOnGacha() {
+  if (totalGachaCount === 1) unlockAchievement('A-2');
+  if (totalGachaCount >= 10) unlockAchievement('C-1');
+}
+
+// 카테고리 추가/삭제 후
+function checkAchievementsOnCategoryChange() {
+  if (categories.length >= 10) unlockAchievement('B-6');
+  if (categories.length >= 20) unlockAchievement('E-8');
+}
+
+// 소감 저장 후
+function checkAchievementsOnNote() {
+  const logs = getLogsFromStorage();
+  const noteCount = logs.filter(l => l.note && l.note.trim()).length;
+  if (noteCount >= 10) unlockAchievement('B-7');
+}
+
+// 타이머 완료 후
+function checkAchievementsOnTimerComplete() {
+  const logs = getLogsFromStorage();
+  const now = new Date();
+
+  // A-1: 첫 완료
+  if (completedCount === 1) unlockAchievement('A-1');
+
+  // B-1, B-2: 스트릭
+  const streak = getCompletionStreak();
+  if (streak >= 3) unlockAchievement('B-1');
+  if (streak >= 7) unlockAchievement('B-2');
+
+  // C-3: 다양한 카테고리 5개 이상 완료
+  const uniqueTasks = new Set(logs.map(l => l.task).filter(Boolean));
+  if (uniqueTasks.size >= 5) unlockAchievement('C-3');
+
+  // E-3: 오늘 4회 이상 완료
+  const todayStr = formatDateStr(now);
+  const todayCount = logs.filter(l => (l.date || formatDateStr(new Date(l.completedAt))) === todayStr).length;
+  if (todayCount >= 4) unlockAchievement('E-3');
+
+  // E-4: 새벽 4~6시
+  const h = now.getHours();
+  if (h >= 4 && h < 6) unlockAchievement('E-4');
+
+  // E-5: 23:30 이후
+  if (h === 23 && now.getMinutes() >= 30) unlockAchievement('E-5');
+
+  // E-6: 100회 달성
+  if (completedCount >= 100) unlockAchievement('E-6');
+
+  // E-7: 연속 리롤 없이 완료 (startTimer에서 A-3 체크가 있을 때만 카운트)
+  const noRerollStreak = parseInt(localStorage.getItem(STORAGE.noRerollStreak) || '0', 10);
+  if (_spinsSinceReset === 1) {
+    const next = noRerollStreak + 1;
+    localStorage.setItem(STORAGE.noRerollStreak, String(next));
+    if (next >= 10) unlockAchievement('E-7');
+  } else {
+    localStorage.setItem(STORAGE.noRerollStreak, '0');
+  }
+
+  // 완료 후 스핀 카운터 리셋
+  _spinsSinceReset = 0;
 }
