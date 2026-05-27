@@ -1208,8 +1208,9 @@ dialog.modal input[type="text"]:focus {
   flex: 1;
   min-width: 0;
   display: flex;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
 }
 
 .battle-me-nick {
@@ -1217,12 +1218,10 @@ dialog.modal input[type="text"]:focus {
   font-weight: 700;
   color: var(--accent);
   cursor: pointer;
-  padding: 4px 0;
+  padding: 2px 0;
   -webkit-tap-highlight-color: transparent;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-all;
 }
 
 .btn-mini {
@@ -3317,11 +3316,19 @@ dialog.modal input[type="text"]:focus {
   .achievement-grid {
     grid-template-columns: repeat(3, 1fr);
     gap: 6px;
-    grid-auto-rows: minmax(88px, auto);
+    grid-auto-rows: minmax(96px, auto);
   }
   .ach-card {
-    min-height: 88px;
+    min-height: 96px;
     justify-content: space-between;
+  }
+  .ach-card-name {
+    font-size: 0.75rem;
+    min-height: calc(1.2 * 0.75rem * 2);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 }
 .ach-card {
