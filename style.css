@@ -1221,19 +1221,19 @@ dialog.modal input[type="text"]:focus {
 }
 
 @media (max-width: 480px) {
-  .battle-me {
+  .battle-me--long {
     align-items: flex-start;
   }
-  .battle-me-info {
+  .battle-me--long .battle-me-info {
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
   }
-  .battle-me-nick {
+  .battle-me--long .battle-me-nick {
     white-space: nowrap;
     overflow: hidden;
   }
-  .battle-me-sub {
+  .battle-me--long .battle-me-sub {
     width: 100%;
     margin-left: 0;
     justify-content: space-between;

@@ -625,10 +625,14 @@ function renderBattleNickname() {
     $settingsTitle.textContent = title ? `${title.emoji} ${title.name}` : '—';
   }
 
+  const $battleMeEl = $battleNick.closest('.battle-me');
   if (myNickname) {
     $battleNick.textContent = myNickname;
     $battleNick.style.color = '';
-    if (window.matchMedia('(max-width: 480px)').matches) {
+    const isMobileNow = window.matchMedia('(max-width: 480px)').matches;
+    const isLong = myNickname.length > 10;
+    $battleMeEl?.classList.toggle('battle-me--long', isMobileNow && isLong);
+    if (isMobileNow && isLong) {
       const len = myNickname.length;
       $battleNick.style.fontSize = len > 16 ? '11px' : len > 12 ? '13px' : '';
     } else {
@@ -638,6 +642,7 @@ function renderBattleNickname() {
     $battleNick.textContent = '(미설정)';
     $battleNick.style.color = 'var(--text-muted)';
     $battleNick.style.fontSize = '';
+    $battleMeEl?.classList.remove('battle-me--long');
   }
 }
 
