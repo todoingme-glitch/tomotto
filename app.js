@@ -4499,7 +4499,7 @@ const ACHIEVEMENT_DEFS = {
   'B-5': { name: '시간의 지배자',   desc: '단 한 번도 멈추지 않았어요',            cond: '일시정지 없이 완료 10회',       icon: '⚔️', tier: 'rare',   hidden: false },
   'B-6': { name: '할 일이 너무 많아', desc: '할 일을 10개나 등록했어요',           cond: '할 일 10개 이상 등록',          icon: '📁', tier: 'normal', hidden: false },
   'B-7': { name: '전원일기',         desc: '완료 후 소감을 10번 남겼어요',           cond: '완료 소감 10회 작성',           icon: '📓', tier: 'normal', hidden: false },
-  'B-8': { name: '찍어야 믿지',     desc: '열심히 한 걸 사진으로 증명했어요',       cond: '인증샷 5회 업로드',             icon: '📷', tier: 'normal', hidden: false },
+  'B-8': { name: '남는 건 사진 뿐', desc: '열심히 한 걸 사진으로 증명했어요',       cond: '인증샷 5회 업로드',             icon: '📷', tier: 'normal', hidden: false },
 
   // ── C. Moto 계열 — 랜덤·즉흥 ─────────────────────────
   'C-1': { name: '일단 돌려!',      desc: '가챠를 10번 돌렸어요',                  cond: '가챠 누적 10회',                icon: '🎲', tier: 'normal', hidden: false },
@@ -4520,14 +4520,14 @@ const ACHIEVEMENT_DEFS = {
   'D-8': { name: '오늘도 같이',     desc: '7일 안에 3번 배틀했어요',               cond: '7일 이내 배틀 완료 3회',        icon: '🗓️', tier: 'normal', hidden: false },
 
   // ── E. 숨겨진 업적 ────────────────────────────────────
-  'E-1': { name: '몰래 딴짓 중',   desc: '타이머 켜놓고 딴 짓 했죠?',            cond: null, icon: '👀', tier: 'hidden', hidden: true  },
-  'E-2': { name: '토마토 탈주',    desc: '10초 남기고 도망쳤어요',               cond: null, icon: '🏃', tier: 'hidden', hidden: true  },
+  'E-1': { name: '잠깐만요 진짜 잠깐', desc: '타이머 켜놓고 딴 짓 했죠?',          cond: null, icon: '👀', tier: 'hidden', hidden: true  },
+  'E-2': { name: '거의 다 왔는데',  desc: '10초 남기고 도망쳤어요',               cond: null, icon: '🏃', tier: 'hidden', hidden: true  },
   'E-3': { name: '완전한 하루',    desc: '하루에 4번이나 집중했어요!',            cond: null, icon: '☀️', tier: 'hidden', hidden: true  },
   'E-4': { name: '새벽 감성',      desc: '새벽 4~6시에 혼자 집중했어요',         cond: null, icon: '⭐', tier: 'hidden', hidden: true  },
   'E-5': { name: '마지막 한 판',   desc: '자정 넘어서도 멈추지 않았어요',         cond: null, icon: '🕛', tier: 'hidden', hidden: true  },
   'E-6': { name: '전설의 토마토',  desc: '100회 수확의 전설',                    cond: null, icon: '👑', tier: 'hidden', hidden: true  },
-  'E-7': { name: '광고 거부자',    desc: '리롤 없이 10번 연속 바로 시작',         cond: null, icon: '✨', tier: 'hidden', hidden: true  },
-  'E-8': { name: '수집 광',        desc: '카테고리를 20개나 만들었어요',          cond: null, icon: '📚', tier: 'hidden', hidden: true  },
+  'E-7': { name: '그냥 간다',       desc: '리롤 없이 10번 연속 바로 시작',         cond: null, icon: '✨', tier: 'hidden', hidden: true  },
+  'E-8': { name: '폴더 안에 폴더', desc: '카테고리를 20개나 만들었어요',          cond: null, icon: '📚', tier: 'hidden', hidden: true  },
 };
 
 // ── 칭호 시스템 ───────────────────────────────────────────
@@ -4549,9 +4549,11 @@ const TITLE_DEFS = [
 ];
 
 function getCurrentTitle() {
-  for (const t of TITLE_DEFS) {
-    try { if (t.check()) return t; } catch { /* ignore */ }
-  }
+  try {
+    for (const t of TITLE_DEFS) {
+      try { if (t.check()) return t; } catch { /* ignore */ }
+    }
+  } catch { /* TITLE_DEFS 초기화 전 호출 시 무시 */ }
   return null;
 }
 
