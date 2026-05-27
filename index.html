@@ -219,6 +219,7 @@
       <div class="completed-log">
         <div class="completed-counter">
           지금까지 <strong id="completedCount">0</strong>번 완료 🍅
+          <span id="userTitleDisplay" class="user-title" hidden></span>
         </div>
         <!-- v0.1.17 — 배틀 결과 보기 버튼 (배틀 타이머 완료 시 표시) -->
         <button id="battleResultBtn" class="btn-battle-result" hidden>🏆 배틀 결과 보기</button>
@@ -341,6 +342,14 @@
         <button id="settingsNickEditBtn" class="btn-mini" type="button">수정</button>
       </div>
       <p class="settings-hint">친구 배틀에서 표시되는 이름이에요.</p>
+    </div>
+
+    <div class="settings-section">
+      <p class="settings-label">현재 칭호</p>
+      <div class="settings-row">
+        <span class="settings-value settings-title-value" id="settingsTitleDisplay">—</span>
+      </div>
+      <p class="settings-hint">기록 탭에서 업적을 쌓으면 칭호가 올라가요.</p>
     </div>
 
     <div class="settings-section">
