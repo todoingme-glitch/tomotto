@@ -1211,13 +1211,24 @@ dialog.modal input[type="text"]:focus {
   flex-direction: row;
   align-items: center;
   gap: 6px;
-  flex-wrap: wrap;
 }
+
+.battle-me-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
 @media (max-width: 480px) {
   .battle-me-info {
     flex-direction: column;
     align-items: flex-start;
-    gap: 3px;
+    gap: 4px;
+  }
+  .battle-me-sub {
+    margin-left: 0;
   }
 }
 
