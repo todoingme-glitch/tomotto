@@ -3298,6 +3298,10 @@ function truncMid(str, max = 13) {
   return str.slice(0, left) + '…' + str.slice(-right);
 }
 
+function truncEnd(str, max = 12) {
+  return str.length > max ? str.slice(0, max) + '···' : str;
+}
+
 function splitCond(cond) {
   if (!cond) return '';
   const words = cond.split(' ');
@@ -3974,6 +3978,7 @@ async function renderLeaderboard() {
   }
 
   const medalEmojis = ['🥇', '🥈', '🥉'];
+  const isMobile = window.matchMedia?.('(max-width: 480px)').matches ?? false;
   const html = displayEntries.map((e, i) => {
     const isMe = e.nick === myNickname;
     const rankBadge = i < 3
@@ -3983,7 +3988,8 @@ async function renderLeaderboard() {
     const meBadge = isMe ? '<span class="lb-me-badge">나</span>' : '';
     const statusBadge = getStatusBadge(e.nick);
     const titleEmoji = isMe ? (getCurrentTitle()?.emoji || '') : '';
-    const nickText = titleEmoji ? `${titleEmoji} ${escapeHtml(e.nick)}` : escapeHtml(e.nick);
+    const dispNick = isMobile ? truncEnd(e.nick, 12) : e.nick;
+    const nickText = titleEmoji ? `${titleEmoji} ${escapeHtml(dispNick)}` : escapeHtml(dispNick);
     return `
       <div class="lb-row${isMe ? ' lb-row-me' : ''}">
         ${rankBadge}

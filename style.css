@@ -1213,6 +1213,13 @@ dialog.modal input[type="text"]:focus {
   gap: 6px;
 }
 
+.battle-me-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
 @media (max-width: 480px) {
   .battle-me {
     align-items: flex-start;
@@ -1225,6 +1232,11 @@ dialog.modal input[type="text"]:focus {
   .battle-me-nick {
     white-space: nowrap;
     overflow: hidden;
+  }
+  .battle-me-sub {
+    width: 100%;
+    margin-left: 0;
+    justify-content: space-between;
   }
 }
 
@@ -3185,8 +3197,6 @@ dialog.modal input[type="text"]:focus {
   .lb-nick-text {
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
-    text-align: center;
   }
 }
 .lb-me-badge {
