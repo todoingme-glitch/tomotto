@@ -2791,6 +2791,40 @@ dialog.modal input[type="text"]:focus {
   font-weight: 600;
 }
 
+/* 배틀 파트너 기록 섹션 */
+.log-partner {
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: var(--bg-card, #fff);
+  border: 1.5px solid var(--border-soft, #f0ebe7);
+  border-radius: 12px;
+}
+.log-section-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-sub, #aaa);
+  letter-spacing: 0.04em;
+  margin: 0 0 8px;
+}
+.partner-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border-soft, #f5f0ed);
+}
+.partner-row:last-child { border-bottom: none; }
+.partner-row-nick {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-main);
+  flex-shrink: 0;
+}
+.partner-row-stats {
+  font-size: 0.72rem;
+  color: var(--text-sub, #aaa);
+}
+
 /* 일별 상세 패널 */
 .log-day-detail {
   border-top: 1.5px solid var(--border);
