@@ -4854,6 +4854,7 @@ function updateCompletedDisplay() {
     const title = getCurrentTitle();
     if (title) {
       $titleEl.textContent = `${title.emoji} ${title.name}`;
+      $titleEl.dataset.titleId = title.id;
       $titleEl.hidden = false;
     } else {
       $titleEl.hidden = true;
@@ -5333,10 +5334,11 @@ const ACHIEVEMENT_DEFS = {
 
   // ── A. 온보딩 ─────────────────────────────────────────
   'A-1': { name: '첫 수확',         desc: '첫 뽀모도로를 끝냈어요!',              cond: '타이머 1회 완료',               icon: '🌱', tier: 'normal', hidden: false },
-  'A-2': { name: '가챠의 시작',     desc: '처음으로 가챠를 돌렸어요',              cond: '가챠 첫 사용',                  icon: '🎰', tier: 'normal', hidden: false },
+  'A-2': { name: '도파민이 싹',      desc: '처음으로 가챠를 돌렸어요',              cond: '가챠 첫 사용',                  icon: '🎰', tier: 'normal', hidden: false },
   'A-3': { name: '고민 끝!',        desc: '나온 대로 리롤 없이 바로 시작했어요',   cond: '가챠 후 리롤 없이 바로 시작',   icon: '⚡', tier: 'normal', hidden: false },
   'A-4': { name: '이름표를 붙여줘',  desc: '닉네임을 설정했어요',                   cond: '닉네임 첫 설정',                icon: '🏷️', tier: 'normal', hidden: false },
   'A-5': { name: '배틀 좋아하세요?', desc: '친구에게 배틀을 제안했어요',        cond: '배틀 초대 링크 첫 생성',        icon: '✉️', tier: 'normal', hidden: false },
+  'D-1': { name: '첫 하이파이브',   desc: '첫 배틀을 완주했어요!',                 cond: '배틀 첫 완료',                  icon: '🙌', tier: 'normal', hidden: false },
 
   // ── B. Tom 계열 — 집중·꾸준함 ────────────────────────
   'B-1': { name: '3연벙',           desc: '3일 연속으로 집중했어요',               cond: '3일 연속 타이머 완료',          icon: '🔥', tier: 'normal', hidden: false },
@@ -5358,16 +5360,16 @@ const ACHIEVEMENT_DEFS = {
   'C-3': { name: '잡식성 토마토',     desc: '5가지 다른 일을 완료했어요',            cond: '서로 다른 작업 5가지 완료',     icon: '🌈', tier: 'normal', hidden: false },
   'C-4': { name: '가챠 중독',       desc: '멈출 수가 없어요',                      cond: '가챠 누적 50회',                icon: '🃏', tier: 'rare',   hidden: false },
   'C-5': { name: '국번 없이 1336',   desc: '랜덤을 진심으로 믿어요',                cond: '가챠 누적 100회',               icon: '🔮', tier: 'rare',   hidden: false },
-  'C-6': { name: '굴러도 완성',     desc: 'MOTO 배틀도 해냈어요',                  cond: 'MOTO MODE 배틀 완료 3회',       icon: '🎳', tier: 'normal', hidden: false },
   'C-7': { name: '외길 인생',      desc: '하나만 파는 사람이 있었어요',             cond: '같은 작업 10회 완료',           icon: '🎯', tier: 'rare',   hidden: false },
 
   // ── D. 배틀 계열 — 친구와 함께 ───────────────────────
-  'D-1': { name: '첫 하이파이브',   desc: '첫 배틀을 완주했어요!',                 cond: '배틀 첫 완료',                  icon: '🙌', tier: 'normal', hidden: false },
   'D-2': { name: 'Tom 콤비',        desc: '함께 집중하고 함께 완료!',              cond: 'TOM MODE 배틀 첫 완료',         icon: '👓', tier: 'normal', hidden: false },
+  'D-9': { name: '집중 3연전',      desc: 'TOM 모드를 세 번이나 완주했어요',       cond: 'TOM MODE 배틀 완료 3회',        icon: '🧠', tier: 'normal', hidden: false },
   'D-3': { name: 'Moto 듀오',       desc: '운명을 같이 받아들였어요',              cond: 'MOTO MODE 배틀 첫 완료',        icon: '🎮', tier: 'normal', hidden: false },
+  'C-6': { name: '굴러도 완성',     desc: 'MOTO 배틀도 해냈어요',                  cond: 'MOTO MODE 배틀 완료 3회',       icon: '🎳', tier: 'normal', hidden: false },
   'D-4': { name: '또 뵙네요',        desc: '이 친구랑 자주 만나네요',               cond: '같은 파트너와 5회 배틀 완료',   icon: '🎟️', tier: 'normal', hidden: false },
   'D-5': { name: '저희 친해요',     desc: '진짜 단짝을 찾았어요',                  cond: '같은 파트너와 10회 배틀 완료',  icon: '💕', tier: 'rare',   hidden: false },
-  'D-6': { name: '한 판 더!',       desc: '끝나자마자 바로 또 시작했어요',         cond: '24시간 이내 같은 파트너 재도전', icon: '🔁', tier: 'normal', hidden: false },
+  'D-6': { name: '한 판 더!',       desc: '끝나자마자 바로 또 시작했어요',         cond: '완료 후 24시간 안에 같은 파트너랑 재시작', icon: '🔁', tier: 'normal', hidden: false },
   'D-7': { name: '새벽 농장',       desc: '새벽에도 함께 집중했어요',              cond: '새벽 1~5시 배틀 완료',          icon: '🌙', tier: 'rare',   hidden: false },
   'D-8': { name: '오늘도 같이',     desc: '7일 안에 3번 배틀했어요',               cond: '7일 이내 배틀 완료 3회',        icon: '🗓️', tier: 'normal', hidden: false },
 
@@ -5375,7 +5377,7 @@ const ACHIEVEMENT_DEFS = {
   'F-1': { name: '공개방 개설자',    desc: '첫 공개 배틀방을 만들었어요!',         cond: '공개 배틀방 첫 생성',              icon: '🏟️', tier: 'normal', hidden: false },
   'F-2': { name: '낯선 배틀',       desc: '공개 배틀방에 처음 참여했어요!',        cond: '공개 배틀방 첫 참여',              icon: '🚪', tier: 'normal', hidden: false },
   'F-3': { name: '공개 배틀 완주',  desc: '공개 배틀을 처음 완료했어요',           cond: '공개 배틀 첫 완료',                icon: '🎉', tier: 'normal', hidden: false },
-  'F-4': { name: '셋이서 집중',     desc: '3명 이상이서 함께 달렸어요',             cond: '3인 이상 공개 배틀 완료',          icon: '👥', tier: 'normal', hidden: false },
+  'F-4': { name: '셋이서 집중',     desc: '3명 이상이서 함께 달렸어요',             cond: '3인 이상 공개 배틀 완료',          icon: '🫂', tier: 'normal', hidden: false },
   'F-5': { name: '단골 공개방',     desc: '공개 배틀을 5번이나 완료했어요',        cond: '공개 배틀 완료 5회',               icon: '🔄', tier: 'rare',   hidden: false },
   'F-6': { name: '만원 사례',       desc: '10명이 꽉 찬 방에서 완주했어요!',       cond: '10명 공개 배틀 완료',              icon: '🎪', tier: 'rare',   hidden: false },
 
@@ -5387,7 +5389,7 @@ const ACHIEVEMENT_DEFS = {
   'E-5': { name: '찐찐막판',       desc: '자정이 다 되도록 멈추지 않았어요',     cond: '밤 11시 30분 이후 타이머 완료',   icon: '🕛', tier: 'hidden', hidden: true,  charImg: 'assets/react-tom-dawn.png',       charQuote: '이 시간까지 달렸어요... 🌙' },
   'E-6': { name: '전설의 토마토',  desc: '100회 수확의 전설',                    cond: '타이머 완료 100회',               icon: '👑', tier: 'hidden', hidden: true,  charImg: 'assets/react-both-celebrate.png', charQuote: '100번째 작업! 진짜 대단해요 🎉' },
   'E-7': { name: '그냥 간다',       desc: '리롤 없이 10번 연속 바로 시작',         cond: '가챠 리롤 없이 10회 연속 시작',   icon: '✨', tier: 'hidden', hidden: true  },
-  'E-8': { name: '폴더 안에 폴더', desc: '카테고리를 20개나 만들었어요',          cond: '카테고리 20개 생성',              icon: '📚', tier: 'hidden', hidden: true  },
+  'E-8': { name: '폴더 안에 폴더', desc: '할 일을 20개나 만들었어요',             cond: '할 일 20개 생성',                icon: '📚', tier: 'hidden', hidden: true  },
 };
 
 // ── 칭호 시스템 ───────────────────────────────────────────
@@ -5398,11 +5400,11 @@ const TITLE_DEFS = [
     const all = getAchievements();
     return Object.entries(ACHIEVEMENT_DEFS).filter(([, d]) => !d.hidden).every(([id]) => all[id]?.unlocked);
   }},
-  { id: 'golden',  emoji: '👑', name: '황금토마토',  check: () => completedCount >= 100 },
+  { id: 'golden',  emoji: '👑', name: '황금 토마토', check: () => completedCount >= 100 },
   { id: 'gacha',   emoji: '🎲', name: '가챠 신봉자', check: () => totalGachaCount >= 100 },
   { id: 'battle',  emoji: '⚔️', name: '배틀마스터',  check: () => getLogsFromStorage().filter(l => l.type === 'battle').length >= 20 },
   { id: 'focus',   emoji: '🔥', name: '집중왕',       check: () => getCompletionStreak() >= 7 },
-  { id: 'ripe',    emoji: '🍅', name: '빨간토마토',  check: () => completedCount >= 50 },
+  { id: 'ripe',    emoji: '🍅', name: '완숙토마토',  check: () => completedCount >= 50 },
   { id: 'green',   emoji: '🍅', name: '풋토마토',    check: () => completedCount >= 20 },
   { id: 'sprout',  emoji: '🍃', name: '새싹',         check: () => completedCount >= 5 },
   { id: 'seed',    emoji: '🌱', name: '씨앗 토마토', check: () => completedCount >= 1 },
@@ -5882,6 +5884,12 @@ function checkAchievementsOnTimerComplete() {
 
     // D-2: Tom 콤비 (common 모드)
     if (battle.mode === 'common') unlockAchievement('D-2');
+
+    // D-9: TOM MODE 배틀 3회
+    if (battle.mode === 'common') {
+      const tomBattles = logs.filter(l => l.type === 'battle' && l.battleMode === 'common').length;
+      if (tomBattles + 1 >= 3) unlockAchievement('D-9');
+    }
 
     // D-3: Moto 듀오 (separate 모드)
     if (battle.mode === 'separate') unlockAchievement('D-3');

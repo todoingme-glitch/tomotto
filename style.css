@@ -4388,6 +4388,13 @@ dialog.modal input[type="text"]:focus {
   vertical-align: middle;
   white-space: nowrap;
 }
+@media (max-width: 480px) {
+  .user-title[data-title-id="legend"] {
+    font-size: 0.63rem;
+    letter-spacing: -0.03em;
+    padding: 2px 7px;
+  }
+}
 .settings-title-value {
   font-weight: 700;
   color: var(--text-main);
