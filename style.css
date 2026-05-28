@@ -2157,8 +2157,33 @@ dialog.modal input[type="text"]:focus {
   border-color: var(--accent);
 }
 
-.public-battle-row {
+.pub-player-count-options {
   display: flex;
+  gap: 8px;
+}
+
+.pub-player-btn {
+  flex: 1;
+  padding: 7px 0;
+  border: 1.5px solid var(--border-soft);
+  border-radius: 20px;
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.pub-player-btn.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.public-battle-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
   align-items: center;
   gap: 8px;
   padding: 9px 12px;
@@ -2172,10 +2197,10 @@ dialog.modal input[type="text"]:focus {
   font-weight: 700;
   flex-shrink: 0;
   color: var(--text-main);
+  white-space: nowrap;
 }
 
 .pb-nick {
-  flex: 1;
   font-size: 0.85rem;
   font-weight: 600;
   min-width: 0;
@@ -2187,17 +2212,40 @@ dialog.modal input[type="text"]:focus {
   gap: 4px;
 }
 
-.pb-waiting {
-  font-size: 0.75rem;
+.pb-count {
+  font-size: 0.78rem;
+  font-weight: 700;
   color: var(--text-muted);
+  white-space: nowrap;
   flex-shrink: 0;
 }
 
+.pb-waiting {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.pb-full {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #aaa;
+  white-space: nowrap;
+}
+
 .btn-join-public {
-  flex-shrink: 0;
   background: var(--accent);
   color: #fff;
   border-color: var(--accent);
+  white-space: nowrap;
+}
+
+.btn-delete-public {
+  background: transparent;
+  border-color: var(--border-soft);
+  color: var(--text-muted);
+  padding: 3px 7px;
+  font-size: 0.85rem;
 }
 
 .lb-empty-code {

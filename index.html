@@ -516,19 +516,30 @@
     </div>
 
     <div class="field">
-      <label>시간 설정</label>
-      <select id="pubBattleDuration">
-        <option value="1500" selected>25분 (기본)</option>
-        <option value="2700">45분</option>
-        <option value="3600">60분</option>
-        <option value="600">10분 (짧게)</option>
-        <option value="30">30초 (테스트)</option>
-      </select>
+      <label>인원 수</label>
+      <div class="pub-player-count-options">
+        <button class="pub-player-btn active" data-count="2" type="button">2명</button>
+        <button class="pub-player-btn" data-count="3" type="button">3명</button>
+        <button class="pub-player-btn" data-count="4" type="button">4명</button>
+      </div>
     </div>
 
-    <p class="modal-hint">공개 방은 누구나 참여할 수 있어요.</p>
+    <div class="field">
+      <label>시간 설정</label>
+      <div class="battle-time-row">
+        <select id="pubBattleDuration">
+          <option value="30">30초 (테스트)</option>
+          <option value="600">10분 (짧게)</option>
+          <option value="1500" selected>25분 (기본)</option>
+          <option value="2700">45분</option>
+          <option value="3600">60분</option>
+        </select>
+      </div>
+    </div>
 
-    <div class="modal-actions">
+    <p class="modal-hint">공개 방은 닉네임이 있는 누구나 참여할 수 있어요.</p>
+
+    <div class="modal-actions modal-battle-create-actions">
       <button id="pubBattleCancelBtn" class="btn-modal btn-modal-secondary" type="button">취소</button>
       <button id="pubBattleConfirmBtn" class="btn-modal btn-modal-primary" type="button">공개 방 만들기</button>
     </div>

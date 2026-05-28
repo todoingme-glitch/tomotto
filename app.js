@@ -4207,20 +4207,22 @@ async function renderPublicBattles() {
   try {
     const { data, error } = await sb
       .from('battles')
-      .select('id, creator_nickname, mode, duration_sec, created_at')
+      .select('id, creator_nickname, mode, duration_sec, max_players, created_at, battle_players(nickname)')
       .eq('is_public', true)
       .eq('status', 'waiting')
       .order('created_at', { ascending: false })
       .limit(20);
     if (error) {
-      if (error.message?.includes('is_public') || error.code === '42703') colMissing = true;
+      if (error.code === '42703') colMissing = true;
     } else if (data) {
       rows = data;
     }
   } catch {}
 
   if (colMissing) {
-    $body.innerHTML = `<p class="lb-empty lb-empty-code">Supabase SQL 에디터에서 아래를 실행해주세요:<br><code>ALTER TABLE battles ADD COLUMN is_public boolean DEFAULT false;</code></p>`;
+    $body.innerHTML = `<p class="lb-empty lb-empty-code">Supabase SQL 에디터에서 아래를 실행해주세요:<br>
+<code>ALTER TABLE battles ADD COLUMN is_public boolean DEFAULT false;</code><br>
+<code>ALTER TABLE battles ADD COLUMN max_players int DEFAULT 2;</code></p>`;
     return;
   }
 
@@ -4233,14 +4235,30 @@ async function renderPublicBattles() {
     const isMe = b.creator_nickname === myNickname;
     const modeLabel = b.mode === 'common' ? '🍅 TOM' : '🎲 MOTO';
     const mins = Math.round(b.duration_sec / 60);
-    const nick = escapeHtml(truncEnd(b.creator_nickname, 12));
+    const nick = escapeHtml(truncEnd(b.creator_nickname, 10));
+    const currentPlayers = Array.isArray(b.battle_players) ? b.battle_players.length : 1;
+    const maxPlayers = b.max_players ?? 2;
+    const isFull = currentPlayers >= maxPlayers;
+
+    let actionHtml;
+    if (isMe) {
+      actionHtml = '<span class="pb-waiting">대기 중···</span>';
+    } else if (isFull) {
+      actionHtml = '<span class="pb-full">마감</span>';
+    } else {
+      actionHtml = `<button class="btn-mini btn-join-public" data-battle-id="${b.id}" type="button">참여하기</button>`;
+    }
+
+    const deleteBtn = isMe
+      ? `<button class="btn-mini btn-delete-public" data-battle-id="${b.id}" type="button" title="방 삭제">🗑</button>`
+      : '';
+
     return `<div class="public-battle-row${isMe ? ' lb-row-me' : ''}">
       <span class="pb-mode">${modeLabel} · ${mins}분</span>
       <span class="pb-nick">${nick}${isMe ? ' <span class="lb-me-badge">나</span>' : ''}</span>
-      ${isMe
-        ? '<span class="pb-waiting">대기 중···</span>'
-        : `<button class="btn-mini btn-join-public" data-battle-id="${b.id}" type="button">참여하기</button>`
-      }
+      <span class="pb-count">${currentPlayers}/${maxPlayers}명</span>
+      ${actionHtml}
+      ${deleteBtn}
     </div>`;
   }).join('');
 
@@ -4248,6 +4266,16 @@ async function renderPublicBattles() {
     btn.addEventListener('click', () => {
       if (!myNickname) { alert('닉네임을 먼저 설정해주세요.'); return; }
       openBattleRoom(btn.dataset.battleId);
+    });
+  });
+
+  $body.querySelectorAll('.btn-delete-public').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('이 공개 방을 삭제할까요?')) return;
+      const ok = await deleteBattleSilent(btn.dataset.battleId);
+      if (!ok) { alert('삭제 중 오류가 발생했어요.'); return; }
+      await renderMyBattles();
+      renderPublicBattles();
     });
   });
 }
@@ -4275,8 +4303,22 @@ function subscribePublicBattles() {
   const $cancel = document.getElementById('pubBattleCancelBtn');
   if (!$modal) return;
 
+  let selectedMaxPlayers = 2;
+
+  // 인원 수 버튼 토글
+  $modal.querySelectorAll('.pub-player-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $modal.querySelectorAll('.pub-player-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedMaxPlayers = parseInt(btn.dataset.count, 10);
+    });
+  });
+
   document.getElementById('createPublicBattleBtn')?.addEventListener('click', () => {
     if (!myNickname) { alert('닉네임을 먼저 설정해주세요.'); return; }
+    // 모달 열 때마다 인원 수 초기화
+    selectedMaxPlayers = 2;
+    $modal.querySelectorAll('.pub-player-btn').forEach(b => b.classList.toggle('active', b.dataset.count === '2'));
     $modal.showModal();
   });
 
@@ -4296,6 +4338,7 @@ function subscribePublicBattles() {
       duration_sec: durationSec,
       status: 'waiting',
       is_public: true,
+      max_players: selectedMaxPlayers,
       created_at: new Date().toISOString(),
     };
 
