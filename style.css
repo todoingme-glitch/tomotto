@@ -2157,28 +2157,44 @@ dialog.modal input[type="text"]:focus {
   border-color: var(--accent);
 }
 
-.pub-player-count-options {
+.pub-player-stepper {
   display: flex;
-  gap: 8px;
-}
-
-.pub-player-btn {
-  flex: 1;
-  padding: 7px 0;
+  align-items: center;
+  gap: 0;
   border: 1.5px solid var(--border-soft);
-  border-radius: 20px;
-  background: var(--bg-card);
-  color: var(--text-muted);
-  font-size: 0.88rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
+  border-radius: 12px;
+  overflow: hidden;
+  width: fit-content;
 }
 
-.pub-player-btn.active {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: #fff;
+.pub-stepper-btn {
+  width: 44px;
+  height: 44px;
+  background: var(--bg-card);
+  border: none;
+  font-size: 1.3rem;
+  font-weight: 400;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: background 0.12s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pub-stepper-btn:hover:not(:disabled) { background: var(--bg-surface); }
+.pub-stepper-btn:disabled { color: var(--text-muted); cursor: default; opacity: 0.4; }
+
+.pub-stepper-value {
+  min-width: 52px;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-main);
+  border-left: 1.5px solid var(--border-soft);
+  border-right: 1.5px solid var(--border-soft);
+  padding: 0 8px;
+  line-height: 44px;
 }
 
 .public-battle-row {

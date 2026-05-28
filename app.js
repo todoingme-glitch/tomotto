@@ -4160,21 +4160,28 @@ function subscribePublicBattles() {
   if (!$modal) return;
 
   let selectedMaxPlayers = 2;
+  const MIN_PLAYERS = 2, MAX_PLAYERS = 10;
 
-  // 인원 수 버튼 토글
-  $modal.querySelectorAll('.pub-player-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      $modal.querySelectorAll('.pub-player-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      selectedMaxPlayers = parseInt(btn.dataset.count, 10);
-    });
+  function updateStepperDisplay() {
+    const $count = document.getElementById('pubPlayerCount');
+    if ($count) $count.textContent = selectedMaxPlayers;
+    const $minus = document.getElementById('pubPlayerMinus');
+    const $plus  = document.getElementById('pubPlayerPlus');
+    if ($minus) $minus.disabled = selectedMaxPlayers <= MIN_PLAYERS;
+    if ($plus)  $plus.disabled  = selectedMaxPlayers >= MAX_PLAYERS;
+  }
+
+  document.getElementById('pubPlayerMinus')?.addEventListener('click', () => {
+    if (selectedMaxPlayers > MIN_PLAYERS) { selectedMaxPlayers--; updateStepperDisplay(); }
+  });
+  document.getElementById('pubPlayerPlus')?.addEventListener('click', () => {
+    if (selectedMaxPlayers < MAX_PLAYERS) { selectedMaxPlayers++; updateStepperDisplay(); }
   });
 
   document.getElementById('createPublicBattleBtn')?.addEventListener('click', () => {
     if (!myNickname) { alert('닉네임을 먼저 설정해주세요.'); return; }
-    // 모달 열 때마다 인원 수 초기화
     selectedMaxPlayers = 2;
-    $modal.querySelectorAll('.pub-player-btn').forEach(b => b.classList.toggle('active', b.dataset.count === '2'));
+    updateStepperDisplay();
     $modal.showModal();
   });
 
