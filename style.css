@@ -4344,14 +4344,15 @@ dialog.modal input[type="text"]:focus {
 }
 .ach-toast-char-img {
   width: 100%;
-  height: 160px;
-  object-fit: cover;
-  object-position: 50% 35%;
+  max-height: 160px;
+  object-fit: contain;
+  object-position: center bottom;
   background: #fff8f6;
+  padding: 10px 0 0;
   display: block;
 }
 .achievement-toast--secret.achievement-toast--char .ach-toast-char-img {
-  background: #2a1a50;
+  background: #ede9fe;
 }
 .achievement-toast--char .achievement-toast-body {
   padding: 8px 14px 12px;
