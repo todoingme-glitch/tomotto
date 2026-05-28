@@ -279,7 +279,10 @@
     <section class="card public-battle-section">
       <div class="public-battle-header">
         <h2><span class="step">2</span> 공개 배틀방</h2>
-        <button id="createPublicBattleBtn" class="btn-mini btn-mini-accent" type="button">+ 만들기</button>
+        <div class="pub-battle-header-btns">
+          <button id="joinPublicBattleBtn" class="btn-mini" type="button">참가하기</button>
+          <button id="createPublicBattleBtn" class="btn-mini btn-mini-accent" type="button">+ 만들기</button>
+        </div>
       </div>
       <div id="publicBattleBody" class="lb-body">
         <p class="lb-loading">불러오는 중···</p>
@@ -300,7 +303,7 @@
 
     <!-- 집중 피드 섹션 -->
     <section class="card focus-feed-section">
-      <h2><span class="step">4</span> 지금 집중 중 <span class="focus-feed-count-badge" id="focusFeedCount">0</span></h2>
+      <h2><span class="step">4</span> 지금 집중 중</h2>
       <div id="focusFeedBody" class="focus-feed-body">
         <p class="lb-loading">불러오는 중···</p>
       </div>
@@ -475,29 +478,12 @@
     </div>
   </dialog>
 
-  <!-- v0.1.79 C — 공개 배틀방 만들기 모달 -->
+  <!-- v0.1.82 — 공개 배틀방 만들기 모달 (TOM MODE 전용) -->
   <dialog id="publicBattleCreateModal" class="modal modal-battle">
     <h3>공개 배틀방 만들기</h3>
 
-    <div class="field">
-      <label>모드 선택</label>
-      <div class="battle-mode-options">
-        <label class="battle-mode-option">
-          <input type="radio" name="pubBattleMode" value="common" checked>
-          <span class="battle-mode-card">
-            <strong>🍅 TOM MODE</strong>
-            <small>같은 목표로 같이 집중!</small>
-          </span>
-        </label>
-        <label class="battle-mode-option">
-          <input type="radio" name="pubBattleMode" value="separate">
-          <span class="battle-mode-card">
-            <strong>🎲 MOTO MODE</strong>
-            <small>각자 랜덤 가챠로 승부!</small>
-          </span>
-        </label>
-      </div>
-    </div>
+    <div class="pub-battle-mode-badge">🍅 TOM MODE · 모두 같은 목표로 집중!</div>
+    <p id="pubBattleTaskPreview" class="pub-battle-task-preview"></p>
 
     <div class="field">
       <label>인원 수</label>

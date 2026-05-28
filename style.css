@@ -2085,46 +2085,57 @@ dialog.modal input[type="text"]:focus {
 
 .focus-feed-section { margin-top: 12px; }
 
+.focus-feed-body { min-height: 48px; }
 
-.focus-feed-count-badge {
+/* 아바타 버블형 집중 피드 */
+.focus-avatars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.focus-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-deep, var(--accent));
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 6px;
-  border-radius: 11px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  border: 2px solid transparent;
+  cursor: default;
+}
+
+.focus-avatar-me {
   background: var(--accent);
   color: #fff;
-  font-size: 0.72rem;
+  border-color: var(--accent);
+}
+
+.focus-avatar-extra {
+  background: var(--bg-surface, #f5f0ed);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  border: 1.5px dashed var(--border-soft);
+}
+
+.focus-count-text {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.focus-count-text strong {
+  color: var(--text-main);
   font-weight: 700;
 }
 
-.focus-feed-body { min-height: 32px; }
-
-.focus-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.focus-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 5px 11px;
-  border-radius: 20px;
-  background: var(--bg-surface, #fafafa);
-  border: 1.5px solid var(--border-soft);
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--text-main);
-}
-
-.focus-chip-me {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 8%, white);
-}
+.focus-empty-text { font-size: 0.84rem; }
 
 /* ====== C — 공개 배틀방 ====== */
 
@@ -2140,6 +2151,50 @@ dialog.modal input[type="text"]:focus {
 .public-battle-header h2 {
   margin: 0;
   flex: 1 1 auto;
+}
+
+.pub-battle-header-btns {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* 공개방 모달 — TOM MODE 전용 */
+.pub-battle-mode-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.pub-battle-task-preview {
+  font-size: 0.82rem;
+  margin: 0 0 14px;
+  min-height: 18px;
+}
+
+.pub-battle-task-preview--set {
+  color: var(--text-muted);
+}
+
+.pub-battle-task-preview--empty {
+  color: #e05a3a;
+  font-weight: 600;
+}
+
+/* 방 목록 task 표시 */
+.pb-task {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 400;
+  margin-left: 2px;
 }
 
 .btn-mini-accent {

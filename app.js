@@ -3995,7 +3995,6 @@ let focusFeedChannel = null;
 
 async function renderFocusFeed() {
   const $body = document.getElementById('focusFeedBody');
-  const $count = document.getElementById('focusFeedCount');
   if (!$body) return;
 
   if (!sb) {
@@ -4007,26 +4006,39 @@ async function renderFocusFeed() {
   try {
     const { data } = await sb
       .from('user_presence')
-      .select('nickname, updated_at')
+      .select('nickname')
       .eq('is_focusing', true)
       .eq('status_public', true)
       .order('updated_at', { ascending: false });
     if (data) rows = data;
   } catch {}
 
-  if ($count) $count.textContent = rows.length;
-
   if (!rows.length) {
-    $body.innerHTML = '<p class="lb-empty">지금 집중 중인 유저가 없어요. 첫 번째로 시작해보세요!</p>';
+    $body.innerHTML = '<p class="lb-empty focus-empty-text">아직 집중 중인 유저가 없어요 😴</p>';
     return;
   }
 
-  const isMobile = window.matchMedia?.('(max-width: 480px)').matches ?? false;
-  $body.innerHTML = '<div class="focus-chips">' + rows.map(r => {
-    const isMe = r.nickname === myNickname;
-    const dispNick = isMobile ? truncEnd(r.nickname, 10) : r.nickname;
-    return `<div class="focus-chip${isMe ? ' focus-chip-me' : ''}">🍅 ${escapeHtml(dispNick)}${isMe ? ' <span class="lb-me-badge">나</span>' : ''}</div>`;
-  }).join('') + '</div>';
+  const MAX_VIS = 6;
+  const visible = rows.slice(0, MAX_VIS);
+  const extra   = rows.length - MAX_VIS;
+
+  const avatarsHtml = visible.map(r => {
+    const isMe    = r.nickname === myNickname;
+    const initial = escapeHtml((r.nickname || '?').charAt(0));
+    return `<span class="focus-avatar${isMe ? ' focus-avatar-me' : ''}" title="${escapeHtml(r.nickname)}">${initial}</span>`;
+  }).join('');
+
+  const extraHtml = extra > 0
+    ? `<span class="focus-avatar focus-avatar-extra">+${extra}</span>`
+    : '';
+
+  const countText = rows.length === 1
+    ? `지금 <strong>1명</strong>이 집중 중이에요 🍅`
+    : `지금 <strong>${rows.length}명</strong>이 함께 집중 중이에요 🍅`;
+
+  $body.innerHTML = `
+    <div class="focus-avatars">${avatarsHtml}${extraHtml}</div>
+    <p class="focus-count-text">${countText}</p>`;
 }
 
 function subscribeFocusFeed() {
@@ -4036,7 +4048,7 @@ function subscribeFocusFeed() {
     .on('postgres_changes',
       { event: '*', schema: 'public', table: 'user_presence' },
       () => {
-        if (!document.getElementById('tab-league')?.classList.contains('tab-panel-hidden')) {
+        if (!document.getElementById('tab-social')?.classList.contains('tab-panel-hidden')) {
           renderFocusFeed();
         }
       }
@@ -4090,9 +4102,9 @@ async function renderPublicBattles() {
 
   $body.innerHTML = rows.map(b => {
     const isMe = b.creator_nickname === myNickname;
-    const modeLabel = b.mode === 'common' ? '🍅 TOM' : '🎲 MOTO';
     const mins = Math.round(b.duration_sec / 60);
     const nick = escapeHtml(truncEnd(b.creator_nickname, 10));
+    const task = b.task_common ? escapeHtml(truncEnd(b.task_common, 14)) : '목표 미정';
     const currentPlayers = Array.isArray(b.battle_players) ? b.battle_players.length : 1;
     const maxPlayers = b.max_players ?? 2;
     const isFull = currentPlayers >= maxPlayers;
@@ -4111,8 +4123,8 @@ async function renderPublicBattles() {
       : '';
 
     return `<div class="public-battle-row${isMe ? ' lb-row-me' : ''}">
-      <span class="pb-mode">${modeLabel} · ${mins}분</span>
-      <span class="pb-nick">${nick}${isMe ? ' <span class="lb-me-badge">나</span>' : ''}</span>
+      <span class="pb-mode">🍅 ${mins}분</span>
+      <span class="pb-nick">${nick}${isMe ? ' <span class="lb-me-badge">나</span>' : ''} <span class="pb-task">${task}</span></span>
       <span class="pb-count">${currentPlayers}/${maxPlayers}명</span>
       ${actionHtml}
       ${deleteBtn}
@@ -4406,26 +4418,46 @@ function subscribePublicBattles() {
     if (selectedMaxPlayers < MAX_PLAYERS) { selectedMaxPlayers++; updateStepperDisplay(); }
   });
 
+  // 모달 열기 — TOM MODE 전용: 현재 task 미리보기 표시
   document.getElementById('createPublicBattleBtn')?.addEventListener('click', () => {
     if (!myNickname) { alert('닉네임을 먼저 설정해주세요.'); return; }
     selectedMaxPlayers = 2;
     updateStepperDisplay();
+    // task 미리보기 업데이트
+    const $preview = document.getElementById('pubBattleTaskPreview');
+    if ($preview) {
+      if (currentTask) {
+        $preview.textContent = `공통 목표: "${currentTask}"`;
+        $preview.className   = 'pub-battle-task-preview pub-battle-task-preview--set';
+      } else {
+        $preview.textContent = '⚠ 먼저 가챠를 돌려서 오늘의 목표를 정해주세요!';
+        $preview.className   = 'pub-battle-task-preview pub-battle-task-preview--empty';
+      }
+    }
+    if ($confirm) $confirm.disabled = !currentTask;
     $modal.showModal();
+  });
+
+  // 참가하기 버튼 — 방 목록 새로고침 후 스크롤
+  document.getElementById('joinPublicBattleBtn')?.addEventListener('click', async () => {
+    if (!myNickname) { alert('닉네임을 먼저 설정해주세요.'); return; }
+    await renderPublicBattles();
+    document.getElementById('publicBattleBody')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   });
 
   $cancel?.addEventListener('click', () => $modal.close());
 
   $confirm?.addEventListener('click', async () => {
-    const mode = document.querySelector('input[name="pubBattleMode"]:checked')?.value || 'common';
     const durationSec = parseInt(document.getElementById('pubBattleDuration')?.value || '1500', 10);
-    const taskCommon = mode === 'common' ? (currentTask || null) : null;
+    // TOM MODE 전용 — 방장의 현재 가챠 결과를 공통 목표로 사용
+    if (!currentTask) { alert('가챠를 먼저 돌려주세요!'); return; }
 
     const battleId = makeBattleId();
     const battle = {
       id: battleId,
       creator_nickname: myNickname,
-      mode,
-      task_common: taskCommon,
+      mode: 'common',
+      task_common: currentTask,
       duration_sec: durationSec,
       status: 'waiting',
       is_public: true,
