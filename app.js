@@ -800,6 +800,15 @@ document.getElementById('devResetOnboardingBtn')?.addEventListener('click', () =
   btn.disabled = true;
 });
 
+// 개발자 옵션 — 업적 토스트 미리보기 모드
+let devAchPreview = false;
+document.getElementById('devAchPreviewToggle')?.addEventListener('change', e => {
+  devAchPreview = e.target.checked;
+  if (!document.getElementById('tab-log')?.classList.contains('tab-panel-hidden')) {
+    renderAchievementsTab();
+  }
+});
+
 // v0.1.64 — 전체 초기화
 document.getElementById('fullResetBtn')?.addEventListener('click', async () => {
   if (!confirm('정말 모든 데이터를 삭제할까요?\n\n카테고리, 기록, 완료 횟수, 배틀 목록, 닉네임이 모두 사라져요. 되돌릴 수 없어요.')) return;
@@ -5700,7 +5709,7 @@ function renderAchievementsTab() {
     if (unlocked) {
       const dateStr = new Date(state.unlockedAt).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' });
       const condHtml = def.cond ? `<div class="ach-card-cond">${splitCond(def.cond)}</div>` : '';
-      return `<div class="ach-card ach-card--unlocked${tierClass}">
+      return `<div class="ach-card ach-card--unlocked${tierClass}" data-ach-id="${id}">
         <div class="ach-card-icon">${def.icon}</div>
         <div class="ach-card-name">${def.name}</div>
         ${condHtml}
@@ -5711,7 +5720,7 @@ function renderAchievementsTab() {
       const condHtml = isSecret
         ? '<div class="ach-card-cond ach-card-cond--blank">&nbsp;<br>&nbsp;</div>'
         : (def.cond ? `<div class="ach-card-cond">${splitCond(def.cond)}</div>` : '');
-      return `<div class="ach-card ach-card--locked${tierClass}">
+      return `<div class="ach-card ach-card--locked${tierClass}" data-ach-id="${id}">
         <div class="ach-card-icon">🔒</div>
         <div class="ach-card-name">${isSecret ? '???' : def.name}</div>
         ${condHtml}
@@ -5750,6 +5759,17 @@ function renderAchievementsTab() {
     header.addEventListener('click', toggle);
     header.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
   });
+
+  if (devAchPreview) {
+    $grid.querySelectorAll('.ach-card').forEach(card => {
+      card.style.cursor = 'pointer';
+      card.title = '클릭하면 토스트 미리보기';
+      card.addEventListener('click', () => {
+        const id = card.dataset.achId;
+        if (id) { _toastQueue = []; _toastShowing = false; _showAchievementToast(id); }
+      });
+    });
+  }
 }
 
 // ── 체크 함수들 ───────────────────────────────────────────
