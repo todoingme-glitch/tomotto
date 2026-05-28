@@ -2783,6 +2783,8 @@ dialog.modal input[type="text"]:focus {
   flex-shrink: 0;
   font-size: 15px;
   line-height: 1.4;
+  width: 22px;
+  text-align: center;
 }
 .log-narrative-text b {
   color: var(--accent-deep, #b94b3a);
@@ -4342,15 +4344,14 @@ dialog.modal input[type="text"]:focus {
 }
 .ach-toast-char-img {
   width: 100%;
-  max-height: 140px;
-  object-fit: contain;
-  object-position: center bottom;
+  height: 160px;
+  object-fit: cover;
+  object-position: 50% 35%;
   background: #fff8f6;
-  padding: 10px 16px 0;
   display: block;
 }
 .achievement-toast--secret.achievement-toast--char .ach-toast-char-img {
-  background: #1e1236;
+  background: #2a1a50;
 }
 .achievement-toast--char .achievement-toast-body {
   padding: 8px 14px 12px;
