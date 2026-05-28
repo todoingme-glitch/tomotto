@@ -1188,7 +1188,7 @@ dialog.modal input[type="text"]:focus {
 
 .battle-me {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 10px;
   padding: 12px 14px;
   background: var(--bg);
@@ -1221,17 +1221,21 @@ dialog.modal input[type="text"]:focus {
 }
 
 @media (max-width: 480px) {
-  .battle-me--long {
-    align-items: flex-start;
-  }
   .battle-me--long .battle-me-info {
     flex-wrap: wrap;
-    gap: 2px 0;
+    row-gap: 4px;
   }
   .battle-me--long .battle-me-nick {
     flex: 1 1 100%;
     white-space: nowrap;
     overflow: hidden;
+  }
+  /* 칭호 배지가 2번째 줄로 내려갈 때 닉네임 왼쪽 기준선 유지 */
+  .battle-me--long .user-title {
+    flex-shrink: 0;
+  }
+  .battle-me--long .battle-me-sub {
+    margin-left: auto;
   }
 }
 
@@ -3148,7 +3152,7 @@ dialog.modal input[type="text"]:focus {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   padding: 8px 12px;
   border-radius: 10px;
   background: var(--bg-surface, #fafafa);
