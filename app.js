@@ -4523,7 +4523,7 @@ const ACHIEVEMENT_DEFS = {
   'A-2': { name: '가챠의 시작',     desc: '처음으로 가챠를 돌렸어요',              cond: '가챠 첫 사용',                  icon: '🎰', tier: 'normal', hidden: false },
   'A-3': { name: '고민 끝!',        desc: '나온 대로 리롤 없이 바로 시작했어요',   cond: '가챠 후 리롤 없이 바로 시작',   icon: '⚡', tier: 'normal', hidden: false },
   'A-4': { name: '이름표를 붙여줘',  desc: '닉네임을 설정했어요',                   cond: '닉네임 첫 설정',                icon: '🏷️', tier: 'normal', hidden: false },
-  'A-5': { name: '배틀··· 좋아하세요?', desc: '친구에게 배틀을 제안했어요',        cond: '배틀 초대 링크 첫 생성',        icon: '✉️', tier: 'normal', hidden: false },
+  'A-5': { name: '배틀 좋아하세요?', desc: '친구에게 배틀을 제안했어요',        cond: '배틀 초대 링크 첫 생성',        icon: '✉️', tier: 'normal', hidden: false },
 
   // ── B. Tom 계열 — 집중·꾸준함 ────────────────────────
   'B-1': { name: '3연벙',           desc: '3일 연속으로 집중했어요',               cond: '3일 연속 타이머 완료',          icon: '🔥', tier: 'normal', hidden: false },
@@ -4752,7 +4752,9 @@ function renderAchievementsTab() {
         </div>`;
     } else {
       const isSecret = def.hidden;
-      const condHtml = (!isSecret && def.cond) ? `<div class="ach-card-cond">${splitCond(def.cond)}</div>` : '';
+      const condHtml = isSecret
+        ? '<div class="ach-card-cond ach-card-cond--blank">&nbsp;<br>&nbsp;</div>'
+        : (def.cond ? `<div class="ach-card-cond">${splitCond(def.cond)}</div>` : '');
       return `
         <div class="ach-card ach-card--locked${tierClass}">
           <div class="ach-card-icon">🔒</div>
