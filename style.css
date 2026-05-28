@@ -1819,21 +1819,12 @@ dialog.modal input[type="text"]:focus {
 
 .battle-result-players {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 10px;
   margin: 16px 0;
 }
 
-/* 공개 배틀 3~4인 결과 — 2열 그리드 */
-.battle-result-players--grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  align-items: start;
-  margin: 16px 0;
-}
-
-/* 공개 배틀 5인+ 결과 — 순위 리스트형 */
+/* 공개 배틀 3인+ 결과 — 순위 리스트형 */
 .battle-result-list {
   display: flex;
   flex-direction: column;

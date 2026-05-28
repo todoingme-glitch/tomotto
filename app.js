@@ -4948,9 +4948,8 @@ async function openBattleResult(battleId) {
   const modeLabel = battle.mode === 'common' ? '🍅 TOM MODE' : '🎲 MOTO MODE';
   $battleResultSummary.textContent = `${modeLabel} · ${minutes}분 · ${battle.task_common || '각자 랜덤 가챠'}`;
 
-  // 1:1 → VS 레이아웃 / 3~4명 → 2열 그리드 / 5명+ → 순위 리스트형
-  const isSmallPublic  = battle.is_public && players.length >= 3 && players.length <= 4;
-  const isBigPublic    = battle.is_public && players.length >= 5;
+  // 1:1 → VS 레이아웃 / 3명+ → 순위 리스트형
+  const isBigPublic = players.length >= 3;
 
   function playerCard(player, showRole = true) {
     if (!player) {
@@ -5007,14 +5006,6 @@ async function openBattleResult(battleId) {
         ${thumbHtml}
       </div>`;
     }).join('');
-
-  } else if (isSmallPublic) {
-    // 3~4명 — 2열 그리드
-    const me = players.find(p => p.nickname === myNickname);
-    const others = players.filter(p => p.nickname !== myNickname);
-    const orderedPlayers = me ? [me, ...others] : players;
-    $battleResultPlayers.className = 'battle-result-players battle-result-players--grid';
-    $battleResultPlayers.innerHTML = orderedPlayers.map(p => playerCard(p, true)).join('');
 
   } else {
     // 1:1 친구 배틀 — 기존 VS 레이아웃
