@@ -275,15 +275,34 @@
       <p class="battle-hint">친구한테 초대 링크 보내면 받는 쪽도 닉네임만 입력하면 시작.</p>
     </section>
 
-    <!-- v0.1.36 — 리더보드 섹션 -->
+    <!-- 공개 배틀방 섹션 -->
+    <section class="card public-battle-section">
+      <div class="public-battle-header">
+        <h2 class="public-battle-title">공개 배틀방</h2>
+        <button id="createPublicBattleBtn" class="btn-mini btn-mini-accent" type="button">+ 만들기</button>
+      </div>
+      <div id="publicBattleBody" class="lb-body">
+        <p class="lb-loading">불러오는 중···</p>
+      </div>
+    </section>
+
+    <!-- 글로벌 랭킹 섹션 -->
     <section class="card leaderboard-section">
-      <h2><span class="step">2</span> 리더보드</h2>
+      <h2><span class="step">2</span> 글로벌 랭킹</h2>
       <div class="lb-period-tabs">
         <button class="lb-period-btn active" data-period="week" type="button">이번 주</button>
         <button class="lb-period-btn" data-period="month" type="button">이번 달</button>
       </div>
       <div id="leaderboardBody" class="lb-body">
-        <p class="lb-empty">닉네임을 설정하면 여기에 기록이 쌓여요.</p>
+        <p class="lb-loading">불러오는 중···</p>
+      </div>
+    </section>
+
+    <!-- 집중 피드 섹션 -->
+    <section class="card focus-feed-section">
+      <h2 class="focus-feed-title">지금 집중 중 <span class="focus-feed-count-badge" id="focusFeedCount">0</span></h2>
+      <div id="focusFeedBody" class="focus-feed-body">
+        <p class="lb-loading">불러오는 중···</p>
       </div>
     </section>
 
@@ -318,41 +337,6 @@
       </section>
     </div><!-- /tab-panel#tab-log -->
 
-    <!-- 탭 패널 : 리그 -->
-    <div class="tab-panel tab-panel-hidden" id="tab-league">
-      <!-- A: 글로벌 랭킹 -->
-      <section class="card league-section">
-        <div class="league-header">
-          <h2 class="league-title">글로벌 랭킹</h2>
-          <div class="league-period-tabs">
-            <button class="league-period-btn active" data-period="week" type="button">이번 주</button>
-            <button class="league-period-btn" data-period="month" type="button">이번 달</button>
-          </div>
-        </div>
-        <div id="leagueBody" class="lb-body">
-          <p class="lb-loading">불러오는 중···</p>
-        </div>
-      </section>
-
-      <!-- B: 집중 피드 -->
-      <section class="card focus-feed-section">
-        <h2 class="focus-feed-title">지금 집중 중 <span class="focus-feed-count-badge" id="focusFeedCount">0</span></h2>
-        <div id="focusFeedBody" class="focus-feed-body">
-          <p class="lb-loading">불러오는 중···</p>
-        </div>
-      </section>
-
-      <!-- C: 공개 배틀방 -->
-      <section class="card public-battle-section">
-        <div class="public-battle-header">
-          <h2 class="public-battle-title">공개 배틀방</h2>
-          <button id="createPublicBattleBtn" class="btn-mini btn-mini-accent" type="button">+ 만들기</button>
-        </div>
-        <div id="publicBattleBody" class="lb-body">
-          <p class="lb-loading">불러오는 중···</p>
-        </div>
-      </section>
-    </div><!-- /tab-panel#tab-league -->
 
     <footer>
       <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1.78 · 준비중 삭제 + 재진입 자동 카운트다운 방지</span></small>
@@ -673,10 +657,6 @@
     <button class="tab-btn" data-tab="log" type="button" aria-pressed="false">
       <span class="tab-icon" aria-hidden="true">📋</span>
       <span class="tab-label">기록</span>
-    </button>
-    <button class="tab-btn" data-tab="league" type="button" aria-pressed="false">
-      <span class="tab-icon">🏆</span>
-      <span class="tab-label">리그</span>
     </button>
   </nav>
 
