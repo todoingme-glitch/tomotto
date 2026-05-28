@@ -3334,7 +3334,7 @@ dialog.modal input[type="text"]:focus {
 }
 /* aria-expanded="false" 이면 위로 회전 (접힌 상태) */
 .achievement-header[aria-expanded="false"] .ach-chevron {
-  transform: translateY(3px) rotate(-180deg);
+  transform: translateY(-3px) rotate(-180deg);
 }
 .achievement-grid {
   display: grid;
