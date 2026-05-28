@@ -756,42 +756,6 @@ $settingsStatusToggle?.addEventListener('change', () => {
   }
 });
 
-// 데이터 숨기기 토글
-const $hideDataToggle = document.getElementById('settingsHideDataToggle');
-if ($hideDataToggle) {
-  $hideDataToggle.checked = !!localStorage.getItem(STORAGE_HIDE_DATA);
-  $hideDataToggle.addEventListener('change', () => {
-    if ($hideDataToggle.checked) {
-      // 현재 모든 tomotto_ 데이터 백업 후 삭제 (온보딩·숨기기 플래그·백업키 제외)
-      const backup = {};
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k && k.startsWith('tomotto_') &&
-            k !== STORAGE_HIDE_DATA && k !== STORAGE_DATA_BACKUP &&
-            k !== STORAGE_ONBOARDED_TT) {
-          backup[k] = localStorage.getItem(k);
-        }
-      }
-      localStorage.setItem(STORAGE_DATA_BACKUP, JSON.stringify(backup));
-      localStorage.setItem(STORAGE_HIDE_DATA, '1');
-      Object.keys(backup).forEach(k => localStorage.removeItem(k));
-      location.reload();
-    } else {
-      // 백업에서 복원
-      const raw = localStorage.getItem(STORAGE_DATA_BACKUP);
-      if (raw) {
-        try {
-          const backup = JSON.parse(raw);
-          Object.entries(backup).forEach(([k, v]) => localStorage.setItem(k, v));
-        } catch {}
-        localStorage.removeItem(STORAGE_DATA_BACKUP);
-      }
-      localStorage.removeItem(STORAGE_HIDE_DATA);
-      location.reload();
-    }
-  });
-}
-
 // 개발자 옵션 — 온보딩 초기화
 document.getElementById('devResetOnboardingBtn')?.addEventListener('click', () => {
   localStorage.removeItem(STORAGE_ONBOARDED_TT);
@@ -5377,7 +5341,7 @@ const ACHIEVEMENT_DEFS = {
   'F-1': { name: '공개방 개설자',    desc: '첫 공개 배틀방을 만들었어요!',         cond: '공개 배틀방 첫 생성',              icon: '🏟️', tier: 'normal', hidden: false },
   'F-2': { name: '낯선 배틀',       desc: '공개 배틀방에 처음 참여했어요!',        cond: '공개 배틀방 첫 참여',              icon: '🚪', tier: 'normal', hidden: false },
   'F-3': { name: '공개 배틀 완주',  desc: '공개 배틀을 처음 완료했어요',           cond: '공개 배틀 첫 완료',                icon: '🎉', tier: 'normal', hidden: false },
-  'F-4': { name: '셋이서 집중',     desc: '3명 이상이서 함께 달렸어요',             cond: '3인 이상 공개 배틀 완료',          icon: '🧑‍🧑‍🧒‍🧒', tier: 'normal', hidden: false },
+  'F-4': { name: '셋이서 집중',     desc: '3명 이상이서 함께 달렸어요',             cond: '3인 이상 공개 배틀 완료',          icon: '👪', tier: 'normal', hidden: false },
   'F-5': { name: '단골 공개방',     desc: '공개 배틀을 5번이나 완료했어요',        cond: '공개 배틀 완료 5회',               icon: '🔄', tier: 'rare',   hidden: false },
   'F-6': { name: '만원 사례',       desc: '10명이 꽉 찬 방에서 완주했어요!',       cond: '10명 공개 배틀 완료',              icon: '🎪', tier: 'rare',   hidden: false },
 
