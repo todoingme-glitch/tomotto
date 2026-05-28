@@ -2085,14 +2085,6 @@ dialog.modal input[type="text"]:focus {
 
 .focus-feed-section { margin-top: 12px; }
 
-.focus-feed-title {
-  font-size: 1rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 12px;
-}
 
 .focus-feed-count-badge {
   display: inline-flex;
@@ -2145,10 +2137,9 @@ dialog.modal input[type="text"]:focus {
   margin-bottom: 12px;
 }
 
-.public-battle-title {
-  font-size: 1rem;
-  font-weight: 700;
+.public-battle-header h2 {
   margin: 0;
+  flex: 1 1 auto;
 }
 
 .btn-mini-accent {
@@ -2285,7 +2276,7 @@ dialog.modal input[type="text"]:focus {
   --cal-gap: 3px;
 }
 
-.log-section { padding: 20px 16px 28px; }
+.log-section { padding: 24px 24px 28px; }
 
 .log-cal-wrap { overflow-x: auto; padding-bottom: 4px; }
 
