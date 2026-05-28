@@ -23,3 +23,11 @@ dist/
 
 # Vercel
 .vercel/
+
+# 민감 정보 — 절대 커밋 금지
+*.txt
+데이타베이스*
+암호*
+password*
+secret*
+credentials*
