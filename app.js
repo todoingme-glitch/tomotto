@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.87 — 가챠 뽀모도로
+// Tomotto v0.1.88 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -1043,11 +1043,12 @@ async function loadMyBattles() {
       const battleIds = (myPlayerRows || []).map((r) => r.battle_id);
       if (battleIds.length === 0) return [];
 
-      // 2) 해당 battle_id들의 battle 정보 가져오기 (v0.1.65 — done 완전 제외)
+      // 2) 해당 battle_id들의 battle 정보 가져오기 (done 제외 + 공개방 제외 — 친구 배틀만)
       const { data: battles, error: e2 } = await sb
         .from('battles')
         .select('*')
         .in('id', battleIds)
+        .eq('is_public', false)   // 공개 배틀방은 친구 배틀 목록에서 완전 분리
         .neq('status', 'done')
         .order('created_at', { ascending: false });
       if (e2) throw e2;
@@ -2082,10 +2083,13 @@ async function acceptBattle() {
   await refreshBattleRoom();
 
   // v0.1.17 — 수락자 쪽 localStorage에도 배틀 저장 (Supabase SELECT 정책 없을 때 fallback 보장)
-  if (currentBattleData?.battle) {
+  // 공개 배틀은 친구 배틀 목록에 저장하지 않음 (분리)
+  if (currentBattleData?.battle && !currentBattleData.battle.is_public) {
     addToMyBattles({ ...currentBattleData.battle, _isCreator: false });
   }
-  await renderMyBattles();  // 수락자 쪽 배틀카드 목록에도 추가 (await 추가)
+  if (!currentBattleData?.battle?.is_public) {
+    await renderMyBattles();  // 수락자 쪽 배틀카드 목록에도 추가
+  }
 
   // v0.1.62 — 수락자도 watchBattle 구독: 창조자가 배틀룸 열었을 때 Broadcast 수신 보장
   if (currentBattleId) subscribeWatchBattle(currentBattleId);
@@ -4186,8 +4190,13 @@ async function renderPublicBattles() {
         <button class="btn-mini btn-hide-battle${isHidden ? ' btn-hide-battle--active' : ''}" data-battle-id="${b.id}" type="button">${isHidden ? '보이기' : '숨기기'}</button>
         <button class="btn-mini btn-report-battle" data-battle-id="${b.id}" data-creator="${escapeHtml(b.creator_nickname)}" type="button">🚩</button>`;
     } else if (isMe) {
-      // 방장: 회색 '대기 중' 버튼 — 클릭 시 로비 열기 (준비 완료는 로비 안에서 눌러야 녹색 표시)
-      actionHtml = `<button class="btn-mini btn-reopen-lobby" data-battle-id="${b.id}" type="button">대기 중</button>`;
+      // 방장: 내가 로비에서 준비 완료를 눌렀으면 초록 "준비 완료", 아니면 회색 "대기 중"
+      const inLobby = (publicLobbyBattleId === b.id);
+      const meReady = inLobby &&
+        currentBattleData?.players?.find(p => p.nickname === myNickname && p.is_creator)?.is_ready === true;
+      actionHtml = meReady
+        ? `<button class="btn-mini btn-mini-green btn-reopen-lobby" data-battle-id="${b.id}" type="button">준비 완료</button>`
+        : `<button class="btn-mini btn-reopen-lobby" data-battle-id="${b.id}" type="button">대기 중</button>`;
     } else if (isFull) {
       actionHtml = '<span class="pb-full">마감</span>';
     } else {
@@ -4388,6 +4397,8 @@ function subscribePublicLobby(battleId) {
 
     currentBattleData = { battle: publicLobbyBattle, players: players ?? [] };
     renderPublicLobby(publicLobbyBattle, players ?? []);
+    // 공개 배틀 목록의 방장 버튼도 ready 상태 반영
+    renderPublicBattles();
 
     // 전원 레디 → 방장만 카운트다운 트리거
     const allReady = (players?.length >= 2) && players.every(p => p.is_ready);
@@ -4531,7 +4542,8 @@ async function closePublicLobby(deleteRoom = false, leaveRoom = false) {
   document.getElementById('pubLobbyQuitBtn')?.addEventListener('click', async () => {
     if (!confirm('방을 나가면 다시 참가해야 해요. 나가시겠어요?')) return;
     await closePublicLobby(false, true);
-    renderMyBattles();
+    // 공개 배틀은 친구 배틀 목록과 무관 — renderMyBattles() 호출 제거
+    renderPublicBattles();
   });
 })();
 
@@ -4638,9 +4650,8 @@ function subscribePublicBattles() {
 
     try {
       await saveBattle(battle);
-      addToMyBattles(battle);
+      // 공개 배틀은 친구 배틀 localStorage에 저장하지 않음 (분리)
       unlockAchievement('F-1');   // 공개방 첫 생성
-      await renderMyBattles();
       await renderPublicBattles();
       // 만든 직후 로비 열기 (subscribeWatchBattle 대신 publicLobby 구독)
       await openPublicLobby(battleId);
