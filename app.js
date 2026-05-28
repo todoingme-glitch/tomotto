@@ -37,6 +37,7 @@ const $noteUploadBtn  = document.getElementById('noteUploadBtn');  // v0.1.22 �
 // v0.1.22 — 라이트박스 dialog
 const $imgLightboxDialog = document.getElementById('imgLightboxDialog');
 const $imgLightboxImg    = document.getElementById('imgLightboxImg');
+const $imgLightboxNote   = document.getElementById('imgLightboxNote');
 const $imgLightboxClose  = document.getElementById('imgLightboxClose');
 const $captureInput = document.getElementById('captureInput');
 const $lastCapture = document.getElementById('lastCapture');
@@ -4996,13 +4997,9 @@ async function openBattleResult(battleId) {
       const thumbHtml = p.proof_url
         ? `<img class="battle-result-img brl-thumb" src="${escapeHtml(p.proof_url)}" alt="인증샷">`
         : `<span class="brl-thumb brl-thumb--empty">—</span>`;
-      const timeHtml = p.proof_uploaded_at
-        ? `<span class="brl-time">${new Date(p.proof_uploaded_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>`
-        : '';
-      return `<div class="brl-row${isMe ? ' brl-row--me' : ''}${!p.proof_url ? ' brl-row--undone' : ''}">
+      return `<div class="brl-row${isMe ? ' brl-row--me' : ''}${!p.proof_url ? ' brl-row--undone' : ''}" data-note="${escapeHtml(p.note || '')}">
         <span class="brl-rank">${rankText}</span>
         <span class="brl-nick">${nickHtml}</span>
-        ${timeHtml}
         ${thumbHtml}
       </div>`;
     }).join('');
@@ -5034,6 +5031,12 @@ $battleResultPlayers.addEventListener('click', (e) => {
     return;
   }
   $imgLightboxImg.src = img.src;
+  // brl-row에 data-note가 있으면 캡션으로 표시 (1:1 카드엔 없으므로 자동 숨김)
+  const note = img.closest('[data-note]')?.dataset.note || '';
+  if ($imgLightboxNote) {
+    $imgLightboxNote.textContent = note ? `"${note}"` : '';
+    $imgLightboxNote.hidden = !note;
+  }
   if (typeof $imgLightboxDialog.showModal === 'function') $imgLightboxDialog.showModal();
   else $imgLightboxDialog.setAttribute('open', '');
 });

@@ -3227,6 +3227,22 @@ dialog.modal input[type="text"]:focus {
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
   cursor: zoom-out;
 }
+/* 라이트박스 소감 캡션 */
+.lightbox-note {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 88vw;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  padding: 8px 14px;
+  border-radius: 8px;
+  text-align: center;
+  pointer-events: none;
+}
 /* lightbox-close는 기존 스타일(.lightbox-close) 재사용 */
 
 /* v0.1.22 — 배틀 결과 소감 */
