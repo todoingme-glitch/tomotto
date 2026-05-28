@@ -2458,18 +2458,33 @@ dialog.modal input[type="text"]:focus {
   padding: 12px 0 8px;
 }
 
-/* 로비 모달 — 닫기 버튼 부드럽게 */
-.pub-lobby-actions .btn-modal-secondary {
-  opacity: 0.75;
+/* 로비 모달 액션 영역 — 왼쪽 그룹 + 오른쪽 준비 완료 */
+.pub-lobby-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
 }
 
-/* 방 나가기 버튼: 작은 텍스트 링크 스타일 */
-#pubLobbyQuitBtn.btn-modal-danger {
+.pub-lobby-left-btns {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* 방 나가기: 작고 조용한 danger 스타일 */
+.pub-lobby-quit {
   font-size: 0.78rem;
   padding: 8px 10px;
   background: transparent;
-  border-color: #e05a3a44;
+  border-color: #e05a3a55;
   color: #e05a3a;
+}
+
+/* 닫기 버튼 부드럽게 */
+.pub-lobby-actions .btn-modal-secondary {
+  opacity: 0.8;
 }
 
 .btn-delete-public {
@@ -2479,6 +2494,12 @@ dialog.modal input[type="text"]:focus {
   padding: 3px 7px;
   font-size: 0.85rem;
 }
+
+/* 편집 모드 — 숨긴 방 */
+.pb-row-hidden { opacity: 0.45; }
+.btn-hide-battle { font-size: 0.78rem; padding: 3px 8px; }
+.btn-hide-battle--active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.btn-report-battle { font-size: 0.8rem; padding: 3px 7px; background: transparent; border-color: var(--border-soft); color: var(--text-muted); }
 
 .lb-empty-code {
   line-height: 1.8;
@@ -3763,6 +3784,93 @@ dialog.modal input[type="text"]:focus {
 }
 
 /* ── 도전과제 기록 탭 그리드 (v0.1.69) ──────────────────── */
+/* ====== 칭호 섹션 ====== */
+.title-section { margin-top: 12px; }
+
+.title-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.title-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px 10px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border-soft);
+  background: var(--bg-surface, #fafafa);
+  text-align: center;
+  opacity: 0.55;
+  filter: grayscale(0.3);
+}
+
+.title-card--unlocked {
+  opacity: 1;
+  filter: none;
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 5%, white);
+}
+
+/* 현재 내 칭호 */
+.title-card--current {
+  border-color: var(--accent);
+  border-width: 2px;
+  background: color-mix(in srgb, var(--accent) 10%, white);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.title-emoji { font-size: 1.8rem; line-height: 1; }
+
+.title-name {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-main);
+  word-break: keep-all;
+}
+
+.title-cond {
+  font-size: 0.62rem;
+  color: var(--text-sub, #aaa);
+  word-break: keep-all;
+}
+
+.title-now {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-top: 2px;
+}
+
+.title-prog-bar {
+  width: 100%;
+  height: 4px;
+  background: var(--border-soft);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.title-prog-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.title-prog-text {
+  font-size: 0.6rem;
+  color: var(--text-sub, #bbb);
+}
+
+@media (max-width: 480px) {
+  .title-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .title-emoji { font-size: 1.5rem; }
+}
+
 .achievement-section {
   margin-top: 12px;
 }

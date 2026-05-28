@@ -280,7 +280,7 @@
       <div class="public-battle-header">
         <h2><span class="step">2</span> 공개 배틀방</h2>
         <div class="pub-battle-header-btns">
-          <button id="joinPublicBattleBtn" class="btn-mini" type="button">참가하기</button>
+          <button id="editPublicBattleBtn" class="btn-mini" type="button">편집</button>
           <button id="createPublicBattleBtn" class="btn-mini btn-mini-accent" type="button">+ 만들기</button>
         </div>
       </div>
@@ -326,10 +326,23 @@
         </div>
       </section>
 
+      <!-- v0.1.85 — 칭호 섹션 -->
+      <section class="card title-section">
+        <div class="achievement-header" id="titleSectionToggle" role="button" tabindex="0" aria-expanded="true">
+          <h2><span class="step">2</span> 칭호 <span id="titleCurrentBadge" class="achievement-count-badge"></span></h2>
+          <span class="ach-chevron">
+            <svg viewBox="17.36 24.85 105.76 95.08" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M58.9,111.8c6.26,10.85,16.42,10.85,22.68,0l38.86-67.3c6.26-10.85,1.18-19.64-11.34-19.64H31.38c-12.52,0-17.6,8.79-11.34,19.64l38.86,67.3Z"/></svg>
+          </span>
+        </div>
+        <div id="titleGrid" class="title-grid">
+          <!-- renderTitlesTab()으로 채워짐 -->
+        </div>
+      </section>
+
       <!-- v0.1.69 — 업적 섹션 -->
       <section class="card achievement-section">
         <div class="achievement-header" id="achievementToggle" role="button" tabindex="0" aria-expanded="true">
-          <h2><span class="step">2</span> 업적 <span id="achievementCount" class="achievement-count-badge"></span></h2>
+          <h2><span class="step">3</span> 업적 <span id="achievementCount" class="achievement-count-badge"></span></h2>
           <span class="ach-chevron">
             <svg viewBox="17.36 24.85 105.76 95.08" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M58.9,111.8c6.26,10.85,16.42,10.85,22.68,0l38.86-67.3c6.26-10.85,1.18-19.64-11.34-19.64H31.38c-12.52,0-17.6,8.79-11.34,19.64l38.86,67.3Z"/></svg>
           </span>
@@ -342,7 +355,7 @@
 
 
     <footer>
-      <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1.84 · 친구배틀버그·참가자닫기·나간유저즉시반영·결과창그리드</span></small>
+      <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1.85 · 칭호카드·편집모드·금칙어·로비버튼개선</span></small>
     </footer>
   </div>
 
@@ -524,10 +537,13 @@
     <p id="pubLobbyInfo" class="pub-lobby-info">접속 중···</p>
     <div id="pubLobbyPlayers" class="pub-lobby-players"></div>
     <p id="pubLobbyStatus" class="pub-lobby-status">다른 플레이어를 기다리는 중···</p>
-    <div class="modal-actions pub-lobby-actions">
-      <!-- 방 나가기: 비방장 전용, renderPublicLobby에서 display 제어 -->
-      <button id="pubLobbyQuitBtn" class="btn-modal btn-modal-danger" type="button" style="display:none">방 나가기</button>
-      <button id="pubLobbyLeaveBtn" class="btn-modal btn-modal-secondary" type="button">닫기</button>
+    <div class="pub-lobby-actions">
+      <!-- 왼쪽 그룹: 방 나가기(비방장 전용) + 창 닫기 -->
+      <div class="pub-lobby-left-btns">
+        <button id="pubLobbyQuitBtn" class="btn-modal btn-modal-danger pub-lobby-quit" type="button" style="display:none">방 나가기</button>
+        <button id="pubLobbyLeaveBtn" class="btn-modal btn-modal-secondary" type="button">창 닫기</button>
+      </div>
+      <!-- 오른쪽: 준비 완료 -->
       <button id="pubLobbyReadyBtn" class="btn-modal btn-modal-primary" type="button">준비 완료</button>
     </div>
   </dialog>
