@@ -339,7 +339,7 @@
 
 
     <footer>
-      <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1.78 · 준비중 삭제 + 재진입 자동 카운트다운 방지</span></small>
+      <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1.81 · 공개 배틀 로비/레디 시스템</span></small>
     </footer>
   </div>
 
@@ -526,6 +526,18 @@
     <div class="modal-actions modal-battle-create-actions">
       <button id="pubBattleCancelBtn" class="btn-modal btn-modal-secondary" type="button">취소</button>
       <button id="pubBattleConfirmBtn" class="btn-modal btn-modal-primary" type="button">공개 방 만들기</button>
+    </div>
+  </dialog>
+
+  <!-- v0.1.81 — 공개 배틀 로비 모달 -->
+  <dialog id="publicLobbyModal" class="modal modal-pub-lobby">
+    <h3 id="pubLobbyTitle">공개 배틀 로비</h3>
+    <p id="pubLobbyInfo" class="pub-lobby-info">접속 중···</p>
+    <div id="pubLobbyPlayers" class="pub-lobby-players"></div>
+    <p id="pubLobbyStatus" class="pub-lobby-status">다른 플레이어를 기다리는 중···</p>
+    <div class="modal-actions pub-lobby-actions">
+      <button id="pubLobbyLeaveBtn" class="btn-modal btn-modal-secondary" type="button">나가기</button>
+      <button id="pubLobbyReadyBtn" class="btn-modal btn-modal-primary" type="button">준비 완료</button>
     </div>
   </dialog>
 

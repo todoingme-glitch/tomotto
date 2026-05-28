@@ -2247,6 +2247,97 @@ dialog.modal input[type="text"]:focus {
   white-space: nowrap;
 }
 
+/* ====== v0.1.81 — 공개 배틀 로비 ====== */
+
+.modal-pub-lobby { max-width: 400px; }
+
+.pub-lobby-info {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: -8px 0 14px;
+  font-weight: 600;
+}
+
+.pub-lobby-players {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+  min-height: 48px;
+}
+
+.pub-lobby-player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--bg-surface, #fafafa);
+  border: 1.5px solid var(--border-soft);
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.pub-lobby-player.is-ready {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, white);
+}
+
+.pub-lobby-player.is-me {
+  font-weight: 700;
+}
+
+.pub-lobby-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  width: 22px;
+  text-align: center;
+}
+
+.pub-lobby-nick {
+  flex: 1 1 auto;
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.pub-lobby-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.pub-lobby-status {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin: 0 0 4px;
+  min-height: 18px;
+}
+
+.pub-lobby-status--go {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.pub-lobby-countdown {
+  display: flex;
+  justify-content: center;
+  padding: 12px 0 8px;
+}
+
+/* 로비 모달 나가기 버튼은 부드럽게 */
+.pub-lobby-actions .btn-modal-secondary {
+  opacity: 0.75;
+}
+
 .btn-delete-public {
   background: transparent;
   border-color: var(--border-soft);

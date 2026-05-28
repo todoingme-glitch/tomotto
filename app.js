@@ -4121,7 +4121,7 @@ async function renderPublicBattles() {
   $body.querySelectorAll('.btn-join-public').forEach(btn => {
     btn.addEventListener('click', () => {
       if (!myNickname) { alert('닉네임을 먼저 설정해주세요.'); return; }
-      openBattleRoom(btn.dataset.battleId);
+      openPublicLobby(btn.dataset.battleId);
     });
   });
 
@@ -4136,6 +4136,232 @@ async function renderPublicBattles() {
   });
 }
 
+// ====== v0.1.81 — 공개 배틀 로비 / 레디 시스템 ======
+
+let publicLobbyBattleId   = null;
+let publicLobbyBattle     = null;
+let publicLobbyChannel    = null;
+let isStartingPublicLobby = false;
+
+/** 공개 배틀방 로비 열기 (참여 or 생성 후 호출) */
+async function openPublicLobby(battleId) {
+  if (!sb || !myNickname) return;
+
+  publicLobbyBattleId = battleId;
+
+  const result = await fetchBattle(battleId);
+  if (!result?.battle) { alert('배틀을 찾을 수 없어요.'); return; }
+
+  publicLobbyBattle = result.battle;
+  let players = result.players ?? [];
+
+  // 아직 내가 battle_players에 없으면 참여 등록
+  const alreadyIn = players.some(p => p.nickname === myNickname);
+  if (!alreadyIn) {
+    const { error } = await sb.from('battle_players').insert({
+      battle_id: battleId,
+      nickname: myNickname,
+      is_creator: false,
+      is_ready: false,
+    });
+    if (error) { alert('참여 실패: ' + error.message); return; }
+    const r = await sb.from('battle_players').select('*').eq('battle_id', battleId).order('created_at', { ascending: true });
+    players = r.data ?? players;
+  }
+
+  // 기존 타이머 시스템과 상태 공유
+  currentBattleId   = battleId;
+  currentBattleData = { battle: publicLobbyBattle, players };
+
+  renderPublicLobby(publicLobbyBattle, players);
+  subscribePublicLobby(battleId);
+
+  const $modal = document.getElementById('publicLobbyModal');
+  if ($modal && typeof $modal.showModal === 'function') $modal.showModal();
+}
+
+/** 로비 모달 UI 렌더링 */
+function renderPublicLobby(battle, players) {
+  const modeLabel = battle.mode === 'common' ? '🍅 TOM MODE' : '🎲 MOTO MODE';
+  const mins      = Math.round(battle.duration_sec / 60);
+  const readyCount = players.filter(p => p.is_ready).length;
+
+  const $title = document.getElementById('pubLobbyTitle');
+  const $info  = document.getElementById('pubLobbyInfo');
+  const $list  = document.getElementById('pubLobbyPlayers');
+  const $status = document.getElementById('pubLobbyStatus');
+  const $readyBtn = document.getElementById('pubLobbyReadyBtn');
+  if (!$list) return;
+
+  if ($title) $title.textContent = `${modeLabel} · ${mins}분`;
+  if ($info)  $info.textContent  = `접속 ${players.length} / ${battle.max_players}명 · 준비 ${readyCount} / ${players.length}명`;
+
+  $list.innerHTML = players.map(p => {
+    const isMe = p.nickname === myNickname;
+    return `<div class="pub-lobby-player${isMe ? ' is-me' : ''}${p.is_ready ? ' is-ready' : ''}">
+      <span class="pub-lobby-icon">${p.is_ready ? '✅' : '⏳'}</span>
+      <span class="pub-lobby-nick">${escapeHtml(p.nickname)}${isMe ? ' <span class="lb-me-badge">나</span>' : ''}</span>
+      ${p.is_creator ? '<span class="pub-lobby-badge">방장</span>' : ''}
+    </div>`;
+  }).join('');
+
+  const myPlayer  = players.find(p => p.nickname === myNickname);
+  const allReady  = players.length >= 2 && players.every(p => p.is_ready);
+  const waiting   = players.length < 2;
+
+  if ($readyBtn) {
+    if (myPlayer?.is_ready) {
+      $readyBtn.textContent  = '준비 취소';
+      $readyBtn.className    = 'btn-modal btn-modal-secondary';
+    } else {
+      $readyBtn.textContent  = '준비 완료';
+      $readyBtn.className    = 'btn-modal btn-modal-primary';
+    }
+    $readyBtn.disabled = false;
+  }
+
+  if ($status) {
+    if (allReady) {
+      $status.textContent = '모두 준비됐어요! 곧 시작돼요···';
+      $status.className   = 'pub-lobby-status pub-lobby-status--go';
+    } else if (waiting) {
+      $status.textContent = '다른 플레이어를 기다리는 중···';
+      $status.className   = 'pub-lobby-status';
+    } else {
+      $status.textContent = `${players.filter(p => !p.is_ready).length}명이 아직 준비 중이에요.`;
+      $status.className   = 'pub-lobby-status';
+    }
+  }
+}
+
+/** 로비 Realtime 구독 */
+function subscribePublicLobby(battleId) {
+  if (publicLobbyChannel && sb) { sb.removeChannel(publicLobbyChannel); publicLobbyChannel = null; }
+  if (!sb) return;
+
+  publicLobbyChannel = sb.channel(`pub-lobby-${battleId}`)
+    // battle_players 변경(참여·레디) 감지
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'battle_players', filter: `battle_id=eq.${battleId}` },
+      async () => {
+        const { data: players } = await sb.from('battle_players')
+          .select('*').eq('battle_id', battleId).order('created_at', { ascending: true });
+        if (!publicLobbyBattle) return;
+
+        currentBattleData = { battle: publicLobbyBattle, players: players ?? [] };
+        renderPublicLobby(publicLobbyBattle, players ?? []);
+
+        // 전원 레디 → 방장만 카운트다운 트리거
+        const allReady = (players?.length >= 2) && players.every(p => p.is_ready);
+        const isCreator = players?.find(p => p.nickname === myNickname)?.is_creator;
+        if (allReady && isCreator && !isStartingPublicLobby) {
+          startPublicLobbyCountdown(false);
+        }
+      }
+    )
+    // 수신자: 방장의 카운트다운 시작 신호 수신
+    .on('broadcast', { event: 'pub-lobby-start' }, async () => {
+      if (isStartingPublicLobby || timer.isRunning) return;
+      const result = await fetchBattle(battleId);
+      if (result?.battle) currentBattleData = result;
+      startPublicLobbyCountdown(true);
+    })
+    .subscribe();
+}
+
+/** 준비 상태 토글 */
+async function togglePublicReady() {
+  if (!sb || !publicLobbyBattleId || !myNickname) return;
+  const myPlayer = currentBattleData?.players?.find(p => p.nickname === myNickname);
+  const newReady = !myPlayer?.is_ready;
+  document.getElementById('pubLobbyReadyBtn').disabled = true;
+  await sb.from('battle_players')
+    .update({ is_ready: newReady })
+    .eq('battle_id', publicLobbyBattleId)
+    .eq('nickname', myNickname);
+  // renderPublicLobby는 subscribePublicLobby 콜백에서 자동 호출됨
+}
+
+/** 로비 카운트다운 + 타이머 시작 */
+async function startPublicLobbyCountdown(isReceiver = false) {
+  if (isStartingPublicLobby || timer.isRunning) return;
+  isStartingPublicLobby = true;
+
+  const $modal   = document.getElementById('publicLobbyModal');
+  const $actions = $modal?.querySelector('.pub-lobby-actions');
+
+  if (!isReceiver) {
+    // 방장: 시작 신호 Broadcast + DB 업데이트
+    publicLobbyChannel?.send({ type: 'broadcast', event: 'pub-lobby-start', payload: {} });
+    if (sb && currentBattleId) {
+      sb.from('battles')
+        .update({ status: 'active', countdown_started_at: new Date().toISOString() })
+        .eq('id', currentBattleId)
+        .then();
+    }
+  }
+
+  // 모달 버튼 숨기고 카운트다운 표시
+  if ($actions) $actions.style.display = 'none';
+  const countEl = document.createElement('div');
+  countEl.className = 'battle-countdown pub-lobby-countdown';
+  $modal?.appendChild(countEl);
+
+  for (let n = 3; n >= 1; n--) {
+    countEl.innerHTML = `<div class="battle-countdown-num">${n}</div>`;
+    await new Promise(r => setTimeout(r, 900));
+  }
+  countEl.innerHTML = `<div class="battle-countdown-num">시작!</div>`;
+  playHifive();
+  await new Promise(r => setTimeout(r, 750));
+
+  // 정리 후 타이머 시작
+  if (publicLobbyChannel && sb) { sb.removeChannel(publicLobbyChannel); publicLobbyChannel = null; }
+  publicLobbyBattleId   = null;
+  publicLobbyBattle     = null;
+  isStartingPublicLobby = false;
+  if ($modal) $modal.close();
+
+  startBattleTimer();  // currentBattleData / currentBattleId 그대로 사용
+}
+
+/** 로비 닫기 (나가기) */
+async function closePublicLobby(deleteRoom = false) {
+  if (deleteRoom && publicLobbyBattleId) {
+    await deleteBattleSilent(publicLobbyBattleId);
+    renderPublicBattles();
+  } else if (publicLobbyBattleId && sb && myNickname) {
+    // 창조자 아닌 경우 — 내 행만 삭제
+    const myPlayer = currentBattleData?.players?.find(p => p.nickname === myNickname);
+    if (!myPlayer?.is_creator) {
+      await sb.from('battle_players')
+        .delete()
+        .eq('battle_id', publicLobbyBattleId)
+        .eq('nickname', myNickname);
+    }
+  }
+  if (publicLobbyChannel && sb) { sb.removeChannel(publicLobbyChannel); publicLobbyChannel = null; }
+  publicLobbyBattleId   = null;
+  publicLobbyBattle     = null;
+  isStartingPublicLobby = false;
+  document.getElementById('publicLobbyModal')?.close();
+}
+
+// 로비 버튼 이벤트
+(function initPublicLobbyEvents() {
+  document.getElementById('pubLobbyReadyBtn')?.addEventListener('click', togglePublicReady);
+  document.getElementById('pubLobbyLeaveBtn')?.addEventListener('click', async () => {
+    const myPlayer = currentBattleData?.players?.find(p => p.nickname === myNickname);
+    if (myPlayer?.is_creator) {
+      if (!confirm('방을 나가면 배틀방이 삭제돼요. 계속할까요?')) return;
+      await closePublicLobby(true);
+    } else {
+      await closePublicLobby(false);
+    }
+    renderMyBattles();
+  });
+})();
+
 function subscribePublicBattles() {
   if (!sb) return;
   if (publicBattleChannel) { sb.removeChannel(publicBattleChannel); publicBattleChannel = null; }
@@ -4144,7 +4370,7 @@ function subscribePublicBattles() {
       { event: '*', schema: 'public', table: 'battles' },
       (payload) => {
         if ((payload.new?.is_public || payload.old?.is_public) &&
-            !document.getElementById('tab-league')?.classList.contains('tab-panel-hidden')) {
+            !document.getElementById('tab-social')?.classList.contains('tab-panel-hidden')) {
           renderPublicBattles();
         }
       }
@@ -4211,9 +4437,10 @@ function subscribePublicBattles() {
     try {
       await saveBattle(battle);
       addToMyBattles(battle);
-      subscribeWatchBattle(battleId);
       await renderMyBattles();
       await renderPublicBattles();
+      // 만든 직후 로비 열기 (subscribeWatchBattle 대신 publicLobby 구독)
+      await openPublicLobby(battleId);
     } catch (e) {
       alert('공개 방 만들기 실패: ' + (e.message || e));
     } finally {
