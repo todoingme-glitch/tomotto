@@ -4758,6 +4758,7 @@ function renderAchievementsTab() {
           <div class="ach-card-icon">🔒</div>
           <div class="ach-card-name">${isSecret ? '???' : def.name}</div>
           ${condHtml}
+          <div class="ach-card-date">미달성</div>
         </div>`;
     }
   }).join('');
