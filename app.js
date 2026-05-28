@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.6 — 가챠 뽀모도로
+// Tomotto v0.1.86 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -2963,6 +2963,9 @@ function hasBannedWord(text) {
 // ====== 공개 배틀방 숨기기 ======
 const STORAGE_HIDDEN_BATTLES = 'tomotto_hidden_battles';
 
+// ====== 칭호 수동 선택 ======
+const STORAGE_SELECTED_TITLE = 'tomotto_selected_title';
+
 function getHiddenBattleIds() {
   try { return new Set(JSON.parse(localStorage.getItem(STORAGE_HIDDEN_BATTLES) || '[]')); }
   catch { return new Set(); }
@@ -4155,14 +4158,12 @@ async function renderPublicBattles() {
     return;
   }
 
-  // 숨긴 방 필터 (편집 모드에서는 숨긴 방도 표시)
+  // 숨긴 방 필터 — 편집 모드에서도 항상 숨긴 방은 표시하지 않음
   const hiddenIds = getHiddenBattleIds();
-  const visibleRows = pubBattleEditMode ? rows : rows.filter(b => !hiddenIds.has(b.id));
+  const visibleRows = rows.filter(b => !hiddenIds.has(b.id));
 
   if (!visibleRows.length) {
-    $body.innerHTML = pubBattleEditMode
-      ? '<p class="lb-empty">공개 배틀방이 없어요.</p>'
-      : '<p class="lb-empty">공개 배틀방이 없어요. 먼저 만들어보세요!</p>';
+    $body.innerHTML = '<p class="lb-empty">공개 배틀방이 없어요. 먼저 만들어보세요!</p>';
     return;
   }
 
@@ -4184,16 +4185,16 @@ async function renderPublicBattles() {
         <button class="btn-mini btn-report-battle" data-battle-id="${b.id}" data-creator="${escapeHtml(b.creator_nickname)}" type="button">🚩</button>`;
     } else if (isMe) {
       const hasActiveLobby = (publicLobbyBattleId === b.id);
-      actionHtml = hasActiveLobby
-        ? `<button class="btn-mini btn-mini-accent btn-reopen-lobby" data-battle-id="${b.id}" type="button">로비 열기</button>`
-        : '<span class="pb-waiting">대기 중···</span>';
+      // 방장: 항상 초록 버튼 — 로비 활성 시 "로비 열기", 아니면 "준비 완료"
+      actionHtml = `<button class="btn-mini btn-mini-green btn-reopen-lobby" data-battle-id="${b.id}" type="button">${hasActiveLobby ? '로비 열기' : '준비 완료'}</button>`;
     } else if (isFull) {
       actionHtml = '<span class="pb-full">마감</span>';
     } else {
       actionHtml = `<button class="btn-mini btn-join-public" data-battle-id="${b.id}" type="button">참여하기</button>`;
     }
 
-    const deleteBtn = isMe
+    // 삭제 버튼: 편집 모드일 때만 방장 카드에 표시
+    const deleteBtn = (isMe && pubBattleEditMode)
       ? `<button class="btn-mini btn-delete-public" data-battle-id="${b.id}" type="button" title="방 삭제">🗑</button>`
       : '';
 
@@ -4346,7 +4347,7 @@ function renderPublicLobby(battle, players) {
   // "방 나가기": 비방장만 표시 — 실제로 방에서 제거
   const $leaveBtn = document.getElementById('pubLobbyLeaveBtn');
   const $quitBtn  = document.getElementById('pubLobbyQuitBtn');
-  if ($leaveBtn) $leaveBtn.textContent = '닫기';
+  if ($leaveBtn) $leaveBtn.textContent = '창 닫기';
   if ($quitBtn)  $quitBtn.style.display = myPlayer?.is_creator ? 'none' : '';
 
   if ($readyBtn) {
@@ -5266,6 +5267,7 @@ function renderTitlesTab() {
   if (!$grid) return;
 
   const currentTitle = getCurrentTitle();
+  const selectedId   = localStorage.getItem(STORAGE_SELECTED_TITLE);
   if ($badge) $badge.textContent = currentTitle ? `${currentTitle.emoji} ${currentTitle.name}` : '없음';
 
   // 씨앗(하위) → 전설(상위) 순서로 표시 — 성장 경로가 보임
@@ -5274,6 +5276,7 @@ function renderTitlesTab() {
   $grid.innerHTML = ordered.map(t => {
     const unlocked  = (() => { try { return t.check(); } catch { return false; } })();
     const isCurrent = t.id === currentTitle?.id;
+    const isSelected = t.id === selectedId;
     const info      = TITLE_PROGRESS[t.id];
 
     let progHtml = '';
@@ -5288,14 +5291,39 @@ function renderTitlesTab() {
       } catch {}
     }
 
-    return `<div class="title-card${unlocked ? ' title-card--unlocked' : ''}${isCurrent ? ' title-card--current' : ''}">
+    let nowHtml = '';
+    if (isCurrent) {
+      nowHtml = isSelected
+        ? '<div class="title-now">현재 칭호 ✓ <span class="title-now-manual">수동 선택</span></div>'
+        : '<div class="title-now">현재 칭호 ✓</div>';
+    } else if (unlocked) {
+      nowHtml = '<div class="title-now title-now-hint">클릭해서 선택</div>';
+    }
+
+    return `<div class="title-card${unlocked ? ' title-card--unlocked' : ''}${isCurrent ? ' title-card--current' : ''}" data-title-id="${t.id}">
       <div class="title-emoji">${t.emoji}</div>
       <div class="title-name">${t.name}</div>
       <div class="title-cond">${info?.condText ?? ''}</div>
       ${unlocked ? '' : progHtml}
-      ${isCurrent ? '<div class="title-now">현재 칭호 ✓</div>' : ''}
+      ${nowHtml}
     </div>`;
   }).join('');
+
+  // 달성한 칭호 카드 클릭 → 수동 선택
+  $grid.querySelectorAll('.title-card--unlocked').forEach(card => {
+    card.addEventListener('click', () => {
+      const id = card.dataset.titleId;
+      if (localStorage.getItem(STORAGE_SELECTED_TITLE) === id) {
+        // 같은 칭호 재클릭 → 선택 해제 (자동 선택으로 복귀)
+        localStorage.removeItem(STORAGE_SELECTED_TITLE);
+      } else {
+        localStorage.setItem(STORAGE_SELECTED_TITLE, id);
+      }
+      renderTitlesTab();
+      updateCompletedDisplay();
+      if (sb && myNickname && timer.isRunning) upsertPresence(true).catch(() => {});
+    });
+  });
 }
 
 // 칭호 섹션 토글 (업적 아코디언과 동일한 패턴)
@@ -5327,6 +5355,19 @@ function initTitleAccordion() {
 
 function getCurrentTitle() {
   try {
+    // 수동 선택된 칭호 우선 확인
+    const selectedId = localStorage.getItem(STORAGE_SELECTED_TITLE);
+    if (selectedId) {
+      const selected = TITLE_DEFS.find(t => t.id === selectedId);
+      if (selected) {
+        try {
+          if (selected.check()) return selected;
+        } catch {}
+        // 조건을 더 이상 충족하지 않으면 선택 초기화
+        localStorage.removeItem(STORAGE_SELECTED_TITLE);
+      }
+    }
+    // 자동: 가장 높은 달성 칭호 반환
     for (const t of TITLE_DEFS) {
       try { if (t.check()) return t; } catch { /* ignore */ }
     }

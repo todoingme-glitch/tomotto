@@ -2231,6 +2231,17 @@ dialog.modal input[type="text"]:focus {
   border-color: var(--accent);
 }
 
+.btn-mini-green {
+  background: var(--basil);
+  color: #fff;
+  border-color: var(--basil);
+}
+.btn-mini-green:hover {
+  background: var(--basil-deep);
+  border-color: var(--basil-deep);
+  color: #fff;
+}
+
 /* 인원 수 + 시간 설정: 같은 행 */
 .pub-battle-settings-row {
   display: flex;
@@ -2366,10 +2377,15 @@ dialog.modal input[type="text"]:focus {
 }
 
 .btn-join-public {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
+  background: #e8e3e0;
+  color: var(--text-soft);
+  border-color: #d8d0cc;
   white-space: nowrap;
+}
+.btn-join-public:hover {
+  background: #ddd8d4;
+  color: var(--text);
+  border-color: #c8c0bc;
 }
 
 /* ====== v0.1.81 — 공개 배틀 로비 ====== */
@@ -2473,18 +2489,22 @@ dialog.modal input[type="text"]:focus {
   align-items: center;
 }
 
-/* 방 나가기: 작고 조용한 danger 스타일 */
+/* 로비 액션 버튼 — 3개 모두 동일한 크기 */
+.pub-lobby-actions .btn-modal {
+  font-size: 14px;
+  padding: 10px 16px;
+}
+
+/* 방 나가기: 조용한 danger 스타일 (크기는 btn-modal 상속) */
 .pub-lobby-quit {
-  font-size: 0.78rem;
-  padding: 8px 10px;
   background: transparent;
   border-color: #e05a3a55;
   color: #e05a3a;
 }
-
-/* 닫기 버튼 부드럽게 */
-.pub-lobby-actions .btn-modal-secondary {
-  opacity: 0.8;
+.pub-lobby-quit:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .btn-delete-public {
@@ -3812,6 +3832,7 @@ dialog.modal input[type="text"]:focus {
   opacity: 1;
   filter: none;
   border-color: var(--accent);
+  cursor: pointer;
   background: color-mix(in srgb, var(--accent) 5%, white);
 }
 
@@ -3838,11 +3859,32 @@ dialog.modal input[type="text"]:focus {
   word-break: keep-all;
 }
 
+.title-card--unlocked:hover {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
+  transform: translateY(-1px);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.title-card--current:hover {
+  transform: none;
+}
+
 .title-now {
   font-size: 0.6rem;
   font-weight: 700;
   color: var(--accent);
   margin-top: 2px;
+}
+
+.title-now-hint {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.title-now-manual {
+  font-size: 0.55rem;
+  font-weight: 400;
+  opacity: 0.7;
+  margin-left: 2px;
 }
 
 .title-prog-bar {
