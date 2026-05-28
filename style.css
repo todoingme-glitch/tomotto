@@ -4119,11 +4119,24 @@ dialog.modal input[type="text"]:focus {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 2px 5px;
+  padding: 6px 4px 5px;
   margin-top: 6px;
   border-bottom: 1.5px solid var(--border);
+  cursor: pointer;
+  user-select: none;
 }
 .ach-section-header--first { margin-top: 0; }
+.ach-section-header:hover { opacity: 0.75; }
+.ach-section-chevron {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+}
+.ach-section-header--collapsed .ach-section-chevron {
+  transform: rotate(-90deg);
+}
 .ach-section-icon { font-size: 13px; line-height: 1; }
 .ach-section-label {
   font-size: 12px;

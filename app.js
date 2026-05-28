@@ -5554,6 +5554,7 @@ function unlockAchievement(id) {
 
 let _toastQueue = [];
 let _toastShowing = false;
+const collapsedTiers = new Set(); // 업적 티어 접힘 상태
 
 function _showAchievementToast(id) {
   _toastQueue.push(id);
@@ -5690,6 +5691,8 @@ function renderAchievementsTab() {
     hidden: { label: '히든',  icon: '🔍', cls: '--hidden' },
   };
 
+  const CHEVRON = `<svg class="ach-section-chevron" viewBox="17.36 24.85 105.76 95.08" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M58.9,111.8c6.26,10.85,16.42,10.85,22.68,0l38.86-67.3c6.26-10.85,1.18-19.64-11.34-19.64H31.38c-12.52,0-17.6,8.79-11.34,19.64l38.86,67.3Z"/></svg>`;
+
   function renderCard(id, def) {
     const state = all[id];
     const unlocked = !!state?.unlocked;
@@ -5723,16 +5726,30 @@ function renderAchievementsTab() {
     if (entries.length === 0) continue;
     const meta = TIER_META[tierKey];
     const tierUnlocked = entries.filter(([id]) => all[id]?.unlocked).length;
-    html += `<div class="ach-section-header ach-section-header${meta.cls}${isFirst ? ' ach-section-header--first' : ''}">
+    const collapsed = collapsedTiers.has(tierKey);
+    html += `<div class="ach-section-header${meta.cls ? ' ach-section-header' + meta.cls : ''}${isFirst ? ' ach-section-header--first' : ''}${collapsed ? ' ach-section-header--collapsed' : ''}"
+      role="button" tabindex="0" data-tier="${tierKey}" aria-expanded="${!collapsed}">
+      ${CHEVRON}
       <span class="ach-section-icon">${meta.icon}</span>
       <span class="ach-section-label">${meta.label}</span>
       <span class="ach-section-count">${tierUnlocked} / ${entries.length}</span>
     </div>`;
-    html += entries.map(([id, def]) => renderCard(id, def)).join('');
+    if (!collapsed) html += entries.map(([id, def]) => renderCard(id, def)).join('');
     isFirst = false;
   }
 
   $grid.innerHTML = html;
+
+  $grid.querySelectorAll('.ach-section-header').forEach(header => {
+    const toggle = () => {
+      const tier = header.dataset.tier;
+      if (collapsedTiers.has(tier)) collapsedTiers.delete(tier);
+      else collapsedTiers.add(tier);
+      renderAchievementsTab();
+    };
+    header.addEventListener('click', toggle);
+    header.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+  });
 }
 
 // ── 체크 함수들 ───────────────────────────────────────────
