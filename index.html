@@ -342,7 +342,7 @@
 
 
     <footer>
-      <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1.83 · 로비창닫기·시작버그·업적띄어쓰기·피드닉네임pill</span></small>
+      <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1.84 · 친구배틀버그·참가자닫기·나간유저즉시반영·결과창그리드</span></small>
     </footer>
   </div>
 
@@ -525,7 +525,9 @@
     <div id="pubLobbyPlayers" class="pub-lobby-players"></div>
     <p id="pubLobbyStatus" class="pub-lobby-status">다른 플레이어를 기다리는 중···</p>
     <div class="modal-actions pub-lobby-actions">
-      <button id="pubLobbyLeaveBtn" class="btn-modal btn-modal-secondary" type="button">나가기</button>
+      <!-- 방 나가기: 비방장 전용, renderPublicLobby에서 display 제어 -->
+      <button id="pubLobbyQuitBtn" class="btn-modal btn-modal-danger" type="button" style="display:none">방 나가기</button>
+      <button id="pubLobbyLeaveBtn" class="btn-modal btn-modal-secondary" type="button">닫기</button>
       <button id="pubLobbyReadyBtn" class="btn-modal btn-modal-primary" type="button">준비 완료</button>
     </div>
   </dialog>

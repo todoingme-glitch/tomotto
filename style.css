@@ -1811,8 +1811,17 @@ dialog.modal input[type="text"]:focus {
 
 .battle-result-players {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
+  margin: 16px 0;
+}
+
+/* 공개 배틀 다인전 결과 — 2열 그리드 */
+.battle-result-players--grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  align-items: start;
   margin: 16px 0;
 }
 
@@ -2178,6 +2187,7 @@ dialog.modal input[type="text"]:focus {
   border: 1.5px solid color-mix(in srgb, var(--accent) 30%, transparent);
   margin-bottom: 14px;
   box-sizing: border-box;
+  text-align: center;
 }
 
 .pub-battle-mode-label {
@@ -2204,6 +2214,7 @@ dialog.modal input[type="text"]:focus {
   color: #e05a3a;
   font-size: 0.82rem;
   font-weight: 600;
+  text-align: left;
 }
 
 /* 방 목록 task 표시 */
@@ -2223,26 +2234,42 @@ dialog.modal input[type="text"]:focus {
 /* 인원 수 + 시간 설정: 같은 행 */
 .pub-battle-settings-row {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   margin-bottom: 14px;
+  align-items: flex-end;
 }
 
+/* 스텝퍼가 더 좁게 (인원 수), 시간 설정이 더 넓게 */
 .pub-battle-settings-item {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  flex: 1 1 0;
+  gap: 5px;
 }
 
+.pub-battle-settings-item:first-child { flex: 0 0 auto; }
+.pub-battle-settings-item:last-child  { flex: 1 1 auto; }
+
 .pub-battle-settings-item label {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 600;
   color: var(--text-muted);
 }
 
+/* 시간 선택 select — 기존 스타일과 통일 */
 .pub-battle-settings-item select {
   height: 34px;
   font-size: 0.82rem;
+  padding: 0 28px 0 10px;
+  border: 1.5px solid var(--border-soft);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-main);
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  cursor: pointer;
 }
 
 .pub-player-stepper {
@@ -2252,16 +2279,16 @@ dialog.modal input[type="text"]:focus {
   border: 1.5px solid var(--border-soft);
   border-radius: 8px;
   overflow: hidden;
-  width: 100%;
+  width: 110px;
   height: 34px;
 }
 
 .pub-stepper-btn {
-  width: 34px;
+  width: 30px;
   height: 34px;
   background: var(--bg-card);
   border: none;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 400;
   color: var(--text-main);
   cursor: pointer;
@@ -2278,7 +2305,7 @@ dialog.modal input[type="text"]:focus {
 .pub-stepper-value {
   flex: 1;
   text-align: center;
-  font-size: 0.88rem;
+  font-size: 0.84rem;
   font-weight: 700;
   color: var(--text-main);
   border-left: 1.5px solid var(--border-soft);
@@ -2431,9 +2458,18 @@ dialog.modal input[type="text"]:focus {
   padding: 12px 0 8px;
 }
 
-/* 로비 모달 나가기 버튼은 부드럽게 */
+/* 로비 모달 — 닫기 버튼 부드럽게 */
 .pub-lobby-actions .btn-modal-secondary {
   opacity: 0.75;
+}
+
+/* 방 나가기 버튼: 작은 텍스트 링크 스타일 */
+#pubLobbyQuitBtn.btn-modal-danger {
+  font-size: 0.78rem;
+  padding: 8px 10px;
+  background: transparent;
+  border-color: #e05a3a44;
+  color: #e05a3a;
 }
 
 .btn-delete-public {

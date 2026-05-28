@@ -2793,7 +2793,8 @@ async function checkPartnerInRoomOnInit() {
   try { battles = await loadMyBattles(); } catch (e) { return; }
   if (!battles?.length) return;
 
-  const activeBattles = battles.filter(b => b.status !== 'done');
+  // 공개 배틀방은 friend battle watch 시스템에서 제외 (watchBattle이 공개방 JOIN INSERT에 반응해 battleRoomModal 여는 버그 방지)
+  const activeBattles = battles.filter(b => b.status !== 'done' && !b.is_public);
   if (!activeBattles.length) return;
 
   const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
@@ -4097,7 +4098,7 @@ async function renderPublicBattles() {
   try {
     const { data, error } = await sb
       .from('battles')
-      .select('id, creator_nickname, mode, duration_sec, max_players, created_at, battle_players(nickname)')
+      .select('id, creator_nickname, mode, task_common, duration_sec, max_players, created_at, battle_players(nickname)')
       .eq('is_public', true)
       .eq('status', 'waiting')
       .order('created_at', { ascending: false })
@@ -4273,11 +4274,12 @@ function renderPublicLobby(battle, players) {
   const allReady  = players.length >= 2 && players.every(p => p.is_ready);
   const waiting   = players.length < 2;
 
-  // 나가기/닫기 버튼 텍스트 동적 변경 (방장=창만 닫기, 일반=방 나가기)
+  // "닫기": 항상 창만 닫기 (방·채널 유지)
+  // "방 나가기": 비방장만 표시 — 실제로 방에서 제거
   const $leaveBtn = document.getElementById('pubLobbyLeaveBtn');
-  if ($leaveBtn) {
-    $leaveBtn.textContent = myPlayer?.is_creator ? '닫기' : '나가기';
-  }
+  const $quitBtn  = document.getElementById('pubLobbyQuitBtn');
+  if ($leaveBtn) $leaveBtn.textContent = '닫기';
+  if ($quitBtn)  $quitBtn.style.display = myPlayer?.is_creator ? 'none' : '';
 
   if ($readyBtn) {
     if (myPlayer?.is_ready) {
@@ -4309,25 +4311,32 @@ function subscribePublicLobby(battleId) {
   if (publicLobbyChannel && sb) { sb.removeChannel(publicLobbyChannel); publicLobbyChannel = null; }
   if (!sb) return;
 
+  async function _refreshLobbyPlayers() {
+    const { data: players } = await sb.from('battle_players')
+      .select('*').eq('battle_id', battleId).order('created_at', { ascending: true });
+    if (!publicLobbyBattle) return;
+
+    currentBattleData = { battle: publicLobbyBattle, players: players ?? [] };
+    renderPublicLobby(publicLobbyBattle, players ?? []);
+
+    // 전원 레디 → 방장만 카운트다운 트리거
+    const allReady = (players?.length >= 2) && players.every(p => p.is_ready);
+    const isCreator = players?.find(p => p.nickname === myNickname)?.is_creator;
+    if (allReady && isCreator && !isStartingPublicLobby) {
+      startPublicLobbyCountdown(false);
+    }
+  }
+
   publicLobbyChannel = sb.channel(`pub-lobby-${battleId}`)
-    // battle_players 변경(참여·레디) 감지
+    // battle_players 변경(참여·레디·나가기) 감지
     .on('postgres_changes',
       { event: '*', schema: 'public', table: 'battle_players', filter: `battle_id=eq.${battleId}` },
-      async () => {
-        const { data: players } = await sb.from('battle_players')
-          .select('*').eq('battle_id', battleId).order('created_at', { ascending: true });
-        if (!publicLobbyBattle) return;
-
-        currentBattleData = { battle: publicLobbyBattle, players: players ?? [] };
-        renderPublicLobby(publicLobbyBattle, players ?? []);
-
-        // 전원 레디 → 방장만 카운트다운 트리거
-        const allReady = (players?.length >= 2) && players.every(p => p.is_ready);
-        const isCreator = players?.find(p => p.nickname === myNickname)?.is_creator;
-        if (allReady && isCreator && !isStartingPublicLobby) {
-          startPublicLobbyCountdown(false);
-        }
-      }
+      () => _refreshLobbyPlayers()
+    )
+    // battles 업데이트 감지 (참가자 나가기 시 battles.updated_at 업데이트 → 즉시 반영)
+    .on('postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'battles', filter: `id=eq.${battleId}` },
+      () => _refreshLobbyPlayers()
     )
     // 수신자: 방장의 카운트다운 시작 신호 수신
     .on('broadcast', { event: 'pub-lobby-start' }, async () => {
@@ -4421,11 +4430,17 @@ async function closePublicLobby(deleteRoom = false, leaveRoom = false) {
     _cleanupLobbyState();
     renderPublicBattles();
   } else if (leaveRoom && publicLobbyBattleId && sb && myNickname) {
+    const leavingBattleId = publicLobbyBattleId;
     // 일반 참여자 — 내 행만 삭제
     await sb.from('battle_players')
       .delete()
-      .eq('battle_id', publicLobbyBattleId)
+      .eq('battle_id', leavingBattleId)
       .eq('nickname', myNickname);
+    // battles.updated_at 업데이트 → 남은 참가자들의 battles 구독 트리거 → 즉시 UI 반영
+    sb.from('battles')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', leavingBattleId)
+      .then();
     _cleanupLobbyState();
   }
   // 방장이 그냥 닫기: 아무것도 안 함 (publicLobbyBattleId·channel 유지)
@@ -4435,17 +4450,17 @@ async function closePublicLobby(deleteRoom = false, leaveRoom = false) {
 // 로비 버튼 이벤트
 (function initPublicLobbyEvents() {
   document.getElementById('pubLobbyReadyBtn')?.addEventListener('click', togglePublicReady);
+
+  // "닫기" — 방장·참가자 모두: 창만 닫고 채널·상태 유지 (나중에 다시 열 수 있음)
   document.getElementById('pubLobbyLeaveBtn')?.addEventListener('click', async () => {
-    const myPlayer = currentBattleData?.players?.find(p => p.nickname === myNickname);
-    if (myPlayer?.is_creator) {
-      // 방장: 창만 닫기 (방·채널 유지, 나중에 "로비 열기"로 돌아올 수 있음)
-      await closePublicLobby(false, false);
-      renderPublicBattles(); // "로비 열기" 버튼 반영
-    } else {
-      // 일반 참여자: 방에서 나가기
-      if (!confirm('방을 나가면 다시 입장해야 해요. 계속할까요?')) return;
-      await closePublicLobby(false, true);
-    }
+    await closePublicLobby(false, false);
+    renderPublicBattles(); // "로비 열기" 버튼 반영
+  });
+
+  // "방 나가기" — 비방장 전용: 방에서 실제로 나가기
+  document.getElementById('pubLobbyQuitBtn')?.addEventListener('click', async () => {
+    if (!confirm('방을 나가면 다시 참가해야 해요. 나가시겠어요?')) return;
+    await closePublicLobby(false, true);
     renderMyBattles();
   });
 })();
@@ -4717,10 +4732,9 @@ async function openBattleResult(battleId) {
   const modeLabel = battle.mode === 'common' ? '🍅 TOM MODE' : '🎲 MOTO MODE';
   $battleResultSummary.textContent = `${modeLabel} · ${minutes}분 · ${battle.task_common || '각자 랜덤 가챠'}`;
 
-  const creator = players.find(p => p.is_creator);
-  const friend = players.find(p => !p.is_creator);
+  const isPublicBattle = battle.is_public && players.length > 2;
 
-  function playerCard(player) {
+  function playerCard(player, showRole = true) {
     if (!player) {
       return `<div class="battle-result-card empty">
         <div class="battle-result-nick">—</div>
@@ -4729,7 +4743,7 @@ async function openBattleResult(battleId) {
       </div>`;
     }
     const isMe = player.nickname === myNickname;
-    const roleLabel = isMe ? '나' : '상대방';
+    const roleLabel = isMe ? '나' : (player.is_creator ? '방장' : '참가자');
     const proofHtml = player.proof_url
       ? `<img class="battle-result-img" src="${escapeHtml(player.proof_url)}" alt="인증샷">`
       : `<div class="battle-result-proof empty-proof">인증샷 없음</div>`;
@@ -4738,18 +4752,31 @@ async function openBattleResult(battleId) {
       : '';
     return `<div class="battle-result-card${isMe ? ' is-me' : ''}">
       <div class="battle-result-nick">${escapeHtml(player.nickname)}</div>
-      <div class="battle-result-role">${roleLabel}</div>
+      ${showRole ? `<div class="battle-result-role">${roleLabel}</div>` : ''}
       ${proofHtml}
       ${noteHtml}
       ${player.proof_uploaded_at ? `<div class="battle-result-time">${new Date(player.proof_uploaded_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</div>` : ''}
     </div>`;
   }
 
-  $battleResultPlayers.innerHTML = `
-    ${playerCard(creator)}
-    <div class="battle-vs">VS</div>
-    ${playerCard(friend)}
-  `;
+  if (isPublicBattle) {
+    // 공개 배틀 3명+ — 나 우선, 나머지 순서대로 그리드 표시
+    const me = players.find(p => p.nickname === myNickname);
+    const others = players.filter(p => p.nickname !== myNickname);
+    const orderedPlayers = me ? [me, ...others] : players;
+    $battleResultPlayers.className = 'battle-result-players battle-result-players--grid';
+    $battleResultPlayers.innerHTML = orderedPlayers.map(p => playerCard(p, true)).join('');
+  } else {
+    // 1:1 친구 배틀 — 기존 VS 레이아웃
+    const creator = players.find(p => p.is_creator);
+    const friend  = players.find(p => !p.is_creator);
+    $battleResultPlayers.className = 'battle-result-players';
+    $battleResultPlayers.innerHTML = `
+      ${playerCard(creator, false)}
+      <div class="battle-vs">VS</div>
+      ${playerCard(friend, false)}
+    `;
+  }
 }
 
 $battleResultCloseBtn.addEventListener('click', () => {
