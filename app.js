@@ -5736,14 +5736,16 @@ function renderAchievementsTab() {
     const meta = TIER_META[tierKey];
     const tierUnlocked = entries.filter(([id]) => all[id]?.unlocked).length;
     const collapsed = collapsedTiers.has(tierKey);
-    html += `<div class="ach-section-header${meta.cls ? ' ach-section-header' + meta.cls : ''}${isFirst ? ' ach-section-header--first' : ''}${collapsed ? ' ach-section-header--collapsed' : ''}"
-      role="button" tabindex="0" data-tier="${tierKey}" aria-expanded="${!collapsed}">
-      ${CHEVRON}
-      <span class="ach-section-icon">${meta.icon}</span>
-      <span class="ach-section-label">${meta.label}</span>
-      <span class="ach-section-count">${tierUnlocked} / ${entries.length}</span>
+    html += `<div class="ach-tier${isFirst ? ' ach-tier--first' : ''}">
+      <div class="ach-section-header${meta.cls ? ' ach-section-header' + meta.cls : ''}${collapsed ? ' ach-section-header--collapsed' : ''}"
+        role="button" tabindex="0" data-tier="${tierKey}" aria-expanded="${!collapsed}">
+        ${CHEVRON}
+        <span class="ach-section-icon">${meta.icon}</span>
+        <span class="ach-section-label">${meta.label}</span>
+        <span class="ach-section-count">${tierUnlocked} / ${entries.length}</span>
+      </div>
+      ${collapsed ? '' : `<div class="ach-tier-grid">${entries.map(([id, def]) => renderCard(id, def)).join('')}</div>`}
     </div>`;
-    if (!collapsed) html += entries.map(([id, def]) => renderCard(id, def)).join('');
     isFirst = false;
   }
 

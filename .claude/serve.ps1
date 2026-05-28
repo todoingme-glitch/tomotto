@@ -7,7 +7,7 @@ while ($listener.IsListening) {
     $ctx = $listener.GetContext()
     $path = $ctx.Request.Url.LocalPath.TrimStart('/')
     if (-not $path) { $path = 'index.html' }
-    $file = Join-Path "C:\Users\tong\Desktop\Tomotto" ($path -replace '/', '\')
+    $file = Join-Path "C:\Users\user\Documents\GitHub\tomotto" ($path -replace '/', '\')
     if (Test-Path $file) {
       $ext = [System.IO.Path]::GetExtension($file).ToLower()
       $mime = switch($ext) {

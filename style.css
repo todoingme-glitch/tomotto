@@ -4110,14 +4110,20 @@ dialog.modal input[type="text"]:focus {
   transform: translateY(8px) rotate(-180deg);
 }
 .achievement-grid {
+  display: flex;
+  flex-direction: column;
+  margin-top: 12px;
+}
+.ach-tier { display: flex; flex-direction: column; }
+.ach-tier--first .ach-section-header { margin-top: 0; }
+.ach-tier-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
-  margin-top: 12px;
+  padding-top: 8px;
 }
 /* 업적 티어 섹션 헤더 */
 .ach-section-header {
-  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -4127,7 +4133,7 @@ dialog.modal input[type="text"]:focus {
   cursor: pointer;
   user-select: none;
 }
-.ach-section-header--first { margin-top: 0; }
+
 .ach-section-header:hover { opacity: 0.75; }
 .ach-section-chevron {
   width: 10px;
@@ -4237,7 +4243,7 @@ dialog.modal input[type="text"]:focus {
   font-weight: 600;
 }
 @media (max-width: 480px) {
-  .achievement-grid {
+  .ach-tier-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 6px;
     grid-auto-rows: minmax(96px, auto);
@@ -4291,18 +4297,18 @@ dialog.modal input[type="text"]:focus {
 }
 /* 숨겨진 업적 변형 */
 .achievement-toast--secret {
-  background: #1a1a2e;
-  border-color: #7c3aed;
-  box-shadow: 0 4px 20px rgba(124,58,237,0.3), 0 0 0 1px rgba(124,58,237,0.15);
+  background: #ede9fe;
+  border-color: #a78bfa;
+  box-shadow: 0 4px 20px rgba(124,58,237,0.2), 0 0 0 1px rgba(167,139,250,0.3);
 }
 .achievement-toast--secret .achievement-toast-label {
-  color: #a78bfa;
+  color: #5b21b6;
 }
 .achievement-toast--secret .achievement-toast-name {
-  color: #f5f3ff;
+  color: #1e0a3c;
 }
 .achievement-toast--secret .achievement-toast-desc {
-  color: #c4b5fd;
+  color: #4c1d95;
 }
 .achievement-toast-icon {
   font-size: 2rem;
@@ -4365,7 +4371,7 @@ dialog.modal input[type="text"]:focus {
   line-height: 1.4;
 }
 .achievement-toast--secret .ach-toast-quote {
-  color: #c4b5fd;
+  color: #5b21b6;
 }
 
 /* ── 칭호 배지 (v0.1.71) ────────────────────────────────── */
