@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.88 — 가챠 뽀모도로
+// Tomotto v0.1.90 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -3599,7 +3599,25 @@ async function upsertPresence(isFocusing) {
   }
   const { error } = await sb.from('user_presence')
     .upsert(payload, { onConflict: 'nickname' });
-  if (error) console.warn('[presence] upsert 실패:', error.message);
+  if (error) {
+    if (error.code === '42703') {
+      // title_emoji 컬럼 미존재 → title_emoji만 제거 후 재시도
+      const { title_emoji, ...noEmoji } = payload;
+      const { error: e2 } = await sb.from('user_presence')
+        .upsert(noEmoji, { onConflict: 'nickname' });
+      if (e2?.code === '42703') {
+        // status_public도 없음 → 최소 필드로 최종 재시도
+        const { status_public, ...minimal } = noEmoji;
+        const { error: e3 } = await sb.from('user_presence')
+          .upsert(minimal, { onConflict: 'nickname' });
+        if (e3) console.warn('[presence] upsert 실패 (minimal):', e3.message);
+      } else if (e2) {
+        console.warn('[presence] upsert 실패 (no emoji):', e2.message);
+      }
+    } else {
+      console.warn('[presence] upsert 실패:', error.message);
+    }
+  }
 }
 
 // 내부 함수 — 실제 인터벌 시작 (endTime 기반)
@@ -4010,7 +4028,7 @@ async function renderLeaderboard() {
     const countColor = rank <= 3 ? 'color:var(--accent);' : '';
     const meBadge = isMe ? '<span class="lb-me-badge">나</span>' : '';
     const titleEmoji = isMe ? (getCurrentTitle()?.emoji || '') : '';
-    const dispNick = isMobile ? truncEnd(nick, 12) : nick;
+    const dispNick = isMobile ? truncEnd(nick, 18) : nick;
     const nickText = titleEmoji ? `${titleEmoji} ${escapeHtml(dispNick)}` : escapeHtml(dispNick);
     return `
       <div class="lb-row${isMe ? ' lb-row-me' : ''}">
@@ -4064,13 +4082,22 @@ async function renderFocusFeed() {
       .order('updated_at', { ascending: false });
 
     if (error?.code === '42703') {
-      // title_emoji 컬럼 없음 → 닉네임만 조회
+      // title_emoji 컬럼 없음 → 닉네임만 조회 (status_public 필터는 유지)
       const r2 = await sb.from('user_presence')
         .select('nickname')
         .eq('is_focusing', true)
         .eq('status_public', true)
         .order('updated_at', { ascending: false });
-      rows = r2.data ?? [];
+      if (r2.error?.code === '42703') {
+        // status_public도 없음 → 필터 없이 최종 조회
+        const r3 = await sb.from('user_presence')
+          .select('nickname')
+          .eq('is_focusing', true)
+          .order('updated_at', { ascending: false });
+        rows = r3.data ?? [];
+      } else {
+        rows = r2.data ?? [];
+      }
     } else if (data) {
       rows = data;
     }
@@ -4145,7 +4172,7 @@ async function renderPublicBattles() {
   try {
     const { data, error } = await sb
       .from('battles')
-      .select('id, creator_nickname, mode, task_common, duration_sec, max_players, created_at, battle_players(nickname)')
+      .select('id, creator_nickname, mode, task_common, duration_sec, max_players, created_at, battle_players(nickname, is_ready)')
       .eq('is_public', true)
       .eq('status', 'waiting')
       .order('created_at', { ascending: false })
@@ -4190,17 +4217,23 @@ async function renderPublicBattles() {
         <button class="btn-mini btn-hide-battle${isHidden ? ' btn-hide-battle--active' : ''}" data-battle-id="${b.id}" type="button">${isHidden ? '보이기' : '숨기기'}</button>
         <button class="btn-mini btn-report-battle" data-battle-id="${b.id}" data-creator="${escapeHtml(b.creator_nickname)}" type="button">🚩</button>`;
     } else if (isMe) {
-      // 방장: 내가 로비에서 준비 완료를 눌렀으면 초록 "준비 완료", 아니면 회색 "대기 중"
-      const inLobby = (publicLobbyBattleId === b.id);
-      const meReady = inLobby &&
-        currentBattleData?.players?.find(p => p.nickname === myNickname && p.is_creator)?.is_ready === true;
-      actionHtml = meReady
-        ? `<button class="btn-mini btn-mini-green btn-reopen-lobby" data-battle-id="${b.id}" type="button">준비 완료</button>`
+      // 방장: 본인 제외 전원 준비 완료 시 초록, 아니면 회색
+      const bPlayers = b.battle_players ?? [];
+      const others = bPlayers.filter(p => p.nickname !== myNickname);
+      const allOthersReady = others.length > 0 && others.every(p => p.is_ready);
+      actionHtml = allOthersReady
+        ? `<button class="btn-mini btn-mini-green btn-reopen-lobby" data-battle-id="${b.id}" type="button">준비 완료!</button>`
         : `<button class="btn-mini btn-reopen-lobby" data-battle-id="${b.id}" type="button">대기 중</button>`;
-    } else if (isFull) {
-      actionHtml = '<span class="pb-full">마감</span>';
     } else {
-      actionHtml = `<button class="btn-mini btn-join-public" data-battle-id="${b.id}" type="button">참여하기</button>`;
+      // 참여자: battle_players에 내 닉네임이 있으면 이미 방에 있는 것 → '대기 중'
+      const imParticipant = (b.battle_players ?? []).some(p => p.nickname === myNickname);
+      if (imParticipant) {
+        actionHtml = `<button class="btn-mini btn-join-public btn-reopen-lobby" data-battle-id="${b.id}" type="button">대기 중</button>`;
+      } else if (isFull) {
+        actionHtml = '<span class="pb-full">마감</span>';
+      } else {
+        actionHtml = `<button class="btn-mini btn-join-public" data-battle-id="${b.id}" type="button">참여하기</button>`;
+      }
     }
 
     // 삭제 버튼: 편집 모드일 때만 방장 카드에 표시
