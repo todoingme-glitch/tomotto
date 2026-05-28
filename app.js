@@ -3765,6 +3765,7 @@ function finishTimer() {
     durationSec: timer.duration,
     type: activeBattleId ? 'battle' : 'solo',
     battleMode: currentBattleData?.battle?.mode || null,
+    isPublic: currentBattleData?.battle?.is_public || false,
     partner: battlePartner?.partnerNick || null,
     note: null,   // 소감은 저장 버튼 클릭 시 updateLatestLogNote()로 채워짐
     completedAt: _now,
@@ -3906,7 +3907,7 @@ async function renderLeaderboard() {
 
   const now = new Date();
   const periodKey = lbPeriod === 'week' ? getWeekKey(now) : getMonthKey(now);
-  const TOP_N = 50;
+  const TOP_N = 10;
 
   let rows = [];
   try {
@@ -4165,6 +4166,7 @@ async function openPublicLobby(battleId) {
       is_ready: false,
     });
     if (error) { alert('참여 실패: ' + error.message); return; }
+    unlockAchievement('F-2');   // 공개방 첫 참여
     const r = await sb.from('battle_players').select('*').eq('battle_id', battleId).order('created_at', { ascending: true });
     players = r.data ?? players;
   }
@@ -4437,6 +4439,7 @@ function subscribePublicBattles() {
     try {
       await saveBattle(battle);
       addToMyBattles(battle);
+      unlockAchievement('F-1');   // 공개방 첫 생성
       await renderMyBattles();
       await renderPublicBattles();
       // 만든 직후 로비 열기 (subscribeWatchBattle 대신 publicLobby 구독)
@@ -4993,6 +4996,14 @@ const ACHIEVEMENT_DEFS = {
   'D-7': { name: '새벽 농장',       desc: '새벽에도 함께 집중했어요',              cond: '새벽 1~5시 배틀 완료',          icon: '🌙', tier: 'rare',   hidden: false },
   'D-8': { name: '오늘도 같이',     desc: '7일 안에 3번 배틀했어요',               cond: '7일 이내 배틀 완료 3회',        icon: '🗓️', tier: 'normal', hidden: false },
 
+  // ── F. 공개 배틀 계열 ────────────────────────────────
+  'F-1': { name: '공개방 개설자',    desc: '첫 공개 배틀방을 만들었어요!',         cond: '공개 배틀방 첫 생성',              icon: '🏟️', tier: 'normal', hidden: false },
+  'F-2': { name: '낯선 배틀',       desc: '공개 배틀방에 처음 참여했어요!',        cond: '공개 배틀방 첫 참여',              icon: '🚪', tier: 'normal', hidden: false },
+  'F-3': { name: '공개 배틀 완주',  desc: '공개 배틀을 처음 완료했어요',           cond: '공개 배틀 첫 완료',                icon: '🎉', tier: 'normal', hidden: false },
+  'F-4': { name: '셋이서 집중',     desc: '3명 이상이서 함께 달렸어요',             cond: '3인 이상 공개 배틀 완료',          icon: '👥', tier: 'normal', hidden: false },
+  'F-5': { name: '단골 공개방',     desc: '공개 배틀을 5번이나 완료했어요',        cond: '공개 배틀 완료 5회',               icon: '🔄', tier: 'rare',   hidden: false },
+  'F-6': { name: '만원 사례',       desc: '10명이 꽉 찬 방에서 완주했어요!',       cond: '10명 공개 배틀 완료',              icon: '🎪', tier: 'rare',   hidden: false },
+
   // ── E. 숨겨진 업적 ────────────────────────────────────
   'E-1': { name: '잠깐만요 진짜 잠깐', desc: '타이머 켜놓고 딴 짓 했죠?',          cond: '타이머 실행 중 탭 전환 5회',       icon: '👀', tier: 'hidden', hidden: true  },
   'E-2': { name: '거의 다 왔는데',  desc: '10초 남기고 도망쳤어요',               cond: '10초 이하 남기고 취소',            icon: '🏃', tier: 'hidden', hidden: true  },
@@ -5343,6 +5354,24 @@ function checkAchievementsOnTimerComplete() {
     const sevenDaysAgo = Date.now() - 7 * 24 * 3600 * 1000;
     const recentBattles = logs.filter(l => l.type === 'battle' && (l.completedAt || 0) >= sevenDaysAgo).length;
     if (recentBattles + 1 >= 3) unlockAchievement('D-8');
+  }
+
+  // ── F: 공개 배틀 계열 ────────────────────────────────────
+  if (activeBattleId && currentBattleData?.battle?.is_public) {
+    const pubPlayers = currentBattleData.players ?? [];
+    const pubBattleLogs = logs.filter(l => l.type === 'battle' && l.isPublic);
+
+    // F-3: 공개 배틀 첫 완료
+    if (pubBattleLogs.length === 0) unlockAchievement('F-3');
+
+    // F-4: 3명 이상 공개 배틀 완료
+    if (pubPlayers.length >= 3) unlockAchievement('F-4');
+
+    // F-5: 공개 배틀 완료 5회
+    if (pubBattleLogs.length + 1 >= 5) unlockAchievement('F-5');
+
+    // F-6: 10명 만원 배틀 완료
+    if (pubPlayers.length >= 10) unlockAchievement('F-6');
   }
 
   // ── B-9~12 / C-7: 추가 희귀 업적 ────────────────────────
