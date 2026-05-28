@@ -3689,12 +3689,12 @@ async function upsertPresence(isFocusing) {
   const { error } = await sb.from('user_presence')
     .upsert(payload, { onConflict: 'nickname' });
   if (error) {
-    if (error.code === '42703') {
+    if (error.code === '42703' || error.code === 'PGRST204') {
       // title_emoji 컬럼 미존재 → title_emoji만 제거 후 재시도
       const { title_emoji, ...noEmoji } = payload;
       const { error: e2 } = await sb.from('user_presence')
         .upsert(noEmoji, { onConflict: 'nickname' });
-      if (e2?.code === '42703') {
+      if (e2?.code === '42703' || e2?.code === 'PGRST204') {
         // status_public도 없음 → 최소 필드로 최종 재시도
         const { status_public, ...minimal } = noEmoji;
         const { error: e3 } = await sb.from('user_presence')
@@ -4171,14 +4171,14 @@ async function renderFocusFeed() {
       .or('status_public.is.null,status_public.eq.true')
       .order('updated_at', { ascending: false });
 
-    if (error?.code === '42703') {
+    if (error?.code === '42703' || error?.code === 'PGRST204') {
       // title_emoji 컬럼 없음 → 닉네임만 조회
       const r2 = await sb.from('user_presence')
         .select('nickname')
         .eq('is_focusing', true)
         .or('status_public.is.null,status_public.eq.true')
         .order('updated_at', { ascending: false });
-      if (r2.error?.code === '42703') {
+      if (r2.error?.code === '42703' || r2.error?.code === 'PGRST204') {
         // status_public 컬럼 없음 → 필터 없이 최종 조회
         const r3 = await sb.from('user_presence')
           .select('nickname')
