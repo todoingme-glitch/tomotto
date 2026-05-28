@@ -3327,14 +3327,14 @@ dialog.modal input[type="text"]:focus {
   flex-shrink: 0;
   margin-right: 6px;
   transition: transform 0.25s ease, color 0.2s;
-  transform: translateY(0);
+  transform: translateY(-3px);
 }
 .achievement-header:hover .ach-chevron {
   color: var(--accent);
 }
 /* aria-expanded="false" 이면 위로 회전 (접힌 상태) */
 .achievement-header[aria-expanded="false"] .ach-chevron {
-  transform: translateY(0) rotate(-180deg);
+  transform: translateY(3px) rotate(-180deg);
 }
 .achievement-grid {
   display: grid;
