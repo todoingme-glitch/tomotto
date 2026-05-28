@@ -320,6 +320,7 @@
 
     <!-- 탭 패널 : 리그 -->
     <div class="tab-panel tab-panel-hidden" id="tab-league">
+      <!-- A: 글로벌 랭킹 -->
       <section class="card league-section">
         <div class="league-header">
           <h2 class="league-title">글로벌 랭킹</h2>
@@ -329,6 +330,25 @@
           </div>
         </div>
         <div id="leagueBody" class="lb-body">
+          <p class="lb-loading">불러오는 중···</p>
+        </div>
+      </section>
+
+      <!-- B: 집중 피드 -->
+      <section class="card focus-feed-section">
+        <h2 class="focus-feed-title">지금 집중 중 <span class="focus-feed-count-badge" id="focusFeedCount">0</span></h2>
+        <div id="focusFeedBody" class="focus-feed-body">
+          <p class="lb-loading">불러오는 중···</p>
+        </div>
+      </section>
+
+      <!-- C: 공개 배틀방 -->
+      <section class="card public-battle-section">
+        <div class="public-battle-header">
+          <h2 class="public-battle-title">공개 배틀방</h2>
+          <button id="createPublicBattleBtn" class="btn-mini btn-mini-accent" type="button">+ 만들기</button>
+        </div>
+        <div id="publicBattleBody" class="lb-body">
           <p class="lb-loading">불러오는 중···</p>
         </div>
       </section>
@@ -468,6 +488,49 @@
     <div class="modal-actions modal-battle-create-actions">
       <button id="battleCreateCancelBtn" class="btn-modal btn-modal-secondary" type="button">취소</button>
       <button id="battleCreateConfirmBtn" class="btn-modal btn-modal-primary" type="button">만들기</button>
+    </div>
+  </dialog>
+
+  <!-- v0.1.79 C — 공개 배틀방 만들기 모달 -->
+  <dialog id="publicBattleCreateModal" class="modal modal-battle">
+    <h3>공개 배틀방 만들기</h3>
+
+    <div class="field">
+      <label>모드 선택</label>
+      <div class="battle-mode-options">
+        <label class="battle-mode-option">
+          <input type="radio" name="pubBattleMode" value="common" checked>
+          <span class="battle-mode-card">
+            <strong>🍅 TOM MODE</strong>
+            <small>같은 목표로 같이 집중!</small>
+          </span>
+        </label>
+        <label class="battle-mode-option">
+          <input type="radio" name="pubBattleMode" value="separate">
+          <span class="battle-mode-card">
+            <strong>🎲 MOTO MODE</strong>
+            <small>각자 랜덤 가챠로 승부!</small>
+          </span>
+        </label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>시간 설정</label>
+      <select id="pubBattleDuration">
+        <option value="1500" selected>25분 (기본)</option>
+        <option value="2700">45분</option>
+        <option value="3600">60분</option>
+        <option value="600">10분 (짧게)</option>
+        <option value="30">30초 (테스트)</option>
+      </select>
+    </div>
+
+    <p class="modal-hint">공개 방은 누구나 참여할 수 있어요.</p>
+
+    <div class="modal-actions">
+      <button id="pubBattleCancelBtn" class="btn-modal btn-modal-secondary" type="button">취소</button>
+      <button id="pubBattleConfirmBtn" class="btn-modal btn-modal-primary" type="button">공개 방 만들기</button>
     </div>
   </dialog>
 

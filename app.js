@@ -2714,7 +2714,7 @@ loadNickname(); // v0.1.65 — IIFE보다 먼저 실행해서 리더보드 첫 �
     localStorage.setItem(TAB_STORAGE_KEY, tabId);
     // v0.1.32 — 소셜 탭으로 전환 시 배틀카드 상태 즉시 갱신 (timer.isRunning 반영)
     if (tabId === 'social') { renderMyBattles(); renderLeaderboard(); }
-    if (tabId === 'league') { renderLeagueRanking(); }
+    if (tabId === 'league') { renderLeagueRanking(); renderFocusFeed(); renderPublicBattles(); }
     // v0.1.33 — 기록 탭으로 전환 시 캘린더 갱신
     // v0.1.70 fix — renderAchievementsTab은 ACHIEVEMENT_DEFS가 선언된 후(스크립트 파싱 완료 후)
     // 실행돼야 함. 탭 초기화 IIFE에서 호출 시 TDZ 에러 방지를 위해 setTimeout(0) 사용.
@@ -2870,6 +2870,8 @@ window.addEventListener('load', () => {
     renderLogCalendar();
   } else if (_activeTab === 'league') {
     renderLeagueRanking();
+    renderFocusFeed();
+    renderPublicBattles();
   } else {
     renderMyBattles();
   }
@@ -2877,6 +2879,8 @@ window.addEventListener('load', () => {
   initTabIcons();               // v0.1.34 — 탭 아이콘에 실제 로고 얼굴 주입
   checkInAppBrowser();          // v0.1.40 — 인앱 브라우저 감지
   initAchievementAccordion();   // v0.1.69 — 업적 아코디언 상태 복원
+  subscribeFocusFeed();         // v0.1.79 B — 집중 피드 실시간 구독
+  subscribePublicBattles();     // v0.1.79 C — 공개 배틀방 실시간 구독
 
   const params = new URLSearchParams(location.search);
   const battleId = params.get('battle');
@@ -4125,6 +4129,192 @@ document.querySelectorAll('.league-period-btn').forEach(btn => {
     renderLeagueRanking();
   });
 });
+
+// =====================================================
+// v0.1.79 B — 집중 피드 (리그 탭)
+// =====================================================
+
+let focusFeedChannel = null;
+
+async function renderFocusFeed() {
+  const $body = document.getElementById('focusFeedBody');
+  const $count = document.getElementById('focusFeedCount');
+  if (!$body) return;
+
+  if (!sb) {
+    $body.innerHTML = '<p class="lb-empty">오프라인 상태입니다.</p>';
+    return;
+  }
+
+  let rows = [];
+  try {
+    const { data } = await sb
+      .from('user_presence')
+      .select('nickname, updated_at')
+      .eq('is_focusing', true)
+      .eq('status_public', true)
+      .order('updated_at', { ascending: false });
+    if (data) rows = data;
+  } catch {}
+
+  if ($count) $count.textContent = rows.length;
+
+  if (!rows.length) {
+    $body.innerHTML = '<p class="lb-empty">지금 집중 중인 유저가 없어요. 첫 번째로 시작해보세요!</p>';
+    return;
+  }
+
+  const isMobile = window.matchMedia?.('(max-width: 480px)').matches ?? false;
+  $body.innerHTML = '<div class="focus-chips">' + rows.map(r => {
+    const isMe = r.nickname === myNickname;
+    const dispNick = isMobile ? truncEnd(r.nickname, 10) : r.nickname;
+    return `<div class="focus-chip${isMe ? ' focus-chip-me' : ''}">🍅 ${escapeHtml(dispNick)}${isMe ? ' <span class="lb-me-badge">나</span>' : ''}</div>`;
+  }).join('') + '</div>';
+}
+
+function subscribeFocusFeed() {
+  if (!sb) return;
+  if (focusFeedChannel) { sb.removeChannel(focusFeedChannel); focusFeedChannel = null; }
+  focusFeedChannel = sb.channel('focus-feed-global')
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'user_presence' },
+      () => {
+        if (!document.getElementById('tab-league')?.classList.contains('tab-panel-hidden')) {
+          renderFocusFeed();
+        }
+      }
+    )
+    .subscribe();
+}
+
+// =====================================================
+// v0.1.79 C — 공개 배틀방 (리그 탭)
+// =====================================================
+
+let publicBattleChannel = null;
+
+async function renderPublicBattles() {
+  const $body = document.getElementById('publicBattleBody');
+  if (!$body) return;
+
+  if (!sb) {
+    $body.innerHTML = '<p class="lb-empty">오프라인 상태입니다.</p>';
+    return;
+  }
+
+  let rows = [];
+  let colMissing = false;
+  try {
+    const { data, error } = await sb
+      .from('battles')
+      .select('id, creator_nickname, mode, duration_sec, created_at')
+      .eq('is_public', true)
+      .eq('status', 'waiting')
+      .order('created_at', { ascending: false })
+      .limit(20);
+    if (error) {
+      if (error.message?.includes('is_public') || error.code === '42703') colMissing = true;
+    } else if (data) {
+      rows = data;
+    }
+  } catch {}
+
+  if (colMissing) {
+    $body.innerHTML = `<p class="lb-empty lb-empty-code">Supabase SQL 에디터에서 아래를 실행해주세요:<br><code>ALTER TABLE battles ADD COLUMN is_public boolean DEFAULT false;</code></p>`;
+    return;
+  }
+
+  if (!rows.length) {
+    $body.innerHTML = '<p class="lb-empty">공개 배틀방이 없어요. 먼저 만들어보세요!</p>';
+    return;
+  }
+
+  $body.innerHTML = rows.map(b => {
+    const isMe = b.creator_nickname === myNickname;
+    const modeLabel = b.mode === 'common' ? '🍅 TOM' : '🎲 MOTO';
+    const mins = Math.round(b.duration_sec / 60);
+    const nick = escapeHtml(truncEnd(b.creator_nickname, 12));
+    return `<div class="public-battle-row${isMe ? ' lb-row-me' : ''}">
+      <span class="pb-mode">${modeLabel} · ${mins}분</span>
+      <span class="pb-nick">${nick}${isMe ? ' <span class="lb-me-badge">나</span>' : ''}</span>
+      ${isMe
+        ? '<span class="pb-waiting">대기 중···</span>'
+        : `<button class="btn-mini btn-join-public" data-battle-id="${b.id}" type="button">참여하기</button>`
+      }
+    </div>`;
+  }).join('');
+
+  $body.querySelectorAll('.btn-join-public').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!myNickname) { alert('닉네임을 먼저 설정해주세요.'); return; }
+      openBattleRoom(btn.dataset.battleId);
+    });
+  });
+}
+
+function subscribePublicBattles() {
+  if (!sb) return;
+  if (publicBattleChannel) { sb.removeChannel(publicBattleChannel); publicBattleChannel = null; }
+  publicBattleChannel = sb.channel('public-battles-global')
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'battles' },
+      (payload) => {
+        if ((payload.new?.is_public || payload.old?.is_public) &&
+            !document.getElementById('tab-league')?.classList.contains('tab-panel-hidden')) {
+          renderPublicBattles();
+        }
+      }
+    )
+    .subscribe();
+}
+
+// 공개 방 만들기 모달 이벤트
+(function initPublicBattleModal() {
+  const $modal = document.getElementById('publicBattleCreateModal');
+  const $confirm = document.getElementById('pubBattleConfirmBtn');
+  const $cancel = document.getElementById('pubBattleCancelBtn');
+  if (!$modal) return;
+
+  document.getElementById('createPublicBattleBtn')?.addEventListener('click', () => {
+    if (!myNickname) { alert('닉네임을 먼저 설정해주세요.'); return; }
+    $modal.showModal();
+  });
+
+  $cancel?.addEventListener('click', () => $modal.close());
+
+  $confirm?.addEventListener('click', async () => {
+    const mode = document.querySelector('input[name="pubBattleMode"]:checked')?.value || 'common';
+    const durationSec = parseInt(document.getElementById('pubBattleDuration')?.value || '1500', 10);
+    const taskCommon = mode === 'common' ? (currentTask || null) : null;
+
+    const battleId = makeBattleId();
+    const battle = {
+      id: battleId,
+      creator_nickname: myNickname,
+      mode,
+      task_common: taskCommon,
+      duration_sec: durationSec,
+      status: 'waiting',
+      is_public: true,
+      created_at: new Date().toISOString(),
+    };
+
+    $modal.close();
+    $confirm.disabled = true;
+
+    try {
+      await saveBattle(battle);
+      addToMyBattles(battle);
+      subscribeWatchBattle(battleId);
+      await renderMyBattles();
+      await renderPublicBattles();
+    } catch (e) {
+      alert('공개 방 만들기 실패: ' + (e.message || e));
+    } finally {
+      $confirm.disabled = false;
+    }
+  });
+})();
 
 // 탭 이탈/복귀 처리
 document.addEventListener('visibilitychange', () => {
