@@ -2087,41 +2087,49 @@ dialog.modal input[type="text"]:focus {
 
 .focus-feed-body { min-height: 48px; }
 
-/* 아바타 버블형 집중 피드 */
-.focus-avatars {
+/* 닉네임 pill 형 집중 피드 */
+.focus-nicks {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   margin-bottom: 10px;
 }
 
-.focus-avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: var(--accent-soft);
-  color: var(--accent-deep, var(--accent));
+.focus-nick-pill {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  font-size: 0.9rem;
-  font-weight: 700;
-  flex-shrink: 0;
-  border: 2px solid transparent;
+  gap: 3px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: var(--bg-surface, #fafafa);
+  border: 1.5px solid var(--border-soft);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-main);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   cursor: default;
 }
 
-.focus-avatar-me {
-  background: var(--accent);
-  color: #fff;
+/* 나 — 배경 채우기 대신 붉은 테두리로 구분 */
+.focus-nick-pill-me {
   border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 700;
 }
 
-.focus-avatar-extra {
-  background: var(--bg-surface, #f5f0ed);
+.focus-nick-pill-extra {
+  border-style: dashed;
   color: var(--text-muted);
   font-size: 0.75rem;
-  border: 1.5px dashed var(--border-soft);
+}
+
+.focus-nick-title {
+  font-size: 0.85em;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .focus-count-text {
@@ -2162,30 +2170,39 @@ dialog.modal input[type="text"]:focus {
 
 /* 공개방 모달 — TOM MODE 전용 */
 .pub-battle-mode-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 20px;
+  display: block;
+  width: 100%;
+  padding: 10px 14px 12px;
+  border-radius: 8px;
   background: var(--accent-soft);
-  color: var(--accent);
-  font-size: 0.82rem;
+  border: 1.5px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  margin-bottom: 14px;
+  box-sizing: border-box;
+}
+
+.pub-battle-mode-label {
+  font-size: 0.75rem;
   font-weight: 700;
+  color: var(--accent);
   margin-bottom: 6px;
 }
 
 .pub-battle-task-preview {
-  font-size: 0.82rem;
-  margin: 0 0 14px;
-  min-height: 18px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111;
+  margin: 0;
+  min-height: 20px;
+  word-break: keep-all;
 }
 
 .pub-battle-task-preview--set {
-  color: var(--text-muted);
+  color: #111;
 }
 
 .pub-battle-task-preview--empty {
   color: #e05a3a;
+  font-size: 0.82rem;
   font-weight: 600;
 }
 
@@ -2203,22 +2220,48 @@ dialog.modal input[type="text"]:focus {
   border-color: var(--accent);
 }
 
+/* 인원 수 + 시간 설정: 같은 행 */
+.pub-battle-settings-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.pub-battle-settings-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 0;
+}
+
+.pub-battle-settings-item label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.pub-battle-settings-item select {
+  height: 34px;
+  font-size: 0.82rem;
+}
+
 .pub-player-stepper {
   display: flex;
   align-items: center;
   gap: 0;
   border: 1.5px solid var(--border-soft);
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
-  width: fit-content;
+  width: 100%;
+  height: 34px;
 }
 
 .pub-stepper-btn {
-  width: 44px;
-  height: 44px;
+  width: 34px;
+  height: 34px;
   background: var(--bg-card);
   border: none;
-  font-size: 1.3rem;
+  font-size: 1.1rem;
   font-weight: 400;
   color: var(--text-main);
   cursor: pointer;
@@ -2226,21 +2269,21 @@ dialog.modal input[type="text"]:focus {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .pub-stepper-btn:hover:not(:disabled) { background: var(--bg-surface); }
 .pub-stepper-btn:disabled { color: var(--text-muted); cursor: default; opacity: 0.4; }
 
 .pub-stepper-value {
-  min-width: 52px;
+  flex: 1;
   text-align: center;
-  font-size: 1rem;
+  font-size: 0.88rem;
   font-weight: 700;
   color: var(--text-main);
   border-left: 1.5px solid var(--border-soft);
   border-right: 1.5px solid var(--border-soft);
-  padding: 0 8px;
-  line-height: 44px;
+  line-height: 34px;
 }
 
 .public-battle-row {

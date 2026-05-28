@@ -3315,7 +3315,8 @@ function splitCond(cond) {
   const words = cond.split(' ');
   if (words.length < 3) return cond;
   const mid = Math.ceil(words.length / 2);
-  return words.slice(0, mid).join(' ') + '<br>' + words.slice(mid).join(' ');
+  // 공백을 <br> 앞에 유지해야 데스크탑(br display:none)에서 띄어쓰기가 사라지지 않음
+  return words.slice(0, mid).join(' ') + ' <br>' + words.slice(mid).join(' ');
 }
 
 // v0.1.9 — 가챠 카운트는 "이번 사이클 N/3" 표시. 3 도달 → 다음엔 광고 사이클 시작.
@@ -3544,8 +3545,11 @@ async function upsertPresence(isFocusing) {
     is_focusing: isFocusing,
     updated_at: new Date().toISOString(),
   };
-  // 시작 시엔 status_public도 함께 기록
-  if (isFocusing) payload.status_public = isStatusPublic;
+  // 집중 시작 시 상태공개 여부 + 칭호 이모지 함께 기록
+  if (isFocusing) {
+    payload.status_public = isStatusPublic;
+    payload.title_emoji   = getCurrentTitle()?.emoji ?? null;
+  }
   const { error } = await sb.from('user_presence')
     .upsert(payload, { onConflict: 'nickname' });
   if (error) console.warn('[presence] upsert 실패:', error.message);
@@ -4004,13 +4008,25 @@ async function renderFocusFeed() {
 
   let rows = [];
   try {
-    const { data } = await sb
+    // title_emoji 컬럼 포함 쿼리 (없으면 fallback)
+    const { data, error } = await sb
       .from('user_presence')
-      .select('nickname')
+      .select('nickname, title_emoji')
       .eq('is_focusing', true)
       .eq('status_public', true)
       .order('updated_at', { ascending: false });
-    if (data) rows = data;
+
+    if (error?.code === '42703') {
+      // title_emoji 컬럼 없음 → 닉네임만 조회
+      const r2 = await sb.from('user_presence')
+        .select('nickname')
+        .eq('is_focusing', true)
+        .eq('status_public', true)
+        .order('updated_at', { ascending: false });
+      rows = r2.data ?? [];
+    } else if (data) {
+      rows = data;
+    }
   } catch {}
 
   if (!rows.length) {
@@ -4018,18 +4034,23 @@ async function renderFocusFeed() {
     return;
   }
 
-  const MAX_VIS = 6;
+  const MAX_VIS = 12;
   const visible = rows.slice(0, MAX_VIS);
   const extra   = rows.length - MAX_VIS;
 
-  const avatarsHtml = visible.map(r => {
-    const isMe    = r.nickname === myNickname;
-    const initial = escapeHtml((r.nickname || '?').charAt(0));
-    return `<span class="focus-avatar${isMe ? ' focus-avatar-me' : ''}" title="${escapeHtml(r.nickname)}">${initial}</span>`;
+  const pillsHtml = visible.map(r => {
+    const isMe  = r.nickname === myNickname;
+    const nick  = escapeHtml(r.nickname || '?');
+    // title_emoji: DB에 있으면 사용, 내 계정은 로컬 계산으로 보정
+    const emoji = isMe
+      ? (getCurrentTitle()?.emoji ?? r.title_emoji ?? '')
+      : (r.title_emoji ?? '');
+    const badgeHtml = emoji ? `<span class="focus-nick-title">${emoji}</span>` : '';
+    return `<span class="focus-nick-pill${isMe ? ' focus-nick-pill-me' : ''}">${badgeHtml}${nick}</span>`;
   }).join('');
 
   const extraHtml = extra > 0
-    ? `<span class="focus-avatar focus-avatar-extra">+${extra}</span>`
+    ? `<span class="focus-nick-pill focus-nick-pill-extra">+${extra}</span>`
     : '';
 
   const countText = rows.length === 1
@@ -4037,7 +4058,7 @@ async function renderFocusFeed() {
     : `지금 <strong>${rows.length}명</strong>이 함께 집중 중이에요 🍅`;
 
   $body.innerHTML = `
-    <div class="focus-avatars">${avatarsHtml}${extraHtml}</div>
+    <div class="focus-nicks">${pillsHtml}${extraHtml}</div>
     <p class="focus-count-text">${countText}</p>`;
 }
 
@@ -4111,7 +4132,11 @@ async function renderPublicBattles() {
 
     let actionHtml;
     if (isMe) {
-      actionHtml = '<span class="pb-waiting">대기 중···</span>';
+      // 방장이 로비를 열어둔 상태면 "로비 열기" 버튼 표시
+      const hasActiveLobby = (publicLobbyBattleId === b.id);
+      actionHtml = hasActiveLobby
+        ? `<button class="btn-mini btn-mini-accent btn-reopen-lobby" data-battle-id="${b.id}" type="button">로비 열기</button>`
+        : '<span class="pb-waiting">대기 중···</span>';
     } else if (isFull) {
       actionHtml = '<span class="pb-full">마감</span>';
     } else {
@@ -4138,6 +4163,13 @@ async function renderPublicBattles() {
     });
   });
 
+  // "로비 열기" — 방장이 창을 닫았다가 다시 열 때
+  $body.querySelectorAll('.btn-reopen-lobby').forEach(btn => {
+    btn.addEventListener('click', () => {
+      openPublicLobby(btn.dataset.battleId);
+    });
+  });
+
   $body.querySelectorAll('.btn-delete-public').forEach(btn => {
     btn.addEventListener('click', async () => {
       if (!confirm('이 공개 방을 삭제할까요?')) return;
@@ -4160,6 +4192,25 @@ let isStartingPublicLobby = false;
 async function openPublicLobby(battleId) {
   if (!sb || !myNickname) return;
 
+  const $modal = document.getElementById('publicLobbyModal');
+
+  // 잔재 카운트다운 제거 + 액션 버튼 복원 (이전 세션 잔재 방지)
+  $modal?.querySelectorAll('.pub-lobby-countdown').forEach(el => el.remove());
+  const $actions = $modal?.querySelector('.pub-lobby-actions');
+  if ($actions) $actions.style.display = '';
+
+  // ── 방장이 자신의 방을 다시 열기 ──────────────────────────
+  if (publicLobbyBattleId === battleId && publicLobbyChannel) {
+    const { data } = await sb.from('battle_players')
+      .select('*').eq('battle_id', battleId).order('created_at', { ascending: true });
+    const players = data ?? currentBattleData?.players ?? [];
+    currentBattleData = { battle: publicLobbyBattle, players };
+    renderPublicLobby(publicLobbyBattle, players);
+    if ($modal && typeof $modal.showModal === 'function') $modal.showModal();
+    return;
+  }
+
+  // ── 새로 참여 / 방 만든 직후 진입 ────────────────────────
   publicLobbyBattleId = battleId;
 
   const result = await fetchBattle(battleId);
@@ -4190,7 +4241,6 @@ async function openPublicLobby(battleId) {
   renderPublicLobby(publicLobbyBattle, players);
   subscribePublicLobby(battleId);
 
-  const $modal = document.getElementById('publicLobbyModal');
   if ($modal && typeof $modal.showModal === 'function') $modal.showModal();
 }
 
@@ -4222,6 +4272,12 @@ function renderPublicLobby(battle, players) {
   const myPlayer  = players.find(p => p.nickname === myNickname);
   const allReady  = players.length >= 2 && players.every(p => p.is_ready);
   const waiting   = players.length < 2;
+
+  // 나가기/닫기 버튼 텍스트 동적 변경 (방장=창만 닫기, 일반=방 나가기)
+  const $leaveBtn = document.getElementById('pubLobbyLeaveBtn');
+  if ($leaveBtn) {
+    $leaveBtn.textContent = myPlayer?.is_creator ? '닫기' : '나가기';
+  }
 
   if ($readyBtn) {
     if (myPlayer?.is_ready) {
@@ -4304,6 +4360,9 @@ async function startPublicLobbyCountdown(isReceiver = false) {
   const $modal   = document.getElementById('publicLobbyModal');
   const $actions = $modal?.querySelector('.pub-lobby-actions');
 
+  // 모달이 닫혀 있으면(창 닫고 대기 중이던 방장) 다시 열어줌
+  if ($modal && !$modal.open) $modal.showModal();
+
   if (!isReceiver) {
     // 방장: 시작 신호 Broadcast + DB 업데이트
     publicLobbyChannel?.send({ type: 'broadcast', event: 'pub-lobby-start', payload: {} });
@@ -4329,6 +4388,10 @@ async function startPublicLobbyCountdown(isReceiver = false) {
   playHifive();
   await new Promise(r => setTimeout(r, 750));
 
+  // 카운트다운 요소 제거 + 버튼 복원 (다음 오픈 시 잔재 방지)
+  countEl.remove();
+  if ($actions) $actions.style.display = '';
+
   // 정리 후 타이머 시작
   if (publicLobbyChannel && sb) { sb.removeChannel(publicLobbyChannel); publicLobbyChannel = null; }
   publicLobbyBattleId   = null;
@@ -4339,25 +4402,33 @@ async function startPublicLobbyCountdown(isReceiver = false) {
   startBattleTimer();  // currentBattleData / currentBattleId 그대로 사용
 }
 
-/** 로비 닫기 (나가기) */
-async function closePublicLobby(deleteRoom = false) {
-  if (deleteRoom && publicLobbyBattleId) {
-    await deleteBattleSilent(publicLobbyBattleId);
-    renderPublicBattles();
-  } else if (publicLobbyBattleId && sb && myNickname) {
-    // 창조자 아닌 경우 — 내 행만 삭제
-    const myPlayer = currentBattleData?.players?.find(p => p.nickname === myNickname);
-    if (!myPlayer?.is_creator) {
-      await sb.from('battle_players')
-        .delete()
-        .eq('battle_id', publicLobbyBattleId)
-        .eq('nickname', myNickname);
-    }
-  }
+/** 로비 상태 완전 초기화 (방 삭제 or 나가기 시) */
+function _cleanupLobbyState() {
   if (publicLobbyChannel && sb) { sb.removeChannel(publicLobbyChannel); publicLobbyChannel = null; }
   publicLobbyBattleId   = null;
   publicLobbyBattle     = null;
   isStartingPublicLobby = false;
+}
+
+/** 로비 닫기
+ *  deleteRoom=true  → 방 삭제 (DB에서 전체 제거)
+ *  leaveRoom=true   → 일반 참여자 나가기 (내 행만 삭제)
+ *  둘 다 false      → 창만 닫기, 방/채널 유지 (방장용)
+ */
+async function closePublicLobby(deleteRoom = false, leaveRoom = false) {
+  if (deleteRoom && publicLobbyBattleId) {
+    await deleteBattleSilent(publicLobbyBattleId);
+    _cleanupLobbyState();
+    renderPublicBattles();
+  } else if (leaveRoom && publicLobbyBattleId && sb && myNickname) {
+    // 일반 참여자 — 내 행만 삭제
+    await sb.from('battle_players')
+      .delete()
+      .eq('battle_id', publicLobbyBattleId)
+      .eq('nickname', myNickname);
+    _cleanupLobbyState();
+  }
+  // 방장이 그냥 닫기: 아무것도 안 함 (publicLobbyBattleId·channel 유지)
   document.getElementById('publicLobbyModal')?.close();
 }
 
@@ -4367,10 +4438,13 @@ async function closePublicLobby(deleteRoom = false) {
   document.getElementById('pubLobbyLeaveBtn')?.addEventListener('click', async () => {
     const myPlayer = currentBattleData?.players?.find(p => p.nickname === myNickname);
     if (myPlayer?.is_creator) {
-      if (!confirm('방을 나가면 배틀방이 삭제돼요. 계속할까요?')) return;
-      await closePublicLobby(true);
+      // 방장: 창만 닫기 (방·채널 유지, 나중에 "로비 열기"로 돌아올 수 있음)
+      await closePublicLobby(false, false);
+      renderPublicBattles(); // "로비 열기" 버튼 반영
     } else {
-      await closePublicLobby(false);
+      // 일반 참여자: 방에서 나가기
+      if (!confirm('방을 나가면 다시 입장해야 해요. 계속할까요?')) return;
+      await closePublicLobby(false, true);
     }
     renderMyBattles();
   });
@@ -4427,7 +4501,7 @@ function subscribePublicBattles() {
     const $preview = document.getElementById('pubBattleTaskPreview');
     if ($preview) {
       if (currentTask) {
-        $preview.textContent = `공통 목표: "${currentTask}"`;
+        $preview.textContent = `"${currentTask}"`;
         $preview.className   = 'pub-battle-task-preview pub-battle-task-preview--set';
       } else {
         $preview.textContent = '⚠ 먼저 가챠를 돌려서 오늘의 목표를 정해주세요!';

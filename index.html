@@ -342,7 +342,7 @@
 
 
     <footer>
-      <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1.81 · 공개 배틀 로비/레디 시스템</span></small>
+      <small>Zero Accord 0기 · 솜솜 · 2026 · <span class="muted">v0.1.83 · 로비창닫기·시작버그·업적띄어쓰기·피드닉네임pill</span></small>
     </footer>
   </div>
 
@@ -478,25 +478,28 @@
     </div>
   </dialog>
 
-  <!-- v0.1.82 — 공개 배틀방 만들기 모달 (TOM MODE 전용) -->
+  <!-- v0.1.83 — 공개 배틀방 만들기 모달 (TOM MODE 전용) -->
   <dialog id="publicBattleCreateModal" class="modal modal-battle">
     <h3>공개 배틀방 만들기</h3>
 
-    <div class="pub-battle-mode-badge">🍅 TOM MODE · 모두 같은 목표로 집중!</div>
-    <p id="pubBattleTaskPreview" class="pub-battle-task-preview"></p>
-
-    <div class="field">
-      <label>인원 수</label>
-      <div class="pub-player-stepper">
-        <button class="pub-stepper-btn" id="pubPlayerMinus" type="button">−</button>
-        <span class="pub-stepper-value"><span id="pubPlayerCount">2</span>명</span>
-        <button class="pub-stepper-btn" id="pubPlayerPlus" type="button">+</button>
-      </div>
+    <!-- TOM MODE 카드: 모드 라벨 + 공통 목표 텍스트 통합 -->
+    <div class="pub-battle-mode-badge">
+      <div class="pub-battle-mode-label">🍅 TOM MODE · 모두 같은 목표로 집중!</div>
+      <p id="pubBattleTaskPreview" class="pub-battle-task-preview"></p>
     </div>
 
-    <div class="field">
-      <label>시간 설정</label>
-      <div class="battle-time-row">
+    <!-- 인원 수 + 시간 설정: 같은 행에 배치 -->
+    <div class="pub-battle-settings-row">
+      <div class="pub-battle-settings-item">
+        <label>인원 수</label>
+        <div class="pub-player-stepper">
+          <button class="pub-stepper-btn" id="pubPlayerMinus" type="button">−</button>
+          <span class="pub-stepper-value"><span id="pubPlayerCount">2</span>명</span>
+          <button class="pub-stepper-btn" id="pubPlayerPlus" type="button">+</button>
+        </div>
+      </div>
+      <div class="pub-battle-settings-item">
+        <label>시간 설정</label>
         <select id="pubBattleDuration">
           <option value="30">30초 (테스트)</option>
           <option value="600">10분 (짧게)</option>
