@@ -3423,7 +3423,7 @@ dialog.modal input[type="text"]:focus {
 }
 @media (max-width: 480px) {
   .achievement-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 6px;
     grid-auto-rows: minmax(96px, auto);
   }
