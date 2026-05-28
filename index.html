@@ -318,13 +318,20 @@
       </section>
     </div><!-- /tab-panel#tab-log -->
 
-    <!-- 탭 패널 : 리그 (준비 중) -->
+    <!-- 탭 패널 : 리그 -->
     <div class="tab-panel tab-panel-hidden" id="tab-league">
-      <div class="tab-coming-soon">
-        <span class="tab-coming-icon">🏆</span>
-        <p class="tab-coming-title">리그 / 리더보드</p>
-        <p class="tab-coming-desc">친구들과 주간 리그에서 경쟁하는 기능이 곧 추가됩니다.</p>
-      </div>
+      <section class="card league-section">
+        <div class="league-header">
+          <h2 class="league-title">글로벌 랭킹</h2>
+          <div class="league-period-tabs">
+            <button class="league-period-btn active" data-period="week" type="button">이번 주</button>
+            <button class="league-period-btn" data-period="month" type="button">이번 달</button>
+          </div>
+        </div>
+        <div id="leagueBody" class="lb-body">
+          <p class="lb-loading">불러오는 중···</p>
+        </div>
+      </section>
     </div><!-- /tab-panel#tab-league -->
 
     <footer>
@@ -593,10 +600,9 @@
       <span class="tab-icon" aria-hidden="true">📋</span>
       <span class="tab-label">기록</span>
     </button>
-    <button class="tab-btn tab-btn-soon" data-tab="league" type="button" aria-pressed="false" disabled>
+    <button class="tab-btn" data-tab="league" type="button" aria-pressed="false">
       <span class="tab-icon">🏆</span>
       <span class="tab-label">리그</span>
-      <span class="tab-soon-badge">준비 중</span>
     </button>
   </nav>
 

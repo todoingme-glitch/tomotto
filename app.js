@@ -2714,6 +2714,7 @@ loadNickname(); // v0.1.65 — IIFE보다 먼저 실행해서 리더보드 첫 �
     localStorage.setItem(TAB_STORAGE_KEY, tabId);
     // v0.1.32 — 소셜 탭으로 전환 시 배틀카드 상태 즉시 갱신 (timer.isRunning 반영)
     if (tabId === 'social') { renderMyBattles(); renderLeaderboard(); }
+    if (tabId === 'league') { renderLeagueRanking(); }
     // v0.1.33 — 기록 탭으로 전환 시 캘린더 갱신
     // v0.1.70 fix — renderAchievementsTab은 ACHIEVEMENT_DEFS가 선언된 후(스크립트 파싱 완료 후)
     // 실행돼야 함. 탭 초기화 IIFE에서 호출 시 TDZ 에러 방지를 위해 setTimeout(0) 사용.
@@ -2866,7 +2867,9 @@ window.addEventListener('load', () => {
     renderMyBattles();
     renderLeaderboard();
   } else if (_activeTab === 'log') {
-    renderLogCalendar(); // v0.1.66 — 기록 탭 새로고침 시 즉시 렌더
+    renderLogCalendar();
+  } else if (_activeTab === 'league') {
+    renderLeagueRanking();
   } else {
     renderMyBattles();
   }
@@ -4011,6 +4014,115 @@ document.querySelectorAll('.lb-period-btn').forEach(btn => {
     btn.classList.add('active');
     lbPeriod = btn.dataset.period;
     renderLeaderboard();
+  });
+});
+
+// =====================================================
+// v0.1.79 — 리그 탭 (글로벌 랭킹)
+// =====================================================
+
+let leaguePeriod = 'week';
+
+async function renderLeagueRanking() {
+  const $body = document.getElementById('leagueBody');
+  if (!$body) return;
+  if (!sb) {
+    $body.innerHTML = '<p class="lb-empty">오프라인 상태에서는 랭킹을 불러올 수 없어요.</p>';
+    return;
+  }
+
+  $body.innerHTML = '<p class="lb-loading">불러오는 중···</p>';
+
+  const now = new Date();
+  const periodKey = leaguePeriod === 'week' ? getWeekKey(now) : getMonthKey(now);
+  const TOP_N = 50;
+
+  let rows = [];
+  try {
+    const { data, error } = await sb
+      .from('user_stats')
+      .select('nickname, count')
+      .eq('period_type', leaguePeriod)
+      .eq('period_key', periodKey)
+      .order('count', { ascending: false })
+      .limit(TOP_N);
+    if (!error && data) rows = data;
+  } catch {}
+
+  if (!rows.length) {
+    $body.innerHTML = '<p class="lb-empty">아직 기록이 없어요. 타이머를 완료하면 집계돼요!</p>';
+    return;
+  }
+
+  const isMobile = window.matchMedia?.('(max-width: 480px)').matches ?? false;
+  const medalEmojis = ['🥇', '🥈', '🥉'];
+
+  const myInTop = rows.findIndex(r => r.nickname === myNickname);
+  let myRankRow = null;
+
+  if (myNickname && myInTop === -1) {
+    // 내가 TOP_N 밖 → 내 순위 따로 조회
+    let myCount = 0;
+    try {
+      const { data: myData } = await sb
+        .from('user_stats')
+        .select('count')
+        .eq('nickname', myNickname)
+        .eq('period_type', leaguePeriod)
+        .eq('period_key', periodKey)
+        .single();
+      if (myData) myCount = myData.count;
+    } catch {}
+
+    let aboveMe = 0;
+    try {
+      const { count } = await sb
+        .from('user_stats')
+        .select('nickname', { count: 'exact', head: true })
+        .eq('period_type', leaguePeriod)
+        .eq('period_key', periodKey)
+        .gt('count', myCount);
+      aboveMe = count ?? 0;
+    } catch {}
+
+    myRankRow = { nick: myNickname, count: myCount, rank: aboveMe + 1 };
+  }
+
+  function buildRow(nick, count, rank) {
+    const isMe = nick === myNickname;
+    const rankBadge = rank <= 3
+      ? `<span style="font-size:1.4rem;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:28px;flex-shrink:0">${medalEmojis[rank - 1]}</span>`
+      : `<span class="lb-rank-badge" style="background:#e0dbd8;color:#888">${rank}</span>`;
+    const countColor = rank <= 3 ? 'color:var(--accent);' : '';
+    const meBadge = isMe ? '<span class="lb-me-badge">나</span>' : '';
+    const titleEmoji = isMe ? (getCurrentTitle()?.emoji || '') : '';
+    const dispNick = isMobile ? truncEnd(nick, 12) : nick;
+    const nickText = titleEmoji ? `${titleEmoji} ${escapeHtml(dispNick)}` : escapeHtml(dispNick);
+    return `
+      <div class="lb-row${isMe ? ' lb-row-me' : ''}">
+        ${rankBadge}
+        <span class="lb-nick"><span class="lb-nick-text">${nickText}</span>${meBadge}</span>
+        <span class="lb-count" style="${countColor}">${count}회</span>
+      </div>`;
+  }
+
+  let html = rows.map((r, i) => buildRow(r.nickname, r.count, i + 1)).join('');
+
+  if (myRankRow) {
+    html += '<div class="league-my-rank-sep">···</div>';
+    html += buildRow(myRankRow.nick, myRankRow.count, myRankRow.rank);
+  }
+
+  $body.innerHTML = html;
+}
+
+// 리그 기간 탭 이벤트
+document.querySelectorAll('.league-period-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.league-period-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    leaguePeriod = btn.dataset.period;
+    renderLeagueRanking();
   });
 });
 

@@ -2030,6 +2030,57 @@ dialog.modal input[type="text"]:focus {
   line-height: 1.6;
 }
 
+/* ====== v0.1.79 — 리그 탭 ====== */
+
+.league-section { margin-top: 0; }
+
+.league-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  gap: 12px;
+}
+
+.league-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.league-period-tabs {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.league-period-btn {
+  padding: 5px 12px;
+  border: 1.5px solid var(--border-soft);
+  border-radius: 20px;
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.league-period-btn.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.league-my-rank-sep {
+  text-align: center;
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  letter-spacing: 4px;
+  padding: 2px 0;
+}
+
 /* ====== v0.1.33 — 기록 탭 캘린더 히트맵 ====== */
 
 :root {
