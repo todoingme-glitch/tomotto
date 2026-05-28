@@ -4394,6 +4394,11 @@ dialog.modal input[type="text"]:focus {
     letter-spacing: -0.03em;
     padding: 2px 7px;
   }
+  .title-card[data-title-id="legend"] .title-name {
+    font-size: 0.62rem;
+    letter-spacing: -0.04em;
+    white-space: nowrap;
+  }
 }
 .settings-title-value {
   font-weight: 700;

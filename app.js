@@ -5377,7 +5377,7 @@ const ACHIEVEMENT_DEFS = {
   'F-1': { name: '공개방 개설자',    desc: '첫 공개 배틀방을 만들었어요!',         cond: '공개 배틀방 첫 생성',              icon: '🏟️', tier: 'normal', hidden: false },
   'F-2': { name: '낯선 배틀',       desc: '공개 배틀방에 처음 참여했어요!',        cond: '공개 배틀방 첫 참여',              icon: '🚪', tier: 'normal', hidden: false },
   'F-3': { name: '공개 배틀 완주',  desc: '공개 배틀을 처음 완료했어요',           cond: '공개 배틀 첫 완료',                icon: '🎉', tier: 'normal', hidden: false },
-  'F-4': { name: '셋이서 집중',     desc: '3명 이상이서 함께 달렸어요',             cond: '3인 이상 공개 배틀 완료',          icon: '🫂', tier: 'normal', hidden: false },
+  'F-4': { name: '셋이서 집중',     desc: '3명 이상이서 함께 달렸어요',             cond: '3인 이상 공개 배틀 완료',          icon: '🧑‍🧑‍🧒‍🧒', tier: 'normal', hidden: false },
   'F-5': { name: '단골 공개방',     desc: '공개 배틀을 5번이나 완료했어요',        cond: '공개 배틀 완료 5회',               icon: '🔄', tier: 'rare',   hidden: false },
   'F-6': { name: '만원 사례',       desc: '10명이 꽉 찬 방에서 완주했어요!',       cond: '10명 공개 배틀 완료',              icon: '🎪', tier: 'rare',   hidden: false },
 
