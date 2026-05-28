@@ -5333,7 +5333,7 @@ const ACHIEVEMENT_DEFS = {
   'C-6': { name: '굴러도 완성',     desc: 'MOTO 배틀도 해냈어요',                  cond: 'MOTO MODE 배틀 완료 3회',       icon: '🎳', tier: 'normal', hidden: false },
   'D-4': { name: '또 뵙네요',        desc: '이 친구랑 자주 만나네요',               cond: '같은 파트너와 5회 배틀 완료',   icon: '🎟️', tier: 'normal', hidden: false },
   'D-5': { name: '저희 친해요',     desc: '진짜 단짝을 찾았어요',                  cond: '같은 파트너와 10회 배틀 완료',  icon: '💕', tier: 'rare',   hidden: false },
-  'D-6': { name: '한 판 더!',       desc: '끝나자마자 바로 또 시작했어요',         cond: '완료 후 24시간 안에 같은 파트너랑 재시작', icon: '🔁', tier: 'normal', hidden: false },
+  'D-6': { name: '한 판 더!',       desc: '끝나자마자 바로 또 시작했어요',         cond: '완료 후 24시간 안에 같은 파트너와 재배틀', icon: '🔁', tier: 'normal', hidden: false },
   'D-7': { name: '새벽 농장',       desc: '새벽에도 함께 집중했어요',              cond: '새벽 1~5시 배틀 완료',          icon: '🌙', tier: 'rare',   hidden: false },
   'D-8': { name: '오늘도 같이',     desc: '7일 안에 3번 배틀했어요',               cond: '7일 이내 배틀 완료 3회',        icon: '🗓️', tier: 'normal', hidden: false },
 
