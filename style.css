@@ -1887,7 +1887,7 @@ dialog.modal input[type="text"]:focus {
   gap: 5px;
   flex-shrink: 0;
   margin-left: auto;
-  overflow: hidden; /* 이미지 overflow 방지 */
+  /* overflow:hidden 제거 — 썸네일 모서리 클리핑은 brl-thumb-frame이 담당 */
 }
 /* 케이스 3: 소감만 — 끝이 썸네일 오른쪽과 일치하도록 너비 고정 */
 .brl-right--note-only {
@@ -1930,17 +1930,22 @@ dialog.modal input[type="text"]:focus {
   flex-shrink: 0;
 }
 
-.brl-thumb {
+/* 썸네일 이미지를 감싸는 프레임 — border-radius + overflow:hidden으로 네 모서리 모두 처리 */
+.brl-thumb-frame {
   width: 40px;
   height: 40px;
   min-width: 40px;
   min-height: 40px;
   border-radius: 6px;
-  object-fit: cover;
+  overflow: hidden;
   border: 1.5px solid var(--border);
-  display: block;
   flex-shrink: 0;
-  overflow: hidden; /* 이미지 박스 이탈 방지 */
+}
+.brl-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .brl-thumb--empty {
@@ -2000,7 +2005,7 @@ dialog.modal input[type="text"]:focus {
 
 /* 소감만 있을 때 라이트박스 — 이미지 없이 소감 텍스트 중앙 표시 */
 .lightbox-note--text-only {
-  position: static;
+  position: static !important;
   background: transparent;
   color: #fff;
   font-size: 1rem;
@@ -2009,6 +2014,7 @@ dialog.modal input[type="text"]:focus {
   text-align: center;
   max-width: 72vw;
   line-height: 1.7;
+  backdrop-filter: none;
 }
 
 .battle-result-card {
@@ -3333,6 +3339,15 @@ dialog.modal input[type="text"]:focus {
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
   cursor: zoom-out;
   flex-shrink: 0;
+}
+/* 소감만 있을 때 wrapper — 이미지 없으므로 flex로 노트 중앙 배치 */
+.lightbox-img-wrap--text-only {
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(30, 20, 20, 0.55);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
 }
 .lightbox-img-wrap img {
   display: block;

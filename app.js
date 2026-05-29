@@ -36,6 +36,7 @@ const $completionNote = document.getElementById('completionNote'); // v0.1.20 �
 const $noteUploadBtn  = document.getElementById('noteUploadBtn');  // v0.1.22 — 소감 저장
 // v0.1.22 — 라이트박스 dialog
 const $imgLightboxDialog = document.getElementById('imgLightboxDialog');
+const $imgLightboxWrap   = document.getElementById('imgLightboxWrap');
 const $imgLightboxImg    = document.getElementById('imgLightboxImg');
 const $imgLightboxNote   = document.getElementById('imgLightboxNote');
 const $imgLightboxClose  = document.getElementById('imgLightboxClose');
@@ -5068,12 +5069,16 @@ async function openBattleResult(battleId) {
         // 케이스 4: 인증샷+소감 → 🪶 이모지 + 썸네일 (소감은 라이트박스에서)
         rightHtml = `<div class="brl-right">
           <span class="brl-note-emoji" aria-label="소감 있음">🪶</span>
-          <img class="battle-result-img brl-thumb" src="${escapeHtml(p.proof_url)}" alt="인증샷">
+          <div class="brl-thumb-frame">
+            <img class="battle-result-img brl-thumb" src="${escapeHtml(p.proof_url)}" alt="인증샷">
+          </div>
         </div>`;
       } else if (hasProof) {
         // 케이스 2: 인증샷만 → 썸네일만
         rightHtml = `<div class="brl-right">
-          <img class="battle-result-img brl-thumb" src="${escapeHtml(p.proof_url)}" alt="인증샷">
+          <div class="brl-thumb-frame">
+            <img class="battle-result-img brl-thumb" src="${escapeHtml(p.proof_url)}" alt="인증샷">
+          </div>
         </div>`;
       } else if (hasNote) {
         // 케이스 3: 소감만 → 오른쪽 정렬 텍스트 (끝이 썸네일 위치와 맞춤)
@@ -5118,11 +5123,13 @@ $battleResultPlayers.addEventListener('click', (e) => {
 
   if (img) {
     // 인증샷 있음: 이미지 표시 + 소감(있으면) 하단 오버레이
+    $imgLightboxWrap?.classList.remove('lightbox-img-wrap--text-only');
     $imgLightboxImg.src = img.src;
     $imgLightboxImg.hidden = false;
     $imgLightboxNote?.classList.remove('lightbox-note--text-only');
   } else {
-    // 소감만 있음: 이미지 숨기고 소감 텍스트만 중앙 표시
+    // 소감만 있음: wrapper를 flex로 전환, 소감 텍스트 중앙 표시
+    $imgLightboxWrap?.classList.add('lightbox-img-wrap--text-only');
     $imgLightboxImg.src = '';
     $imgLightboxImg.hidden = true;
     $imgLightboxNote?.classList.add('lightbox-note--text-only');
