@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.104 — 가챠 뽀모도로
+// Tomotto v0.1.105 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -4099,55 +4099,52 @@ async function syncUserStats() {
 }
 
 // =====================================================
-// v0.1.104 — 리더보드 앞지르기 감지
+// v0.1.105 — 리더보드 앞지르기 감지 (stateless)
 // =====================================================
 
-let _lbPrevAboveNicks = null;             // null = 미초기화
-const _overtakeShownThisSession = new Set(); // 세션 내 이미 토스트 띄운 nick
+const _overtakeShownThisSession = new Set(); // 세션 내 라이벌 토스트 표시한 nick
 
-// suppressToast=true 이면 상태만 업데이트 (초기화 용)
-async function checkAndNotifyOvertake(suppressToast = false) {
+// syncUserStats()가 upsert 완료 후 호출.
+// 공식: 내 새 count = N → 방금 앞지른 사람 = count가 정확히 N-1인 사람들
+// → 리더보드를 직접 보지 않아도 동작.
+async function checkAndNotifyOvertake() {
   if (!sb || !myNickname) return;
   try {
     const now = new Date();
     const periodKey = getWeekKey(now);
 
-    // 내 현재 count 조회
+    // 내 현재 count (upsert 완료 후)
     const { data: myRow } = await sb.from('user_stats').select('count')
       .eq('nickname', myNickname).eq('period_type', 'week').eq('period_key', periodKey)
       .maybeSingle();
     const myCount = myRow?.count ?? 0;
+    if (!myCount) return;
 
-    // 나보다 count 많은 유저 목록
-    const { data: aboveRows } = await sb.from('user_stats').select('nickname')
+    // ① 탑 3 / 1위 진입 체크
+    const { count: numAbove } = await sb.from('user_stats')
+      .select('*', { count: 'exact', head: true })
       .eq('period_type', 'week').eq('period_key', periodKey)
-      .gt('count', myCount).limit(30);
-    const currentAbove = (aboveRows || []).map(r => r.nickname).filter(n => n !== myNickname);
-    const currentAboveSet = new Set(currentAbove);
+      .gt('count', myCount);
+    const myRank = (numAbove ?? 0) + 1;
+    if (myRank <= 3) _checkRankMilestoneToast(myRank, periodKey);
 
-    if (!suppressToast) {
-      // ① 탑 3 진입 토스트 (해당 순위 이번 주 처음 진입 시 1번)
-      const myRank = currentAbove.length + 1;
-      if (myRank <= 3) _checkTop3Toast(myRank, periodKey);
-
-      // ② 라이벌(배틀 파트너) 앞지르기 토스트 — 세션당 1번
-      if (_lbPrevAboveNicks !== null) {
-        const newlyPassed = _lbPrevAboveNicks.filter(
-          n => !currentAboveSet.has(n) && !_overtakeShownThisSession.has(n)
-        );
-        if (newlyPassed.length > 0) {
-          // user_partner_stats에서 내 배틀 파트너 목록 조회
-          const partnerSet = await _fetchMyPartnerNicks();
-          const rivalPassed = newlyPassed.filter(n => partnerSet.has(n));
-          if (rivalPassed.length > 0) {
-            _showRivalOvertakeToast(rivalPassed[0]);
-            _overtakeShownThisSession.add(rivalPassed[0]);
-          }
+    // ② 라이벌(배틀 파트너) 앞지르기 — 세션당 1번
+    // 내 이전 count = myCount-1, 그 count에 있던 사람 = 방금 내가 앞지른 사람
+    if (myCount >= 2) {
+      const { data: justPassedRows } = await sb.from('user_stats').select('nickname')
+        .eq('period_type', 'week').eq('period_key', periodKey)
+        .eq('count', myCount - 1).limit(30);
+      const justPassed = (justPassedRows || []).map(r => r.nickname)
+        .filter(n => n !== myNickname && !_overtakeShownThisSession.has(n));
+      if (justPassed.length > 0) {
+        const partnerSet = await _fetchMyPartnerNicks();
+        const rivalPassed = justPassed.filter(n => partnerSet.has(n));
+        if (rivalPassed.length > 0) {
+          _showRivalOvertakeToast(rivalPassed[0]);
+          _overtakeShownThisSession.add(rivalPassed[0]);
         }
       }
     }
-
-    _lbPrevAboveNicks = currentAbove;
   } catch (e) {
     console.warn('[checkOvertake] 실패:', e);
   }
@@ -4162,22 +4159,37 @@ async function _fetchMyPartnerNicks() {
   } catch { return new Set(); }
 }
 
-// 탑 3 진입 토스트 — 이번 주 해당 순위 처음 진입 시만
-function _checkTop3Toast(rank, periodKey) {
-  const key = `tomotto_lb_top3_${periodKey}`;
+// 탑 3 / 1위 진입 토스트 — 이번 주 처음 해당 마일스톤 달성 시만
+// • rank 1 → "1위 달성!" 1번
+// • rank 2~3 → "탑 3 진입!" 1번
+// (주당 최대 2번: 탑3 진입 + 1위 달성)
+function _checkRankMilestoneToast(rank, periodKey) {
+  const key = `tomotto_lb_rank_${periodKey}`;
   const notified = JSON.parse(localStorage.getItem(key) || '{}');
-  if (notified[rank]) return; // 이미 알림 표시했음
-  notified[rank] = true;
-  localStorage.setItem(key, JSON.stringify(notified));
 
-  const medals = ['🥇', '🥈', '🥉'];
-  const msgs   = ['이번 주 1위에 올랐어요!', '2위에 진입했어요!', '탑 3에 들었어요!'];
+  if (rank === 1 && !notified.no1) {
+    notified.no1 = true;
+    localStorage.setItem(key, JSON.stringify(notified));
+    _showRankMilestoneToast(1);
+    return; // 1위 달성 시 탑3 토스트 중복 생략
+  }
+  if (rank <= 3 && !notified.top3) {
+    notified.top3 = true;
+    localStorage.setItem(key, JSON.stringify(notified));
+    _showRankMilestoneToast(rank);
+  }
+}
+
+function _showRankMilestoneToast(rank) {
+  const medals  = ['🥇', '🥈', '🥉'];
+  const labels  = ['1위 달성!', '순위 상승!', '순위 상승!'];
+  const msgs    = ['이번 주 1위에 올랐어요!', '탑 3에 진입했어요!', '탑 3에 진입했어요!'];
   const toast = document.createElement('div');
   toast.className = 'achievement-toast achievement-toast--overtake';
   toast.innerHTML = `
     <span class="achievement-toast-icon">${medals[rank - 1]}</span>
     <div class="achievement-toast-body">
-      <div class="achievement-toast-label">순위 상승!</div>
+      <div class="achievement-toast-label">${labels[rank - 1]}</div>
       <div class="achievement-toast-name">${msgs[rank - 1]}</div>
     </div>
   `;
@@ -4308,9 +4320,6 @@ async function renderLeaderboard() {
     html += buildRow(myRankRow.nick, myRankRow.count, myRankRow.rank);
   }
   $body.innerHTML = html;
-
-  // 앞지르기 감지 초기화 (처음 렌더 시에만)
-  if (_lbPrevAboveNicks === null) checkAndNotifyOvertake(true);
 }
 
 // 리더보드 기간 탭 이벤트
