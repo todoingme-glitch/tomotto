@@ -1835,8 +1835,7 @@ dialog.modal input[type="text"]:focus {
 }
 
 .brl-row {
-  display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) auto 44px;
+  display: flex;
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
@@ -1859,6 +1858,8 @@ dialog.modal input[type="text"]:focus {
   font-size: 1.1rem;
   line-height: 1;
   text-align: center;
+  flex-shrink: 0;
+  width: 28px;
 }
 
 .brl-rank-num {
@@ -1876,7 +1877,31 @@ dialog.modal input[type="text"]:focus {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 1;
+  min-width: 0;
 }
+/* 오른쪽 영역: 소감 힌트 + 썸네일 묶음 */
+.brl-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+/* 소감 보기 힌트 버튼 (썸네일 왼쪽) */
+.brl-note-hint {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.72rem;
+  color: var(--text-soft);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.brl-note-hint:hover { color: var(--text); }
 
 .brl-host-badge {
   font-size: 0.65rem;
@@ -1907,13 +1932,9 @@ dialog.modal input[type="text"]:focus {
 }
 
 .brl-thumb--empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.8rem;
-  color: var(--text-muted);
+  display: block;
   background: var(--bg);
-  border: 1.5px solid var(--border);
+  border: 1.5px dashed var(--border);
   border-radius: 6px;
   width: 40px;
   height: 40px;
