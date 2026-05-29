@@ -4025,14 +4025,10 @@ dialog.modal input[type="text"]:focus {
 .lb-nick-text {
   flex-shrink: 1;
   min-width: 0;
-}
-@media (max-width: 480px) {
-  .lb-nick-text {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 120px;
-  }
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* max-width 제거 — 1fr 컬럼 전체 활용, 넘치면 ellipsis */
 }
 .lb-me-badge {
   display: inline-block;

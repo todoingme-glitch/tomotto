@@ -4155,14 +4155,12 @@ async function renderLeaderboard() {
       ? `<span style="font-size:1.4rem;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:28px;flex-shrink:0">${medalEmojis[rank - 1]}</span>`
       : `<span class="lb-rank-badge" style="background:#e0dbd8;color:#888">${rank}</span>`;
     const countColor = rank <= 3 ? 'color:var(--accent);' : '';
-    const meBadge = isMe ? '<span class="lb-me-badge">나</span>' : '';
     const titleEmoji = isMe ? (getCurrentTitle()?.emoji || '') : '';
-    const dispNick = isMobile ? truncEnd(nick, 18) : nick;
-    const nickText = titleEmoji ? `${titleEmoji} ${escapeHtml(dispNick)}` : escapeHtml(dispNick);
+    const nickText = titleEmoji ? `${titleEmoji} ${escapeHtml(nick)}` : escapeHtml(nick);
     return `
       <div class="lb-row${isMe ? ' lb-row-me' : ''}">
         ${rankBadge}
-        <span class="lb-nick"><span class="lb-nick-text">${nickText}</span>${meBadge}</span>
+        <span class="lb-nick"><span class="lb-nick-text">${nickText}</span></span>
         <span class="lb-count" style="${countColor}">${count}회</span>
       </div>`;
   }
