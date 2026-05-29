@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.116 — 가챠 뽀모도로
+// Tomotto v0.1.117 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -1279,7 +1279,7 @@ function renderLogPartnerRecord() {
         <span class="partner-row-nick">${escapeHtml(nick)}</span>
         ${tierBadge}
       </div>
-      <span class="partner-row-stats">${d.count}회 · 마지막 ${lastDate}</span>
+      <span class="partner-row-stats">${d.count}회 · 마지막 배틀 ${lastDate}</span>
     </div>`;
   }).join('');
 
