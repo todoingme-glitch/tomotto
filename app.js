@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.120 — 가챠 뽀모도로
+// Tomotto v0.1.121 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -4167,7 +4167,9 @@ function showEmojiRainOnElement(targetEl, emojis = ['🔥', '✨', '⚡', '💥'
 
   const overlay = document.createElement('div');
   overlay.className = 'emoji-rain-overlay';
-  document.body.appendChild(overlay);
+  // <dialog>는 top-layer라서 body에 붙이면 모달 뒤로 감 → dialog 내부에 append
+  const host = targetEl.closest('dialog') ?? document.body;
+  host.appendChild(overlay);
 
   const COUNT = 28;
   for (let i = 0; i < COUNT; i++) {
@@ -4762,28 +4764,51 @@ async function enrichLobbyWithPartnerBadges(players) {
   const others = players.filter(p => p.nickname !== myNickname).map(p => p.nickname);
   if (!others.length) return;
   try {
-    // v0.1.95 — 닉네임 이력 조회: 로비 플레이어들의 예전 닉네임 파악
-    const newToOld = {}; // { 현재닉네임: 이전닉네임 }
+    // 닉네임 체인 추적: 다단계 변경(A→B→C)까지 모두 역추적
+    // oldToCurrentNick: { 이전닉네임: 현재로비닉네임 }
+    // currentToLatestOld: { 현재로비닉네임: 바로이전닉네임 (배지 표시용) }
+    const oldToCurrentNick = {};
+    const currentToLatestOld = {};
     try {
-      const { data: hist } = await sb.from('nickname_history')
-        .select('old_nickname, new_nickname')
-        .in('new_nickname', others)
-        .order('changed_at', { ascending: false });
-      if (hist?.length) {
+      let frontier = [...others];
+      const visited = new Set(others);
+      while (frontier.length > 0) {
+        const { data: hist } = await sb.from('nickname_history')
+          .select('old_nickname, new_nickname')
+          .in('new_nickname', frontier)
+          .order('changed_at', { ascending: false });
+        if (!hist?.length) break;
+        const nextFrontier = [];
         for (const h of hist) {
-          if (!newToOld[h.new_nickname]) newToOld[h.new_nickname] = h.old_nickname; // 가장 최근 변경만
+          if (!visited.has(h.old_nickname)) {
+            visited.add(h.old_nickname);
+            const curNick = oldToCurrentNick[h.new_nickname] || h.new_nickname;
+            oldToCurrentNick[h.old_nickname] = curNick;
+            if (!currentToLatestOld[curNick]) currentToLatestOld[curNick] = h.old_nickname;
+            nextFrontier.push(h.old_nickname);
+          }
         }
+        frontier = nextFrontier;
       }
-    } catch { /* nickname_history 테이블 없으면 무시 */ }
+    } catch { /* nickname_history 없으면 무시 */ }
 
-    // 현재 닉네임 + 이전 닉네임 모두로 파트너 통계 조회
-    const allLookups = [...new Set([...others, ...Object.values(newToOld)])];
+    // 현재 닉네임 + 모든 이전 닉네임으로 파트너 통계 조회, 현재 닉네임 기준 집계
+    const allLookups = [...new Set([...others, ...Object.keys(oldToCurrentNick)])];
     const { data } = await sb.from('user_partner_stats')
       .select('partner, battle_count, total_sec')
       .eq('nickname', myNickname)
       .in('partner', allLookups);
     if (!data?.length) return;
-    const statsMap = Object.fromEntries(data.map(d => [d.partner, d]));
+    const statsMap = {}; // { 현재로비닉네임: { battle_count, total_sec } }
+    for (const d of data) {
+      const curNick = oldToCurrentNick[d.partner] || d.partner;
+      if (!statsMap[curNick]) {
+        statsMap[curNick] = { battle_count: d.battle_count, total_sec: d.total_sec || 0 };
+      } else {
+        statsMap[curNick].battle_count += d.battle_count;
+        statsMap[curNick].total_sec    += d.total_sec || 0;
+      }
+    }
 
     const $list = document.getElementById('pubLobbyPlayers');
     if (!$list) return;
@@ -4793,11 +4818,11 @@ async function enrichLobbyWithPartnerBadges(players) {
       if (el.querySelector('.pub-lobby-partner-badge')) return;
       const nick = el.querySelector('.pub-lobby-nick')?.firstChild?.textContent?.trim();
       if (!nick) return;
-      const s = statsMap[nick] || (newToOld[nick] && statsMap[newToOld[nick]]);
+      const s = statsMap[nick]; // 이미 현재 닉네임 기준으로 집계됨
       if (!s) return;
 
       const tier    = getPartnerTier(s.battle_count);
-      const oldHint = (newToOld[nick] && statsMap[newToOld[nick]]) ? ` (구: ${newToOld[nick]})` : '';
+      const oldHint = currentToLatestOld[nick] ? ` (구: ${currentToLatestOld[nick]})` : '';
 
       // 배지: 5회+(tier 있을 때)만 표시
       if (tier) {
@@ -4834,7 +4859,7 @@ async function enrichLobbyWithPartnerBadges(players) {
           $msg.textContent = `👋 ${escapeHtml(nick)}님, 저번에 같이 달렸었죠!`;
         }
       }
-      // 클릭 → 이모지 비 (파트너 카드 집중)
+      // 클릭 → 이모지 비 (파트너 카드 집중) + 상대방 화면에도 broadcast
       const $partnerEl = top?.el || null;
       if ($partnerEl) {
         $msg.classList.add('is-tappable');
@@ -4843,6 +4868,10 @@ async function enrichLobbyWithPartnerBadges(players) {
           if (_rainBusy) return;
           _rainBusy = true;
           showEmojiRainOnElement($partnerEl, ['🔥', '✨', '⚡', '💥']);
+          // 상대방 화면에서도 내 카드에 이모지 비 트리거
+          publicLobbyChannel?.send({
+            type: 'broadcast', event: 'emoji_rain', payload: { from: myNickname }
+          });
           setTimeout(() => { _rainBusy = false; }, 2500);
         });
       }
@@ -4955,6 +4984,14 @@ function subscribePublicLobby(battleId) {
       const result = await fetchBattle(battleId);
       if (result?.battle) currentBattleData = result;
       startPublicLobbyCountdown(true);
+    })
+    // 수신자: 파트너가 이모지 비를 쏨 → 내 화면에서 그 파트너 카드에 이모지 비 표시
+    .on('broadcast', { event: 'emoji_rain' }, ({ payload }) => {
+      if (!payload?.from || payload.from === myNickname) return;
+      const $list = document.getElementById('pubLobbyPlayers');
+      const $senderEl = [...($list?.querySelectorAll('.pub-lobby-player:not(.is-me)') || [])]
+        .find(el => el.querySelector('.pub-lobby-nick')?.firstChild?.textContent?.trim() === payload.from);
+      if ($senderEl) showEmojiRainOnElement($senderEl, ['🔥', '✨', '⚡', '💥']);
     })
     .subscribe();
 }
