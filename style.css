@@ -2003,17 +2003,17 @@ dialog.modal input[type="text"]:focus {
   color: var(--text);
 }
 
-/* 소감만 있을 때 라이트박스 — 이미지 없이 소감 텍스트 중앙 표시 */
+/* 소감만 있을 때 라이트박스 — 크림 배경 위 짙은 텍스트 */
 .lightbox-note--text-only {
   position: static !important;
   background: transparent;
-  color: #fff;
+  color: var(--text, #3a2826);
   font-size: 1rem;
-  padding: 24px 32px;
-  border-radius: 12px;
+  padding: 28px 36px;
+  border-radius: 16px;
   text-align: center;
-  max-width: 72vw;
-  line-height: 1.7;
+  max-width: min(72vw, 380px);
+  line-height: 1.8;
   backdrop-filter: none;
 }
 
@@ -3340,14 +3340,15 @@ dialog.modal input[type="text"]:focus {
   cursor: zoom-out;
   flex-shrink: 0;
 }
-/* 소감만 있을 때 wrapper — 이미지 없으므로 flex로 노트 중앙 배치 */
+/* 소감만 있을 때 wrapper — 크림 카드 스타일로 글자 가독성 확보 */
 .lightbox-img-wrap--text-only {
   overflow: visible;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(30, 20, 20, 0.55);
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+  background: var(--bg, #fdf8f5);
+  border-radius: 16px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
 }
 .lightbox-img-wrap img {
   display: block;
@@ -4161,9 +4162,9 @@ dialog.modal input[type="text"]:focus {
 .title-card--unlocked {
   opacity: 1;
   filter: none;
-  border-color: var(--accent);
+  border-color: #c8bfbc;   /* 회색 계열 — 달성했지만 미착용 */
   cursor: pointer;
-  background: color-mix(in srgb, var(--accent) 5%, white);
+  background: var(--bg-card, #fff);
 }
 
 /* 현재 내 칭호 */
@@ -4190,7 +4191,7 @@ dialog.modal input[type="text"]:focus {
 }
 
 .title-card--unlocked:hover {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
+  box-shadow: 0 0 0 2px #c8bfbc;
   transform: translateY(-1px);
   transition: transform 0.15s, box-shadow 0.15s;
 }
@@ -4465,6 +4466,18 @@ dialog.modal input[type="text"]:focus {
   transform: translateX(-50%) translateY(-120%);
   opacity: 0;
   transition: transform 0.3s ease, opacity 0.3s ease;
+}
+/* 희귀 업적 변형 */
+.achievement-toast--rare {
+  background: #fffbeb;
+  border-color: #d97706;
+  box-shadow: 0 4px 20px rgba(251,191,36,0.3), 0 0 0 1px rgba(251,191,36,0.25);
+}
+.achievement-toast--rare .achievement-toast-label {
+  color: #b45309;
+}
+.achievement-toast--rare .achievement-toast-name {
+  color: #92400e;
 }
 /* 숨겨진 업적 변형 */
 .achievement-toast--secret {

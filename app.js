@@ -679,10 +679,13 @@ async function saveNickname() {
   // v0.1.69 — 첫 닉네임 설정 업적
   if (!oldNickname) unlockAchievement('A-4');
   // v0.1.66 — 닉네임 변경 시 DB 기존 데이터 마이그레이션 (리더보드 횟수 유지)
+  // v0.1.95 — partner_stats 자기 행 마이그레이션 + 닉네임 이력 기록
   if (sb && oldNickname && oldNickname !== v) {
     try {
       await sb.from('user_stats').update({ nickname: v }).eq('nickname', oldNickname);
       await sb.from('battle_players').update({ nickname: v }).eq('nickname', oldNickname);
+      await sb.from('user_partner_stats').update({ nickname: v }).eq('nickname', oldNickname);
+      await sb.from('nickname_history').insert({ old_nickname: oldNickname, new_nickname: v }).catch(() => {});
       console.log('[닉네임 변경] DB 마이그레이션:', oldNickname, '→', v);
     } catch (err) {
       console.warn('[닉네임 변경] DB 마이그레이션 실패:', err);
@@ -4490,23 +4493,43 @@ async function enrichLobbyWithPartnerBadges(players) {
   const others = players.filter(p => p.nickname !== myNickname).map(p => p.nickname);
   if (!others.length) return;
   try {
+    // v0.1.95 — 닉네임 이력 조회: 로비 플레이어들의 예전 닉네임 파악
+    const newToOld = {}; // { 현재닉네임: 이전닉네임 }
+    try {
+      const { data: hist } = await sb.from('nickname_history')
+        .select('old_nickname, new_nickname')
+        .in('new_nickname', others)
+        .order('changed_at', { ascending: false });
+      if (hist?.length) {
+        for (const h of hist) {
+          if (!newToOld[h.new_nickname]) newToOld[h.new_nickname] = h.old_nickname; // 가장 최근 변경만
+        }
+      }
+    } catch { /* nickname_history 테이블 없으면 무시 */ }
+
+    // 현재 닉네임 + 이전 닉네임 모두로 파트너 통계 조회
+    const allLookups = [...new Set([...others, ...Object.values(newToOld)])];
     const { data } = await sb.from('user_partner_stats')
       .select('partner, battle_count, total_sec')
       .eq('nickname', myNickname)
-      .in('partner', others);
+      .in('partner', allLookups);
     if (!data?.length) return;
     const statsMap = Object.fromEntries(data.map(d => [d.partner, d]));
+
     const $list = document.getElementById('pubLobbyPlayers');
     if (!$list) return;
     $list.querySelectorAll('.pub-lobby-player:not(.is-me)').forEach(el => {
       if (el.querySelector('.pub-lobby-partner-badge')) return; // 중복 방지
       const nick = el.querySelector('.pub-lobby-nick')?.firstChild?.textContent?.trim();
-      const s = nick && statsMap[nick];
+      if (!nick) return;
+      // 현재 닉네임으로 먼저 조회, 없으면 이전 닉네임으로 조회
+      const s = statsMap[nick] || (newToOld[nick] && statsMap[newToOld[nick]]);
       if (!s) return;
       const mins = Math.round((s.total_sec || 0) / 60);
       const badge = document.createElement('span');
       badge.className = 'pub-lobby-partner-badge';
-      badge.textContent = `${s.battle_count}번 함께 · ${mins}분`;
+      const oldHint = (newToOld[nick] && statsMap[newToOld[nick]]) ? ` (구: ${newToOld[nick]})` : '';
+      badge.textContent = `${s.battle_count}번 함께 · ${mins}분${oldHint}`;
       el.appendChild(badge);
     });
   } catch {}
@@ -5683,12 +5706,14 @@ function _processToastQueue() {
 
   const toast = document.createElement('div');
   const isSecret = def.hidden;
+  const isRare   = !def.hidden && def.tier === 'rare';
   const hasChar  = !!def.charImg;
   toast.className = 'achievement-toast'
     + (isSecret ? ' achievement-toast--secret' : '')
+    + (isRare   ? ' achievement-toast--rare'   : '')
     + (hasChar  ? ' achievement-toast--char'   : '');
 
-  const label = isSecret ? '🔍 숨겨진 업적 발견!' : '🏅 업적 달성!';
+  const label = isSecret ? '🔍 숨겨진 업적 발견!' : isRare ? '✨ 희귀 업적 달성!' : '🏅 업적 달성!';
   if (hasChar) {
     toast.innerHTML = `
       <img class="ach-toast-char-img" src="${def.charImg}" alt="">
