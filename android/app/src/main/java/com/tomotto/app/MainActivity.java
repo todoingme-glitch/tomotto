@@ -1,6 +1,5 @@
 package com.tomotto.app;
 
-import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -36,7 +35,7 @@ public class MainActivity extends BridgeActivity {
                             }
                             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                             startActivity(intent);
-                        } catch (ActivityNotFoundException | Exception e) {
+                        } catch (Exception e) {
                             // 카카오톡 미설치 등 — 무시
                         }
                         return true;
