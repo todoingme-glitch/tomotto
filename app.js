@@ -2505,8 +2505,8 @@ function subscribeBattleRoom(battleId) {
             });
         }
         // 구독 시점에 이미 battles.status = active인 경우
-        // 10초 이내: 카운트다운 애니메이션 포함 시작 / 이후: 남은 시간으로 직접 동기화
-        if (sb && $battleRoomModal.open && !timer.isRunning && !isStartingBattle) {
+        // v0.1.128 — countdown_started_at null이어도 카운트다운 시작 (버그 수정)
+        if (sb && !timer.isRunning && !isStartingBattle) {
           try {
             const { data: bData } = await sb.from('battles')
               .select('status, countdown_started_at')
@@ -2514,11 +2514,11 @@ function subscribeBattleRoom(battleId) {
             if (bData?.status === 'active') {
               const _satMs = bData.countdown_started_at
                 ? new Date(bData.countdown_started_at).getTime() : 0;
-              const _isRecent = _satMs && (Date.now() - _satMs < 10000);
+              const _isRecent = !_satMs || (Date.now() - _satMs < 10000);
               if (_isRecent) {
-                console.log('[Realtime] 구독 시 battles.status=active (최근) 감지 → 즉시 카운트다운');
+                console.log('[Realtime] 구독 시 battles.status=active 감지 → 즉시 카운트다운');
                 await startBattleWithCountdown(1);
-              } else if (_satMs && currentBattleData?.battle) {
+              } else if (currentBattleData?.battle) {
                 console.log('[Realtime] 구독 시 배틀 진행 중 감지 → 재접속 타이머 동기화');
                 syncActiveBattleTimer(currentBattleData.battle);
               }
@@ -2557,7 +2557,9 @@ function startBattleRoomPolling(battleId) {
   }
   console.log('[Poll] 배틀룸 폴링 시작 | battleId:', battleId, '| 초기 status:', knownStatus);
   battleRoomPollInterval = setInterval(async () => {
-    if (timer.isRunning || isStartingBattle || !$battleRoomModal.open) {
+    // v0.1.128 — dialog.open 대신 hasAttribute로 확인 (일부 WebView 환경 호환성)
+    const _modalOpen = $battleRoomModal.open || $battleRoomModal.hasAttribute('open');
+    if (timer.isRunning || isStartingBattle || !_modalOpen) {
       stopBattleRoomPolling(); return;
     }
     if (!sb || !battleId) return;
@@ -2568,14 +2570,14 @@ function startBattleRoomPolling(battleId) {
       if (data.status === 'active' && !timer.isRunning && !isStartingBattle) {
         const _satMs = data.countdown_started_at
           ? new Date(data.countdown_started_at).getTime() : 0;
-        const _isRecent = _satMs && (Date.now() - _satMs < 10000);
+        const _isRecent = !_satMs || (Date.now() - _satMs < 10000); // v0.1.128 — null이면 최신으로 간주
         stopBattleRoomPolling();
         const result = await fetchBattle(battleId);
         if (result?.battle) currentBattleData = result;
         if (_isRecent) {
-          console.log('[Poll] battles.status=active (최근) 감지 → 카운트다운 시작');
+          console.log('[Poll] battles.status=active 감지 → 카운트다운 시작');
           await startBattleWithCountdown(1);
-        } else if (_satMs) {
+        } else {
           console.log('[Poll] 배틀 진행 중 감지 → 재접속 타이머 동기화');
           syncActiveBattleTimer(currentBattleData?.battle);
         }
@@ -2591,6 +2593,32 @@ function stopBattleRoomPolling() {
     console.log('[Poll] 배틀룸 폴링 중지');
   }
 }
+
+// v0.1.128 — 카카오톡 IAB 등 백그라운드 throttling 대응:
+// 화면이 다시 활성화될 때 즉시 배틀 상태 확인
+document.addEventListener('visibilitychange', async () => {
+  if (document.hidden) return;
+  if (!sb || !currentBattleId || timer.isRunning || isStartingBattle) return;
+  const _modalOpen = $battleRoomModal?.open || $battleRoomModal?.hasAttribute('open');
+  if (!_modalOpen) return;
+  try {
+    const { data } = await sb.from('battles')
+      .select('status, countdown_started_at')
+      .eq('id', currentBattleId).single();
+    if (!data || data.status !== 'active') return;
+    console.log('[Visibility] 화면 복귀 시 battles.status=active 감지 → 동기화');
+    const _satMs = data.countdown_started_at
+      ? new Date(data.countdown_started_at).getTime() : 0;
+    const _isRecent = !_satMs || (Date.now() - _satMs < 10000);
+    const result = await fetchBattle(currentBattleId);
+    if (result?.battle) currentBattleData = result;
+    if (_isRecent) {
+      await startBattleWithCountdown(1);
+    } else if (currentBattleData?.battle) {
+      syncActiveBattleTimer(currentBattleData.battle);
+    }
+  } catch (_e) { /* 무시 */ }
+});
 
 // v0.1.27 — 배틀 생성 후 친구 수락 대기 전용 채널 (룸 뷰 채널과 독립)
 // openBattleRoom 호출 시 realtimeChannel이 교체돼도 이 채널은 유지됨
@@ -2684,8 +2712,8 @@ function subscribeWatchBattle(battleId) {
             });
         }
         // 구독 시점에 이미 battles.status = active인 경우
-        // 10초 이내: 카운트다운 / 이후: 재접속 타이머 동기화
-        if (sb && $battleRoomModal.open && !timer.isRunning && !isStartingBattle) {
+        // v0.1.128 — countdown_started_at null이어도 카운트다운 시작 (버그 수정)
+        if (sb && !timer.isRunning && !isStartingBattle) {
           try {
             const { data: bData } = await sb.from('battles')
               .select('status, countdown_started_at')
@@ -2693,11 +2721,11 @@ function subscribeWatchBattle(battleId) {
             if (bData?.status === 'active') {
               const _satMs = bData.countdown_started_at
                 ? new Date(bData.countdown_started_at).getTime() : 0;
-              const _isRecent = _satMs && (Date.now() - _satMs < 10000);
+              const _isRecent = !_satMs || (Date.now() - _satMs < 10000);
               if (_isRecent) {
-                console.log('[Watch] 구독 시 battles.status=active (최근) 감지 → 즉시 카운트다운');
+                console.log('[Watch] 구독 시 battles.status=active 감지 → 즉시 카운트다운');
                 await startBattleWithCountdown(1);
-              } else if (_satMs && currentBattleData?.battle) {
+              } else if (currentBattleData?.battle) {
                 console.log('[Watch] 배틀 진행 중 감지 → 재접속 타이머 동기화');
                 syncActiveBattleTimer(currentBattleData.battle);
               }
