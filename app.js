@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.106 — 가챠 뽀모도로
+// Tomotto v0.1.107 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -4232,7 +4232,7 @@ function _showRivalOvertakeToast(nick) {
   }, 4000);
 }
 
-let lbPeriod = 'week';
+var lbPeriod = 'week'; // var 호이스팅 — initBottomTab() 초기화 시 TDZ 방지
 
 // v0.1.80 — 글로벌 랭킹 (파트너 한정 → 전체)
 async function renderLeaderboard() {
