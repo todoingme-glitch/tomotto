@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.90 — 가챠 뽀모도로
+// Tomotto v0.1.91 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -4994,9 +4994,20 @@ async function openBattleResult(battleId) {
       const nickHtml = escapeHtml(truncEnd(p.nickname, 12))
         + (isMe ? ' <span class="lb-me-badge">나</span>' : '')
         + (p.is_creator ? ' <span class="brl-host-badge">방장</span>' : '');
-      const thumbHtml = p.proof_url
-        ? `<img class="battle-result-img brl-thumb" src="${escapeHtml(p.proof_url)}" alt="인증샷">`
-        : `<span class="brl-thumb brl-thumb--empty">—</span>`;
+      const hasNote = !!p.note;
+      let thumbHtml;
+      if (p.proof_url) {
+        // 인증샷 있음: 썸네일 + 소감 있으면 작은 힌트
+        thumbHtml = `<div class="brl-thumb-cell">
+          <img class="battle-result-img brl-thumb" src="${escapeHtml(p.proof_url)}" alt="인증샷">
+          ${hasNote ? '<span class="brl-note-badge">✏️</span>' : ''}
+        </div>`;
+      } else if (hasNote) {
+        // 인증샷 없고 소감만 있음: 소감 보기 버튼
+        thumbHtml = `<button class="brl-note-only-btn" type="button">✏️ 소감</button>`;
+      } else {
+        thumbHtml = `<span class="brl-thumb brl-thumb--empty">—</span>`;
+      }
       return `<div class="brl-row${isMe ? ' brl-row--me' : ''}${!p.proof_url ? ' brl-row--undone' : ''}" data-note="${escapeHtml(p.note || '')}">
         <span class="brl-rank">${rankText}</span>
         <span class="brl-nick">${nickHtml}</span>
@@ -5022,17 +5033,26 @@ $battleResultCloseBtn.addEventListener('click', () => {
   else $battleResultModal.removeAttribute('open');
 });
 
-// v0.1.22 — 배틀 결과 인증샷 탭 → 라이트박스 (dialog 기반, top layer)
+// v0.1.22 — 배틀 결과 인증샷 / 소감 → 라이트박스
 $battleResultPlayers.addEventListener('click', (e) => {
-  const img = e.target.closest('.battle-result-img');
-  if (!img) return;
-  if ($imgLightboxDialog.open) {
-    $imgLightboxDialog.close();
-    return;
+  const img      = e.target.closest('.battle-result-img');
+  const noteBtn  = e.target.closest('.brl-note-only-btn');
+  if (!img && !noteBtn) return;
+  if ($imgLightboxDialog.open) { $imgLightboxDialog.close(); return; }
+
+  const note = (img || noteBtn).closest('[data-note]')?.dataset.note || '';
+
+  if (img) {
+    // 인증샷 있음: 이미지 표시 + 소감(있으면) 하단 오버레이
+    $imgLightboxImg.src = img.src;
+    $imgLightboxImg.hidden = false;
+    $imgLightboxNote?.classList.remove('lightbox-note--text-only');
+  } else {
+    // 소감만 있음: 이미지 숨기고 소감 텍스트만 중앙 표시
+    $imgLightboxImg.src = '';
+    $imgLightboxImg.hidden = true;
+    $imgLightboxNote?.classList.add('lightbox-note--text-only');
   }
-  $imgLightboxImg.src = img.src;
-  // brl-row에 data-note가 있으면 캡션으로 표시 (1:1 카드엔 없으므로 자동 숨김)
-  const note = img.closest('[data-note]')?.dataset.note || '';
   if ($imgLightboxNote) {
     $imgLightboxNote.textContent = note ? `"${note}"` : '';
     $imgLightboxNote.hidden = !note;
