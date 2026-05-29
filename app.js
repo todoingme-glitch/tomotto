@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.107 — 가챠 뽀모도로
+// Tomotto v0.1.108 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -4076,30 +4076,40 @@ async function syncUserStats() {
   ];
   for (const p of periods) {
     try {
-      const { data: existing } = await sb
-        .from('user_stats')
-        .select('count')
-        .eq('nickname', myNickname)
-        .eq('period_type', p.period_type)
-        .eq('period_key', p.period_key)
+      // v0.1.108 — count + total_minutes 함께 조회 (컬럼 없으면 count만)
+      let existing = null;
+      const { data: ex1, error: selErr } = await sb.from('user_stats')
+        .select('count, total_minutes')
+        .eq('nickname', myNickname).eq('period_type', p.period_type).eq('period_key', p.period_key)
         .maybeSingle();
+      if (selErr?.code === '42703' || selErr?.code === 'PGRST204') {
+        const { data: ex2 } = await sb.from('user_stats').select('count')
+          .eq('nickname', myNickname).eq('period_type', p.period_type).eq('period_key', p.period_key)
+          .maybeSingle();
+        existing = ex2;
+      } else { existing = ex1; }
+
+      const sessionMins = Math.round(timer.duration / 60);
       const payload = {
         nickname: myNickname,
         period_type: p.period_type,
         period_key: p.period_key,
         count: (existing?.count ?? 0) + 1,
-        title_emoji: getCurrentTitle()?.emoji ?? null,  // v0.1.105 — 칭호 이모지 함께 저장
+        title_emoji: getCurrentTitle()?.emoji ?? null,
+        total_minutes: (existing?.total_minutes ?? 0) + sessionMins, // v0.1.108
         updated_at: new Date().toISOString(),
       };
-      const { error: upsertErr } = await sb.from('user_stats').upsert(payload);
-      if (upsertErr?.code === '42703' || upsertErr?.code === 'PGRST204') {
-        // title_emoji 컬럼 없음 → 제거 후 재시도
-        const { title_emoji, ...noEmoji } = payload;
-        const { error: e2 } = await sb.from('user_stats').upsert(noEmoji);
-        if (e2) console.warn('[syncUserStats] upsert 재시도 실패:', e2.message);
-      } else if (upsertErr) {
-        console.warn('[syncUserStats] 실패:', upsertErr.message);
+      // 컬럼 미존재 시 점진적 fallback: total_minutes → title_emoji 순으로 제거
+      let err = (await sb.from('user_stats').upsert(payload)).error;
+      if (err?.code === '42703' || err?.code === 'PGRST204') {
+        const { total_minutes, ...p2 } = payload;
+        err = (await sb.from('user_stats').upsert(p2)).error;
       }
+      if (err?.code === '42703' || err?.code === 'PGRST204') {
+        const { title_emoji, total_minutes, ...p3 } = payload;
+        err = (await sb.from('user_stats').upsert(p3)).error;
+      }
+      if (err) console.warn('[syncUserStats] 최종 실패:', err.message);
     } catch (err) {
       console.warn('[syncUserStats] 실패:', err);
     }
@@ -4113,6 +4123,31 @@ async function syncUserStats() {
 // =====================================================
 
 const _overtakeShownThisSession = new Set(); // 세션 내 라이벌 토스트 표시한 nick
+
+// 알림 토스트 슬롯: 여러 개 동시 발생 시 순차 표시 (4.4s 간격)
+let _notifNextSlot = 0;
+function _showNotifToast(className, icon, label, name, duration = 4000) {
+  const delay = Math.max(0, _notifNextSlot - Date.now());
+  _notifNextSlot = Date.now() + delay + duration + 400;
+  setTimeout(() => {
+    const toast = document.createElement('div');
+    toast.className = `achievement-toast ${className}`;
+    toast.innerHTML = `
+      <span class="achievement-toast-icon">${icon}</span>
+      <div class="achievement-toast-body">
+        <div class="achievement-toast-label">${label}</div>
+        <div class="achievement-toast-name">${name}</div>
+      </div>
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.classList.add('achievement-toast--show'), 30);
+    setTimeout(() => {
+      toast.classList.remove('achievement-toast--show');
+      toast.classList.add('achievement-toast--hide');
+      setTimeout(() => toast.remove(), 350);
+    }, duration);
+  }, delay);
+}
 
 // syncUserStats()가 upsert 완료 후 호출.
 // 공식: 내 새 count = N → 방금 앞지른 사람 = count가 정확히 N-1인 사람들
@@ -4191,45 +4226,15 @@ function _checkRankMilestoneToast(rank, periodKey) {
 }
 
 function _showRankMilestoneToast(rank) {
-  const medals  = ['🥇', '🥈', '🥉'];
-  const labels  = ['1위 달성!', '순위 상승!', '순위 상승!'];
-  const msgs    = ['이번 주 1위에 올랐어요!', '탑 3에 진입했어요!', '탑 3에 진입했어요!'];
-  const toast = document.createElement('div');
-  toast.className = 'achievement-toast achievement-toast--overtake';
-  toast.innerHTML = `
-    <span class="achievement-toast-icon">${medals[rank - 1]}</span>
-    <div class="achievement-toast-body">
-      <div class="achievement-toast-label">${labels[rank - 1]}</div>
-      <div class="achievement-toast-name">${msgs[rank - 1]}</div>
-    </div>
-  `;
-  document.body.appendChild(toast);
-  setTimeout(() => toast.classList.add('achievement-toast--show'), 30);
-  setTimeout(() => {
-    toast.classList.remove('achievement-toast--show');
-    toast.classList.add('achievement-toast--hide');
-    setTimeout(() => toast.remove(), 350);
-  }, 4000);
+  const medals = ['🥇', '🥈', '🥉'];
+  const labels = ['1위 달성!', '순위 상승!', '순위 상승!'];
+  const msgs   = ['이번 주 1위에 올랐어요!', '탑 3에 진입했어요!', '탑 3에 진입했어요!'];
+  _showNotifToast('achievement-toast--overtake', medals[rank - 1], labels[rank - 1], msgs[rank - 1]);
 }
 
-// 라이벌(배틀 파트너) 앞지르기 토스트
+// 라이벌(배틀 파트너) 앞지르기 토스트 — 주황색
 function _showRivalOvertakeToast(nick) {
-  const toast = document.createElement('div');
-  toast.className = 'achievement-toast achievement-toast--overtake';
-  toast.innerHTML = `
-    <span class="achievement-toast-icon">⚔️</span>
-    <div class="achievement-toast-body">
-      <div class="achievement-toast-label">라이벌 추월!</div>
-      <div class="achievement-toast-name">${escapeHtml(nick)}님을 앞질렀어요!</div>
-    </div>
-  `;
-  document.body.appendChild(toast);
-  setTimeout(() => toast.classList.add('achievement-toast--show'), 30);
-  setTimeout(() => {
-    toast.classList.remove('achievement-toast--show');
-    toast.classList.add('achievement-toast--hide');
-    setTimeout(() => toast.remove(), 350);
-  }, 4000);
+  _showNotifToast('achievement-toast--rival', '⚔️', '라이벌 추월!', `${escapeHtml(nick)}님을 앞질렀어요!`);
 }
 
 var lbPeriod = 'week'; // var 호이스팅 — initBottomTab() 초기화 시 TDZ 방지
@@ -4251,22 +4256,22 @@ async function renderLeaderboard() {
 
   let rows = [];
   try {
-    // title_emoji 포함 조회 (컬럼 없으면 fallback)
-    const { data, error } = await sb
-      .from('user_stats')
-      .select('nickname, count, title_emoji')
-      .eq('period_type', lbPeriod)
-      .eq('period_key', periodKey)
-      .order('count', { ascending: false })
-      .limit(TOP_N);
+    const { data, error } = await sb.from('user_stats')
+      .select('nickname, count, title_emoji, total_minutes')
+      .eq('period_type', lbPeriod).eq('period_key', periodKey)
+      .order('count', { ascending: false }).limit(TOP_N);
     if (error?.code === '42703' || error?.code === 'PGRST204') {
-      const { data: d2 } = await sb.from('user_stats').select('nickname, count')
+      const { data: d2, error: e2 } = await sb.from('user_stats')
+        .select('nickname, count, title_emoji')
         .eq('period_type', lbPeriod).eq('period_key', periodKey)
         .order('count', { ascending: false }).limit(TOP_N);
-      if (d2) rows = d2;
-    } else if (!error && data) {
-      rows = data;
-    }
+      if (e2?.code === '42703' || e2?.code === 'PGRST204') {
+        const { data: d3 } = await sb.from('user_stats').select('nickname, count')
+          .eq('period_type', lbPeriod).eq('period_key', periodKey)
+          .order('count', { ascending: false }).limit(TOP_N);
+        if (d3) rows = d3;
+      } else if (d2) { rows = d2; }
+    } else if (!error && data) { rows = data; }
   } catch {}
 
   if (!rows.length) {
@@ -4280,50 +4285,66 @@ async function renderLeaderboard() {
   let myRankRow = null;
 
   if (myNickname && myInTop === -1) {
-    let myCount = 0;
+    let myCount = 0, myTotalMins = 0;
     try {
-      const { data: myData } = await sb
-        .from('user_stats').select('count')
+      const { data: myData } = await sb.from('user_stats').select('count, total_minutes')
         .eq('nickname', myNickname).eq('period_type', lbPeriod).eq('period_key', periodKey)
-        .single();
-      if (myData) myCount = myData.count;
+        .maybeSingle();
+      if (myData) { myCount = myData.count ?? 0; myTotalMins = myData.total_minutes ?? 0; }
     } catch {}
     let aboveMe = 0;
     try {
-      const { count } = await sb
-        .from('user_stats')
+      const { count } = await sb.from('user_stats')
         .select('nickname', { count: 'exact', head: true })
         .eq('period_type', lbPeriod).eq('period_key', periodKey).gt('count', myCount);
       aboveMe = count ?? 0;
     } catch {}
-    myRankRow = { nick: myNickname, count: myCount, rank: aboveMe + 1 };
+    myRankRow = { nick: myNickname, count: myCount, rank: aboveMe + 1, totalMins: myTotalMins };
   }
 
-  // emoji는 user_stats에서 직접 읽음 (user_presence 별도 쿼리 불필요)
-  function buildRow(nick, count, rank, emoji = '') {
+  // 세션 유형 라벨 (평균 집중 분 기준)
+  function getSessionLabel(avgMin) {
+    if (avgMin > 0 && avgMin < 10) return '🍅 방울토마토 러너';
+    if (avgMin >= 20 && avgMin <= 35) return '🌿 정석 수확러';
+    if (avgMin >= 60) return '⏳ 장기 숙성 토마토';
+    return '';
+  }
+
+  function buildRow(nick, count, rank, emoji = '', totalMins = 0) {
     const isMe = nick === myNickname;
     const rankBadge = rank <= 3
       ? `<span style="font-size:1.4rem;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:28px;flex-shrink:0">${medalEmojis[rank - 1]}</span>`
       : `<span class="lb-rank-badge" style="background:#e0dbd8;color:#888">${rank}</span>`;
     const countColor = rank <= 3 ? 'color:var(--accent);' : '';
-    // 내 계정: 로컬 계산 우선, 상대 계정: user_stats.title_emoji
     const titleEmoji = isMe
       ? (getCurrentTitle()?.emoji || emoji || '')
       : (emoji || '');
     const nickText = titleEmoji ? `${titleEmoji} ${escapeHtml(nick)}` : escapeHtml(nick);
+
+    // 보조 정보 (총 집중분 · 평균 세션 · 라벨) — total_minutes 있을 때만 표시
+    let subHtml = '';
+    if (totalMins > 0 && count > 0) {
+      const avgMin = Math.round(totalMins / count);
+      const label = getSessionLabel(avgMin);
+      const labelHtml = label ? ` <span class="lb-session-label">${label}</span>` : '';
+      subHtml = `<span class="lb-sub">총 ${totalMins}분 · 평균 ${avgMin}분${labelHtml}</span>`;
+    }
+
     return `
       <div class="lb-row${isMe ? ' lb-row-me' : ''}">
         ${rankBadge}
-        <span class="lb-nick"><span class="lb-nick-text">${nickText}</span></span>
+        <div class="lb-info">
+          <span class="lb-nick"><span class="lb-nick-text">${nickText}</span></span>
+          ${subHtml}
+        </div>
         <span class="lb-count" style="${countColor}">${count}회</span>
       </div>`;
   }
 
-  let html = rows.map((r, i) => buildRow(r.nickname, r.count, i + 1, r.title_emoji || '')).join('');
+  let html = rows.map((r, i) => buildRow(r.nickname, r.count, i + 1, r.title_emoji || '', r.total_minutes || 0)).join('');
   if (myRankRow) {
     html += '<div class="league-my-rank-sep">···</div>';
-    // 내 순위 행: 로컬 칭호 직접 사용
-    html += buildRow(myRankRow.nick, myRankRow.count, myRankRow.rank, getCurrentTitle()?.emoji || '');
+    html += buildRow(myRankRow.nick, myRankRow.count, myRankRow.rank, getCurrentTitle()?.emoji || '', myRankRow.totalMins || 0);
   }
   $body.innerHTML = html;
 }
