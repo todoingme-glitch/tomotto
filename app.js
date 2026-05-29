@@ -1811,8 +1811,10 @@ function openInviteModal(battle) {
 
 function makeInviteLink(battleId) {
   const h = location.hostname;
-  const isLocal = h === 'localhost' || h === '127.0.0.1';
-  // 로컬 외 모든 환경(Vercel preview 포함)은 production URL 고정
+  // Capacitor 앱은 localhost에서 실행되지만 실제 로컬 개발 환경이 아님
+  const isCapacitor = !!(window.Capacitor?.isNativePlatform?.());
+  const isLocal = !isCapacitor && (h === 'localhost' || h === '127.0.0.1');
+  // 로컬 외 모든 환경(Vercel preview, Capacitor 포함)은 production URL 고정
   // — preview URL은 Vercel 로그인 요구 + 카카오 도메인 미등록 문제 발생
   const base = isLocal
     ? (location.origin + location.pathname)
