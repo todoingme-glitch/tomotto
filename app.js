@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.110 — 가챠 뽀모도로
+// Tomotto v0.1.111 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -4188,6 +4188,13 @@ async function checkAndNotifyOvertake() {
       const justPassed = (justPassedRows || []).map(r => r.nickname)
         .filter(n => n !== myNickname && !_overtakeShownThisSession.has(n));
       console.log('[overtake] count-1 자리 유저:', justPassed);
+      // 🧪 TEST: 파트너 필터 임시 제거 — 추월한 사람 누구든 토스트 표시
+      // (원인: user_partner_stats에 배틀 완료 기록 없으면 partnerSet이 비어 토스트 안 뜸)
+      if (justPassed.length > 0) {
+        _showRivalOvertakeToast(justPassed[0]);
+        _overtakeShownThisSession.add(justPassed[0]);
+      }
+      /* 원본 파트너 필터 (복구 시 위 블록 교체):
       if (justPassed.length > 0) {
         const partnerSet = await _fetchMyPartnerNicks();
         console.log('[overtake] 내 배틀 파트너:', [...partnerSet]);
@@ -4198,6 +4205,7 @@ async function checkAndNotifyOvertake() {
           _overtakeShownThisSession.add(rivalPassed[0]);
         }
       }
+      */
     }
   } catch (e) {
     console.warn('[checkOvertake] 실패:', e);
@@ -4218,20 +4226,23 @@ async function _fetchMyPartnerNicks() {
 // • rank 2~3 → "탑 3 진입!" 1번
 // (주당 최대 2번: 탑3 진입 + 1위 달성)
 function _checkRankMilestoneToast(rank, periodKey) {
+  // 🧪 TEST: 주차 제한 임시 해제 — 테스트 후 복구 필요
+  _showRankMilestoneToast(rank);
+  /* 원본 (복구 시 주석 해제, 위 한 줄 삭제):
   const key = `tomotto_lb_rank_${periodKey}`;
   const notified = JSON.parse(localStorage.getItem(key) || '{}');
-
   if (rank === 1 && !notified.no1) {
     notified.no1 = true;
     localStorage.setItem(key, JSON.stringify(notified));
     _showRankMilestoneToast(1);
-    return; // 1위 달성 시 탑3 토스트 중복 생략
+    return;
   }
   if (rank <= 3 && !notified.top3) {
     notified.top3 = true;
     localStorage.setItem(key, JSON.stringify(notified));
     _showRankMilestoneToast(rank);
   }
+  */
 }
 
 function _showRankMilestoneToast(rank) {
