@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.109 — 가챠 뽀모도로
+// Tomotto v0.1.110 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -4124,29 +4124,34 @@ async function syncUserStats() {
 
 const _overtakeShownThisSession = new Set(); // 세션 내 라이벌 토스트 표시한 nick
 
-// 알림 토스트 슬롯: 여러 개 동시 발생 시 순차 표시 (4.4s 간격)
-let _notifNextSlot = 0;
+// 알림 토스트: 스택 컨테이너에 동시 표시 (v0.1.110)
+// 1위 토스트 + 라이벌 토스트가 동시에 쌓여서 보임
 function _showNotifToast(className, icon, label, name, duration = 4000) {
-  const delay = Math.max(0, _notifNextSlot - Date.now());
-  _notifNextSlot = Date.now() + delay + duration + 400;
+  let container = document.getElementById('notif-toast-stack');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'notif-toast-stack';
+    document.body.appendChild(container);
+  }
+  const toast = document.createElement('div');
+  toast.className = `achievement-toast achievement-toast--stacked ${className}`;
+  toast.innerHTML = `
+    <span class="achievement-toast-icon">${icon}</span>
+    <div class="achievement-toast-body">
+      <div class="achievement-toast-label">${label}</div>
+      <div class="achievement-toast-name">${name}</div>
+    </div>
+  `;
+  container.appendChild(toast);
+  setTimeout(() => toast.classList.add('achievement-toast--show'), 30);
   setTimeout(() => {
-    const toast = document.createElement('div');
-    toast.className = `achievement-toast ${className}`;
-    toast.innerHTML = `
-      <span class="achievement-toast-icon">${icon}</span>
-      <div class="achievement-toast-body">
-        <div class="achievement-toast-label">${label}</div>
-        <div class="achievement-toast-name">${name}</div>
-      </div>
-    `;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.classList.add('achievement-toast--show'), 30);
+    toast.classList.remove('achievement-toast--show');
+    toast.classList.add('achievement-toast--hide');
     setTimeout(() => {
-      toast.classList.remove('achievement-toast--show');
-      toast.classList.add('achievement-toast--hide');
-      setTimeout(() => toast.remove(), 350);
-    }, duration);
-  }, delay);
+      toast.remove();
+      if (!container.children.length) container.remove();
+    }, 350);
+  }, duration);
 }
 
 // syncUserStats()가 upsert 완료 후 호출.
@@ -4182,9 +4187,12 @@ async function checkAndNotifyOvertake() {
         .eq('count', myCount - 1).limit(30);
       const justPassed = (justPassedRows || []).map(r => r.nickname)
         .filter(n => n !== myNickname && !_overtakeShownThisSession.has(n));
+      console.log('[overtake] count-1 자리 유저:', justPassed);
       if (justPassed.length > 0) {
         const partnerSet = await _fetchMyPartnerNicks();
+        console.log('[overtake] 내 배틀 파트너:', [...partnerSet]);
         const rivalPassed = justPassed.filter(n => partnerSet.has(n));
+        console.log('[overtake] 라이벌 추월:', rivalPassed);
         if (rivalPassed.length > 0) {
           _showRivalOvertakeToast(rivalPassed[0]);
           _overtakeShownThisSession.add(rivalPassed[0]);

@@ -4556,6 +4556,39 @@ dialog.modal input[type="text"]:focus {
   opacity: 0;
   transition: transform 0.3s ease, opacity 0.3s ease;
 }
+/* 알림 토스트 스택 컨테이너 (v0.1.110) — 동시 표시용 */
+#notif-toast-stack {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 9000;
+  pointer-events: none;
+  width: 320px;
+  max-width: calc(100vw - 32px);
+}
+/* 스택 내 토스트: 컨테이너 기준 (fixed 위치 덮어쓰기) */
+.achievement-toast.achievement-toast--stacked {
+  position: relative;
+  top: auto;
+  left: auto;
+  width: 100%;
+  max-width: 100%;
+  transform: translateY(-12px);
+  opacity: 0;
+}
+.achievement-toast.achievement-toast--stacked.achievement-toast--show {
+  transform: translateY(0);
+  opacity: 1;
+}
+.achievement-toast.achievement-toast--stacked.achievement-toast--hide {
+  transform: translateY(-12px);
+  opacity: 0;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
 /* 희귀 업적 변형 */
 .achievement-toast--rare {
   background: #fffbeb;
