@@ -4663,14 +4663,35 @@ dialog.modal input[type="text"]:focus {
   92%  { opacity: 0.2; }
   100% { transform: translateY(var(--dy, 80vh)) rotate(var(--r1, 30deg)); opacity: 0; }
 }
-/* 클릭 가능한 파트너 메시지 */
-.pub-lobby-partner-msg.is-tappable {
+/* 인사 보내기 버튼 */
+.pub-lobby-greet-btn {
+  display: block;
+  width: calc(100% - 24px);
+  margin: 0 12px 6px;
+  padding: 9px 16px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border: none;
   cursor: pointer;
-  text-decoration: underline dotted currentColor;
-  text-underline-offset: 3px;
-  transition: opacity 0.15s;
+  letter-spacing: 0.01em;
+  transition: opacity 0.15s, transform 0.1s;
 }
-.pub-lobby-partner-msg.is-tappable:active { opacity: 0.65; }
+.pub-lobby-greet-btn:active {
+  opacity: 0.82;
+  transform: scale(0.97);
+}
+
+/* 인사 도착 토스트 (노란/주황 계열) */
+.achievement-toast--greet {
+  background: #fffbeb;
+  border-color: #f59e0b;
+  box-shadow: 0 4px 20px rgba(245,158,11,0.2), 0 0 0 1px rgba(245,158,11,0.2);
+}
+.achievement-toast--greet .achievement-toast-label { color: #b45309; }
+.achievement-toast--greet .achievement-toast-name  { color: #78350f; }
 
 /* 숨겨진 업적 변형 */
 .achievement-toast--secret {
