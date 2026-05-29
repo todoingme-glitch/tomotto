@@ -3,7 +3,7 @@ name: Android APK Build
 on:
   push:
     branches: [main]
-  workflow_dispatch:   # 수동 실행 버튼
+  workflow_dispatch:
 
 jobs:
   build:
@@ -33,6 +33,12 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
       - name: Grant Gradle execute permission
         run: chmod +x android/gradlew
