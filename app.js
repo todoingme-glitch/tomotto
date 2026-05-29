@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.105 — 가챠 뽀모도로
+// Tomotto v0.1.106 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -4083,13 +4083,23 @@ async function syncUserStats() {
         .eq('period_type', p.period_type)
         .eq('period_key', p.period_key)
         .maybeSingle();
-      await sb.from('user_stats').upsert({
+      const payload = {
         nickname: myNickname,
         period_type: p.period_type,
         period_key: p.period_key,
         count: (existing?.count ?? 0) + 1,
+        title_emoji: getCurrentTitle()?.emoji ?? null,  // v0.1.105 — 칭호 이모지 함께 저장
         updated_at: new Date().toISOString(),
-      });
+      };
+      const { error: upsertErr } = await sb.from('user_stats').upsert(payload);
+      if (upsertErr?.code === '42703' || upsertErr?.code === 'PGRST204') {
+        // title_emoji 컬럼 없음 → 제거 후 재시도
+        const { title_emoji, ...noEmoji } = payload;
+        const { error: e2 } = await sb.from('user_stats').upsert(noEmoji);
+        if (e2) console.warn('[syncUserStats] upsert 재시도 실패:', e2.message);
+      } else if (upsertErr) {
+        console.warn('[syncUserStats] 실패:', upsertErr.message);
+      }
     } catch (err) {
       console.warn('[syncUserStats] 실패:', err);
     }
@@ -4241,14 +4251,22 @@ async function renderLeaderboard() {
 
   let rows = [];
   try {
+    // title_emoji 포함 조회 (컬럼 없으면 fallback)
     const { data, error } = await sb
       .from('user_stats')
-      .select('nickname, count')
+      .select('nickname, count, title_emoji')
       .eq('period_type', lbPeriod)
       .eq('period_key', periodKey)
       .order('count', { ascending: false })
       .limit(TOP_N);
-    if (!error && data) rows = data;
+    if (error?.code === '42703' || error?.code === 'PGRST204') {
+      const { data: d2 } = await sb.from('user_stats').select('nickname, count')
+        .eq('period_type', lbPeriod).eq('period_key', periodKey)
+        .order('count', { ascending: false }).limit(TOP_N);
+      if (d2) rows = d2;
+    } else if (!error && data) {
+      rows = data;
+    }
   } catch {}
 
   if (!rows.length) {
@@ -4281,30 +4299,17 @@ async function renderLeaderboard() {
     myRankRow = { nick: myNickname, count: myCount, rank: aboveMe + 1 };
   }
 
-  // 리더보드 유저들 칭호 이모지 fetch (user_presence.title_emoji)
-  let emojiMap = {};
-  try {
-    const allNicks = [...new Set([
-      ...rows.map(r => r.nickname),
-      ...(myRankRow ? [myRankRow.nick] : []),
-    ])];
-    if (allNicks.length > 0) {
-      const { data: presData } = await sb.from('user_presence')
-        .select('nickname, title_emoji').in('nickname', allNicks);
-      (presData || []).forEach(p => { if (p.title_emoji) emojiMap[p.nickname] = p.title_emoji; });
-    }
-  } catch {}
-
-  function buildRow(nick, count, rank) {
+  // emoji는 user_stats에서 직접 읽음 (user_presence 별도 쿼리 불필요)
+  function buildRow(nick, count, rank, emoji = '') {
     const isMe = nick === myNickname;
     const rankBadge = rank <= 3
       ? `<span style="font-size:1.4rem;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:28px;flex-shrink:0">${medalEmojis[rank - 1]}</span>`
       : `<span class="lb-rank-badge" style="background:#e0dbd8;color:#888">${rank}</span>`;
     const countColor = rank <= 3 ? 'color:var(--accent);' : '';
-    // 내 계정: 로컬 계산 우선, 상대 계정: DB title_emoji
+    // 내 계정: 로컬 계산 우선, 상대 계정: user_stats.title_emoji
     const titleEmoji = isMe
-      ? (getCurrentTitle()?.emoji || emojiMap[nick] || '')
-      : (emojiMap[nick] || '');
+      ? (getCurrentTitle()?.emoji || emoji || '')
+      : (emoji || '');
     const nickText = titleEmoji ? `${titleEmoji} ${escapeHtml(nick)}` : escapeHtml(nick);
     return `
       <div class="lb-row${isMe ? ' lb-row-me' : ''}">
@@ -4314,10 +4319,11 @@ async function renderLeaderboard() {
       </div>`;
   }
 
-  let html = rows.map((r, i) => buildRow(r.nickname, r.count, i + 1)).join('');
+  let html = rows.map((r, i) => buildRow(r.nickname, r.count, i + 1, r.title_emoji || '')).join('');
   if (myRankRow) {
     html += '<div class="league-my-rank-sep">···</div>';
-    html += buildRow(myRankRow.nick, myRankRow.count, myRankRow.rank);
+    // 내 순위 행: 로컬 칭호 직접 사용
+    html += buildRow(myRankRow.nick, myRankRow.count, myRankRow.rank, getCurrentTitle()?.emoji || '');
   }
   $body.innerHTML = html;
 }
