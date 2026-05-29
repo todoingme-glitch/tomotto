@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.128 — 가챠 뽀모도로
+// Tomotto v0.1.129 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -5887,33 +5887,33 @@ $cameraRetryBtn.addEventListener('click', retryCamera);
 $cameraSaveBtn.addEventListener('click', saveCameraCapture);
 $cameraCancelBtn.addEventListener('click', closeCameraModal);
 $cameraGalleryBtn.addEventListener('click', () => {
-  // v0.1.58 — 카메라 완전 해제 후 새 input 요소를 동적 생성해서 갤러리 열기
-  // 기존 $captureInput은 카메라 컨텍스트와 연결된 것으로 Chrome이 인식할 수 있어서
-  // 완전히 새로운 input 요소를 만들면 카메라 연관 없이 순수 갤러리(사진 및 동영상)로 열림
+  // v0.1.128 — Capacitor WebView 대응:
+  // 모달 닫기 전에 파일 피커를 선제 클릭 → 사용자 제스처 컨텍스트 유지
+  // (300ms 딜레이 방식은 Capacitor에서 gesture context 만료로 클릭 무시됨)
+  const tmpInput = document.createElement('input');
+  tmpInput.type = 'file';
+  tmpInput.accept = 'image/*';
+  tmpInput.multiple = false;
+  tmpInput.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
+  tmpInput.addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => saveCaptureToStorage(ev.target.result);
+      reader.readAsDataURL(file);
+    }
+    tmpInput.remove();
+  });
+  document.body.appendChild(tmpInput);
+  tmpInput.click(); // 제스처 컨텍스트 살아있는 동안 즉시 클릭
+
+  // 파일 피커 열린 후 카메라 스트림 정리
   stopCameraStream();
   if (typeof $cameraModal.close === 'function') $cameraModal.close();
   else $cameraModal.removeAttribute('open');
 
-  setTimeout(() => {
-    const tmpInput = document.createElement('input');
-    tmpInput.type = 'file';
-    tmpInput.accept = 'image/*';
-    tmpInput.multiple = false; // v0.1.65 — 모바일 갤러리 다중선택 방지
-    tmpInput.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
-    tmpInput.addEventListener('change', (e) => {
-      const file = e.target.files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (ev) => saveCaptureToStorage(ev.target.result);
-        reader.readAsDataURL(file);
-      }
-      tmpInput.remove();
-    });
-    document.body.appendChild(tmpInput);
-    tmpInput.click();
-    // 선택 취소 시 클린업
-    setTimeout(() => { if (tmpInput.parentNode) tmpInput.remove(); }, 60000);
-  }, 300);
+  // 선택 취소 시 클린업
+  setTimeout(() => { if (tmpInput.parentNode) tmpInput.remove(); }, 60000);
 });
 // backdrop 클릭 시 닫기 + stream 정리
 $cameraModal.addEventListener('click', (e) => {
