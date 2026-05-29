@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.126 — 가챠 뽀모도로
+// Tomotto v0.1.128 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -3034,17 +3034,26 @@ window.addEventListener('load', () => {
   subscribePublicBattles();     // v0.1.79 C — 공개 배틀방 실시간 구독
 
   const params = new URLSearchParams(location.search);
-  const battleId = params.get('battle');
+  // v0.1.128 — URL 파라미터(웹/IAB) + AndroidBridge(네이티브 앱) 모두 확인
+  let battleId = params.get('battle');
+  if (!battleId && window.AndroidBridge) {
+    // Capacitor 네이티브: MainActivity가 Android Intent에서 추출한 battle ID
+    const nativeId = window.AndroidBridge.getLaunchBattleId?.();
+    if (nativeId) battleId = nativeId;
+  }
 
   if (battleId) {
-    // v0.1.127 — 배틀 링크 진입: 온보딩 건너뛰고 소셜탭 → 배틀룸 바로 오픔
-    // (KakaoTalk IAB 등 첫 진입 환경에서도 온보딩이 모달을 가로막지 않도록)
     // v0.1.70 — 실제 참여자인 경우에만 잠금 배너 표시 (카드 삭제 후 재진입 버그 방지)
     loadMyBattles().then(list => {
       if (list?.some(b => b.id === battleId)) showBattleLock(battleId);
     });
-    switchTab('social', { skipScroll: true });
-    setTimeout(() => openBattleRoom(battleId), 400);
+    // 온보딩 완료 후 소셜탭으로 이동하고 배틀룸 오픔
+    // (초대받은 신규 유저도 앱 설명을 먼저 봐야 하므로 온보딩 유지)
+    initOnboardingTooltip(() => {
+      switchTab('social');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setTimeout(() => openBattleRoom(battleId), 300);
+    });
   } else {
     // 일반 진입: 온보딩 + v0.1.69 파트너 배틀룸 입장 확인
     // initOnboarding();        // v0.1.34 — Shepherd.js 버전 (보관)
