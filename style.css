@@ -1672,6 +1672,9 @@ dialog.modal input[type="text"]:focus {
   font-weight: 800;
   color: var(--accent);
   letter-spacing: 0.05em;
+  align-self: center;
+  display: flex;
+  align-items: center;
 }
 
 .battle-room-task {
