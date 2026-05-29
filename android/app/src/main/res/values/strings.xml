@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Tomotto</string>
+    <string name="title_activity_main">Tomotto</string>
+    <string name="package_name">com.tomotto.app</string>
+    <string name="custom_url_scheme">com.tomotto.app</string>
+</resources>

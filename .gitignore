@@ -14,12 +14,15 @@ desktop.ini
 *.tmp
 .cache/
 
-# Node (혹시 나중에 추가)
+# Node
 node_modules/
 package-lock.json
 dist/
 .env
 .env.local
+
+# Capacitor 빌드 산출물 (CI에서 자동 생성)
+www/
 
 # Vercel
 .vercel/

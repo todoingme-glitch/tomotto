@@ -1,0 +1,28 @@
+{
+  "name": "tomotto",
+  "version": "1.0.0",
+  "description": "Gacha-style Pomodoro timer for procrastinators",
+  "main": "app.js",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "sync": "npm run build && npx cap sync",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/todoingme-glitch/tomotto.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/todoingme-glitch/tomotto/issues"
+  },
+  "homepage": "https://github.com/todoingme-glitch/tomotto#readme",
+  "dependencies": {
+    "@capacitor/android": "^8.3.4",
+    "@capacitor/cli": "^8.3.4",
+    "@capacitor/core": "^8.3.4"
+  }
+}
