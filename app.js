@@ -3684,10 +3684,10 @@ async function upsertPresence(isFocusing) {
     is_focusing: isFocusing,
     updated_at: new Date().toISOString(),
   };
-  // 집중 시작 시 상태공개 여부 + 칭호 이모지 함께 기록
+  // 칭호 이모지는 항상 최신 값 기록 (리더보드에서 상대 배지 표시에 사용)
+  payload.title_emoji = getCurrentTitle()?.emoji ?? null;
   if (isFocusing) {
     payload.status_public = isStatusPublic;
-    payload.title_emoji   = getCurrentTitle()?.emoji ?? null;
   }
   const { error } = await sb.from('user_presence')
     .upsert(payload, { onConflict: 'nickname' });
