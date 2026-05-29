@@ -5998,9 +5998,9 @@ const TITLE_DEFS = [
   { id: 'battle',  emoji: '⚔️', name: '배틀마스터',  check: () => getLogsFromStorage().filter(l => l.type === 'battle').length >= 20 },
   { id: 'focus',   emoji: '🔥', name: '집중왕',       check: () => getCompletionStreak() >= 7 },
   { id: 'ripe',    emoji: '🍅', name: '완숙토마토',  check: () => completedCount >= 50 },
-  { id: 'green',   emoji: '🍅', name: '풋토마토',    check: () => completedCount >= 20 },
-  { id: 'sprout',  emoji: '🍃', name: '새싹',         check: () => completedCount >= 5 },
-  { id: 'seed',    emoji: '🌱', name: '씨앗 토마토', check: () => completedCount >= 1 },
+  { id: 'green',   emoji: '🍏', name: '풋토마토',    check: () => completedCount >= 20 },
+  { id: 'sprout',  emoji: '🌱', name: '새싹',         check: () => completedCount >= 5 },
+  { id: 'seed',    emoji: '🌰', name: '씨앗 토마토', check: () => completedCount >= 1 },
 ];
 
 // 칭호 탭 표시용: 조건 텍스트 + 진행도 함수
