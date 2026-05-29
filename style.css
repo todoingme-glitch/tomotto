@@ -1880,26 +1880,35 @@ dialog.modal input[type="text"]:focus {
   flex: 1;
   min-width: 0;
 }
-/* 오른쪽 영역: 소감 힌트 + 썸네일 묶음 */
+/* 오른쪽 영역: 소감 이모지/힌트 + 썸네일 묶음 */
 .brl-right {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   flex-shrink: 0;
   margin-left: auto;
+  overflow: hidden; /* 이미지 overflow 방지 */
 }
-/* 소감 보기 힌트 버튼 (썸네일 왼쪽) */
+/* 케이스 3: 소감만 — 끝이 썸네일 오른쪽과 일치하도록 너비 고정 */
+.brl-right--note-only {
+  min-width: 40px;
+  justify-content: flex-end;
+}
+/* 소감 이모지 (케이스 4) */
+.brl-note-emoji {
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+/* 소감 보기 버튼 (케이스 3) */
 .brl-note-hint {
-  display: flex;
-  align-items: center;
-  gap: 3px;
   font-size: 0.72rem;
-  color: var(--text-soft);
+  color: var(--text-muted);
   background: none;
   border: none;
   padding: 0;
   cursor: pointer;
   white-space: nowrap;
+  text-align: right;
 }
 .brl-note-hint:hover { color: var(--text); }
 
@@ -1924,11 +1933,14 @@ dialog.modal input[type="text"]:focus {
 .brl-thumb {
   width: 40px;
   height: 40px;
+  min-width: 40px;
+  min-height: 40px;
   border-radius: 6px;
   object-fit: cover;
   border: 1.5px solid var(--border);
   display: block;
   flex-shrink: 0;
+  overflow: hidden; /* 이미지 박스 이탈 방지 */
 }
 
 .brl-thumb--empty {
@@ -2647,6 +2659,19 @@ dialog.modal input[type="text"]:focus {
   background: var(--accent-soft);
   color: var(--accent);
   flex-shrink: 0;
+}
+
+/* 파트너 이력 배지 — 로비에서 함께한 적 있는 유저에게 표시 */
+.pub-lobby-partner-badge {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-left: auto;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1px 7px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .pub-lobby-status {

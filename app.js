@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.92 — 가챠 뽀모도로
+// Tomotto v0.1.93 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -3915,6 +3915,20 @@ function finishTimer() {
   // v0.1.36 — 소셜 리더보드 통계 동기화
   syncUserStats();
 
+  // v0.1.93 — 파트너 통계 업데이트 (양방향 상호작용 기반)
+  if (activeBattleId && sb && myNickname) {
+    const dur = timer.duration || 0;
+    if (battlePartner?.partnerNick) {
+      // 1:1 배틀
+      upsertPartnerStats(battlePartner.partnerNick, dur);
+    } else if (currentBattleData?.battle?.is_public && currentBattleData?.players?.length) {
+      // 공개 배틀 — 함께한 모든 참여자 기록
+      currentBattleData.players
+        .filter(p => p.nickname !== myNickname)
+        .forEach(p => upsertPartnerStats(p.nickname, dur));
+    }
+  }
+
   // v0.1.33 — 기록 탭 로그 저장
   const _now = Date.now();
   saveLog({
@@ -4015,6 +4029,27 @@ function getWeekKey(date = new Date()) {
 
 function getMonthKey(date = new Date()) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+// ── 파트너 통계 단방향 upsert (내 쪽 기록만, 상대방도 자신이 완료 시 자신 기록)
+async function upsertPartnerStats(partnerNick, durationSec = 0) {
+  if (!sb || !myNickname || !partnerNick || partnerNick === myNickname) return;
+  try {
+    await sb.rpc('increment_partner_stats', {
+      p_me:      myNickname,
+      p_partner: partnerNick,
+      p_sec:     Math.round(durationSec),
+    });
+  } catch (e) {
+    // RPC 함수 미생성 시 fallback: 직접 upsert (중복 방지 미보장)
+    await sb.from('user_partner_stats').upsert({
+      nickname:       myNickname,
+      partner:        partnerNick,
+      battle_count:   1,
+      total_sec:      Math.round(durationSec),
+      last_battled_at: new Date().toISOString(),
+    }, { onConflict: 'nickname,partner', ignoreDuplicates: false }).catch(() => {});
+  }
 }
 
 // 타이머 완료 시 Supabase user_stats에 카운트 업데이트
@@ -4448,6 +4483,34 @@ async function openPublicLobby(battleId) {
   if ($modal && typeof $modal.showModal === 'function') $modal.showModal();
 }
 
+/** 로비 플레이어 목록에 파트너 이력 배지 추가 (비동기, 렌더 후 호출) */
+async function enrichLobbyWithPartnerBadges(players) {
+  if (!sb || !myNickname || !players.length) return;
+  const others = players.filter(p => p.nickname !== myNickname).map(p => p.nickname);
+  if (!others.length) return;
+  try {
+    const { data } = await sb.from('user_partner_stats')
+      .select('partner, battle_count, total_sec')
+      .eq('nickname', myNickname)
+      .in('partner', others);
+    if (!data?.length) return;
+    const statsMap = Object.fromEntries(data.map(d => [d.partner, d]));
+    const $list = document.getElementById('pubLobbyPlayers');
+    if (!$list) return;
+    $list.querySelectorAll('.pub-lobby-player:not(.is-me)').forEach(el => {
+      if (el.querySelector('.pub-lobby-partner-badge')) return; // 중복 방지
+      const nick = el.querySelector('.pub-lobby-nick')?.firstChild?.textContent?.trim();
+      const s = nick && statsMap[nick];
+      if (!s) return;
+      const mins = Math.round((s.total_sec || 0) / 60);
+      const badge = document.createElement('span');
+      badge.className = 'pub-lobby-partner-badge';
+      badge.textContent = `${s.battle_count}번 함께 · ${mins}분`;
+      el.appendChild(badge);
+    });
+  } catch {}
+}
+
 /** 로비 모달 UI 렌더링 */
 function renderPublicLobby(battle, players) {
   const modeLabel = battle.mode === 'common' ? '🍅 TOM MODE' : '🎲 MOTO MODE';
@@ -4523,6 +4586,7 @@ function subscribePublicLobby(battleId) {
 
     currentBattleData = { battle: publicLobbyBattle, players: players ?? [] };
     renderPublicLobby(publicLobbyBattle, players ?? []);
+    enrichLobbyWithPartnerBadges(players ?? []);
     // 공개 배틀 목록의 방장 버튼도 ready 상태 반영
     renderPublicBattles();
 
@@ -4996,19 +5060,32 @@ async function openBattleResult(battleId) {
       const nickHtml = escapeHtml(truncEnd(p.nickname, 12))
         + (isMe ? ' <span class="lb-me-badge">나</span>' : '')
         + (p.is_creator ? ' <span class="brl-host-badge">방장</span>' : '');
-      const hasNote = !!p.note;
-      // 소감 힌트 (썸네일 왼쪽)
-      const noteHint = hasNote
-        ? `<button class="brl-note-hint" type="button">🪶 소감 보기</button>`
-        : '';
-      // 썸네일 (항상 맨 오른쪽)
-      const thumbHtml = p.proof_url
-        ? `<img class="battle-result-img brl-thumb" src="${escapeHtml(p.proof_url)}" alt="인증샷">`
-        : `<span class="brl-thumb brl-thumb--empty"></span>`;
-      return `<div class="brl-row${isMe ? ' brl-row--me' : ''}${!p.proof_url ? ' brl-row--undone' : ''}" data-note="${escapeHtml(p.note || '')}">
+      const hasProof = !!p.proof_url;
+      const hasNote  = !!p.note;
+      // ── 4가지 케이스 분기 ──
+      let rightHtml = '';
+      if (hasProof && hasNote) {
+        // 케이스 4: 인증샷+소감 → 🪶 이모지 + 썸네일 (소감은 라이트박스에서)
+        rightHtml = `<div class="brl-right">
+          <span class="brl-note-emoji" aria-label="소감 있음">🪶</span>
+          <img class="battle-result-img brl-thumb" src="${escapeHtml(p.proof_url)}" alt="인증샷">
+        </div>`;
+      } else if (hasProof) {
+        // 케이스 2: 인증샷만 → 썸네일만
+        rightHtml = `<div class="brl-right">
+          <img class="battle-result-img brl-thumb" src="${escapeHtml(p.proof_url)}" alt="인증샷">
+        </div>`;
+      } else if (hasNote) {
+        // 케이스 3: 소감만 → 오른쪽 정렬 텍스트 (끝이 썸네일 위치와 맞춤)
+        rightHtml = `<div class="brl-right brl-right--note-only">
+          <button class="brl-note-hint" type="button">🪶 소감 보기</button>
+        </div>`;
+      }
+      // 케이스 1: 둘 다 없음 → rightHtml 없음 (닉네임만)
+      return `<div class="brl-row${isMe ? ' brl-row--me' : ''}${!hasProof ? ' brl-row--undone' : ''}" data-note="${escapeHtml(p.note || '')}">
         <span class="brl-rank">${rankText}</span>
         <span class="brl-nick">${nickHtml}</span>
-        <div class="brl-right">${noteHint}${thumbHtml}</div>
+        ${rightHtml}
       </div>`;
     }).join('');
 
