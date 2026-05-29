@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.113 — 가챠 뽀모도로
+// Tomotto v0.1.114 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -4192,36 +4192,28 @@ async function checkAndNotifyOvertake() {
         .eq('count', myCount - 1).limit(30);
       const justPassed = (justPassedRows || []).map(r => r.nickname)
         .filter(n => n !== myNickname && !_overtakeShownThisSession.has(n));
-      console.log('[overtake] count-1 자리 유저:', justPassed);
-      // 🧪 TEST: 파트너 필터 임시 제거 — 추월한 사람 누구든 토스트 표시
-      // (원인: user_partner_stats에 배틀 완료 기록 없으면 partnerSet이 비어 토스트 안 뜸)
-      if (justPassed.length > 0) {
-        _showRivalOvertakeToast(justPassed[0]);
-        _overtakeShownThisSession.add(justPassed[0]);
-      }
-      /* 원본 파트너 필터 (복구 시 위 블록 교체):
+      // 구면(3회+ 배틀) 중 방금 추월한 사람에게만 토스트
       if (justPassed.length > 0) {
         const partnerSet = await _fetchMyPartnerNicks();
-        console.log('[overtake] 내 배틀 파트너:', [...partnerSet]);
         const rivalPassed = justPassed.filter(n => partnerSet.has(n));
-        console.log('[overtake] 라이벌 추월:', rivalPassed);
         if (rivalPassed.length > 0) {
           _showRivalOvertakeToast(rivalPassed[0]);
           _overtakeShownThisSession.add(rivalPassed[0]);
         }
       }
-      */
     }
   } catch (e) {
     console.warn('[checkOvertake] 실패:', e);
   }
 }
 
-// 내 배틀 파트너 닉네임 Set 반환
+// 구면(battle_count >= 3) 파트너 닉네임 Set 반환
 async function _fetchMyPartnerNicks() {
   try {
     const { data } = await sb.from('user_partner_stats')
-      .select('partner').eq('nickname', myNickname);
+      .select('partner, battle_count')
+      .eq('nickname', myNickname)
+      .gte('battle_count', 3); // 구면 조건: 3회 이상 함께 배틀 완료
     return new Set((data || []).map(r => r.partner));
   } catch { return new Set(); }
 }
