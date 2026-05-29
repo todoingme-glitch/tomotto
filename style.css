@@ -4489,6 +4489,9 @@ dialog.modal input[type="text"]:focus {
 .achievement-toast--rare .achievement-toast-name {
   color: #92400e;
 }
+.achievement-toast--rare .achievement-toast-desc {
+  color: #b45309;
+}
 /* 숨겨진 업적 변형 */
 .achievement-toast--secret {
   background: #ede9fe;
