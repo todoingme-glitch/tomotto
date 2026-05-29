@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.93 — 가챠 뽀모도로
+// Tomotto v0.1.103 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -1274,8 +1274,10 @@ function renderLogPartnerRecord() {
       ? `<span class="partner-tier-badge">${tier.emoji} ${tier.label}</span>`
       : '';
     return `<div class="partner-row">
-      <span class="partner-row-nick">${escapeHtml(nick)}</span>
-      ${tierBadge}
+      <div class="partner-row-top">
+        <span class="partner-row-nick">${escapeHtml(nick)}</span>
+        ${tierBadge}
+      </div>
       <span class="partner-row-stats">${d.count}회${modeTag ? ` · ${modeTag}` : ''} · 마지막 ${lastDate}</span>
     </div>`;
   }).join('');
@@ -1341,15 +1343,6 @@ function renderLogNarrative() {
       야간: '밤에 혼자 달리는 스타일이에요 🌃',
     };
     stats.push({ icon: '⏰', text: msg[top[0]] });
-  }
-
-  // 4. 자주 배틀한 파트너
-  const battleLogs = logs.filter(l => l.type === 'battle' && l.partner);
-  if (battleLogs.length >= 2) {
-    const pc = {};
-    battleLogs.forEach(l => { pc[l.partner] = (pc[l.partner] || 0) + 1; });
-    const top = Object.entries(pc).sort((a, b) => b[1] - a[1])[0];
-    if (top[1] >= 2) stats.push({ icon: '⚔️', text: `<b>${escapeHtml(top[0])}</b>님이랑 ${top[1]}번 붙었어요` });
   }
 
   if (stats.length === 0) { $el.hidden = true; return; }
@@ -4101,6 +4094,59 @@ async function syncUserStats() {
       console.warn('[syncUserStats] 실패:', err);
     }
   }
+  // v0.1.103 — 주간 리더보드 앞지르기 감지
+  checkAndNotifyOvertake();
+}
+
+// =====================================================
+// v0.1.103 — 리더보드 앞지르기 감지
+// =====================================================
+
+let _lbPrevAboveNicks = null; // null = 미초기화
+
+// suppressToast=true 이면 상태만 업데이트 (초기화 용)
+async function checkAndNotifyOvertake(suppressToast = false) {
+  if (!sb || !myNickname) return;
+  try {
+    const now = new Date();
+    const periodKey = getWeekKey(now);
+    const { data: myRow } = await sb.from('user_stats').select('count')
+      .eq('nickname', myNickname).eq('period_type', 'week').eq('period_key', periodKey)
+      .maybeSingle();
+    const myCount = myRow?.count ?? 0;
+    const { data: aboveRows } = await sb.from('user_stats').select('nickname')
+      .eq('period_type', 'week').eq('period_key', periodKey)
+      .gt('count', myCount).limit(30);
+    const currentAbove = (aboveRows || []).map(r => r.nickname).filter(n => n !== myNickname);
+
+    if (!suppressToast && _lbPrevAboveNicks !== null) {
+      const currentAboveSet = new Set(currentAbove);
+      const overtaken = _lbPrevAboveNicks.filter(n => !currentAboveSet.has(n));
+      if (overtaken.length > 0) _showOvertakeToast(overtaken[0]);
+    }
+    _lbPrevAboveNicks = currentAbove;
+  } catch (e) {
+    console.warn('[checkOvertake] 실패:', e);
+  }
+}
+
+function _showOvertakeToast(nick) {
+  const toast = document.createElement('div');
+  toast.className = 'achievement-toast achievement-toast--overtake';
+  toast.innerHTML = `
+    <span class="achievement-toast-icon">🏆</span>
+    <div class="achievement-toast-body">
+      <div class="achievement-toast-label">순위 상승!</div>
+      <div class="achievement-toast-name">${escapeHtml(nick)}님을 앞질렀어요!</div>
+    </div>
+  `;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.classList.add('achievement-toast--show'), 30);
+  setTimeout(() => {
+    toast.classList.remove('achievement-toast--show');
+    toast.classList.add('achievement-toast--hide');
+    setTimeout(() => toast.remove(), 350);
+  }, 4000);
 }
 
 let lbPeriod = 'week';
@@ -4162,13 +4208,30 @@ async function renderLeaderboard() {
     myRankRow = { nick: myNickname, count: myCount, rank: aboveMe + 1 };
   }
 
+  // 리더보드 유저들 칭호 이모지 fetch (user_presence.title_emoji)
+  let emojiMap = {};
+  try {
+    const allNicks = [...new Set([
+      ...rows.map(r => r.nickname),
+      ...(myRankRow ? [myRankRow.nick] : []),
+    ])];
+    if (allNicks.length > 0) {
+      const { data: presData } = await sb.from('user_presence')
+        .select('nickname, title_emoji').in('nickname', allNicks);
+      (presData || []).forEach(p => { if (p.title_emoji) emojiMap[p.nickname] = p.title_emoji; });
+    }
+  } catch {}
+
   function buildRow(nick, count, rank) {
     const isMe = nick === myNickname;
     const rankBadge = rank <= 3
       ? `<span style="font-size:1.4rem;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:28px;flex-shrink:0">${medalEmojis[rank - 1]}</span>`
       : `<span class="lb-rank-badge" style="background:#e0dbd8;color:#888">${rank}</span>`;
     const countColor = rank <= 3 ? 'color:var(--accent);' : '';
-    const titleEmoji = isMe ? (getCurrentTitle()?.emoji || '') : '';
+    // 내 계정: 로컬 계산 우선, 상대 계정: DB title_emoji
+    const titleEmoji = isMe
+      ? (getCurrentTitle()?.emoji || emojiMap[nick] || '')
+      : (emojiMap[nick] || '');
     const nickText = titleEmoji ? `${titleEmoji} ${escapeHtml(nick)}` : escapeHtml(nick);
     return `
       <div class="lb-row${isMe ? ' lb-row-me' : ''}">
@@ -4184,6 +4247,9 @@ async function renderLeaderboard() {
     html += buildRow(myRankRow.nick, myRankRow.count, myRankRow.rank);
   }
   $body.innerHTML = html;
+
+  // 앞지르기 감지 초기화 (처음 렌더 시에만)
+  if (_lbPrevAboveNicks === null) checkAndNotifyOvertake(true);
 }
 
 // 리더보드 기간 탭 이벤트

@@ -2932,12 +2932,20 @@ dialog.modal input[type="text"]:focus {
 }
 .partner-row {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
   padding: 5px 0;
   border-bottom: 1px solid var(--border-soft, #f5f0ed);
+  flex-wrap: wrap;
 }
 .partner-row:last-child { border-bottom: none; }
+/* 닉네임 + 배지를 한 묶음으로 */
+.partner-row-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
 .partner-row-nick {
   font-size: 0.82rem;
   font-weight: 700;
@@ -2959,6 +2967,14 @@ dialog.modal input[type="text"]:focus {
 .partner-row-stats {
   font-size: 0.72rem;
   color: var(--text-sub, #aaa);
+}
+/* 모바일: 닉네임+배지 / 횟수+날짜 — 2줄 */
+@media (max-width: 480px) {
+  .partner-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
 }
 
 /* 일별 상세 패널 */
@@ -4527,6 +4543,14 @@ dialog.modal input[type="text"]:focus {
 .achievement-toast--rare .achievement-toast-desc {
   color: #b45309;
 }
+/* 앞지르기 토스트 변형 */
+.achievement-toast--overtake {
+  background: #f0fdf4;
+  border-color: #16a34a;
+  box-shadow: 0 4px 20px rgba(22,163,74,0.2), 0 0 0 1px rgba(22,163,74,0.2);
+}
+.achievement-toast--overtake .achievement-toast-label { color: #15803d; }
+.achievement-toast--overtake .achievement-toast-name  { color: #14532d; }
 /* 숨겨진 업적 변형 */
 .achievement-toast--secret {
   background: #ede9fe;
