@@ -4663,25 +4663,34 @@ dialog.modal input[type="text"]:focus {
   92%  { opacity: 0.2; }
   100% { transform: translateY(var(--dy, 80vh)) rotate(var(--r1, 30deg)); opacity: 0; }
 }
-/* 인사 보내기 버튼 */
+/* 인사 보내기 버튼 (두 줄: 파트너 메시지 + 힌트) */
 .pub-lobby-greet-btn {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   width: calc(100% - 24px);
-  margin: 0 12px 6px;
-  padding: 9px 16px;
-  border-radius: 20px;
-  background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+  margin: 4px 12px 6px;
+  padding: 10px 16px;
+  gap: 3px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent) 0%, #ff8f50 100%);
   color: #fff;
-  font-size: 0.82rem;
-  font-weight: 700;
   border: none;
   cursor: pointer;
-  letter-spacing: 0.01em;
   transition: opacity 0.15s, transform 0.1s;
 }
-.pub-lobby-greet-btn:active {
-  opacity: 0.82;
-  transform: scale(0.97);
+.pub-lobby-greet-btn:active { opacity: 0.82; transform: scale(0.97); }
+.pub-lobby-greet-btn .greet-msg-line {
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+.pub-lobby-greet-btn .greet-hint-line {
+  font-size: 0.72rem;
+  font-weight: 400;
+  opacity: 0.88;
+  line-height: 1.3;
 }
 
 /* 인사 도착 토스트 (노란/주황 계열) */
