@@ -4623,12 +4623,30 @@ dialog.modal input[type="text"]:focus {
 /* =====================================================
    이모지 비 효과 (로비 파트너 카드 집중)
    ===================================================== */
+/* 새 dialog를 top-layer에 올려서 로비 modal 위에 표시 */
+.emoji-rain-host-dialog {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+.emoji-rain-host-dialog::backdrop {
+  background: transparent;
+  pointer-events: none;
+}
 .emoji-rain-overlay {
   position: fixed;
   top: 0; left: 0;
-  width: 100%; height: 100%;
+  width: 100vw; height: 100vh;
   pointer-events: none;
-  z-index: 9998;
   overflow: hidden;
 }
 .emoji-rain-drop {

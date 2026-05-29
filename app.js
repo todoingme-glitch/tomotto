@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.121 — 가챠 뽀모도로
+// Tomotto v0.1.122 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -4165,11 +4165,17 @@ function showEmojiRainOnElement(targetEl, emojis = ['🔥', '✨', '⚡', '💥'
   const centerX = rect.left + rect.width / 2;
   const dy = rect.bottom + 40; // top:-40px 기준으로 카드 하단까지 낙하 거리
 
+  // 새 <dialog>를 top-layer에 올려서 로비 modal 위에 표시
+  // (나중에 showModal()한 dialog가 top-layer 스택 위에 쌓임)
+  const dlg = document.createElement('dialog');
+  dlg.className = 'emoji-rain-host-dialog';
+  dlg.addEventListener('cancel', e => e.preventDefault()); // ESC로 닫히지 않게
+  document.body.appendChild(dlg);
+
   const overlay = document.createElement('div');
   overlay.className = 'emoji-rain-overlay';
-  // <dialog>는 top-layer라서 body에 붙이면 모달 뒤로 감 → dialog 내부에 append
-  const host = targetEl.closest('dialog') ?? document.body;
-  host.appendChild(overlay);
+  dlg.appendChild(overlay);
+  dlg.showModal();
 
   const COUNT = 28;
   for (let i = 0; i < COUNT; i++) {
@@ -4204,7 +4210,7 @@ function showEmojiRainOnElement(targetEl, emojis = ['🔥', '✨', '⚡', '💥'
     }, 170);
   }, 450);
 
-  setTimeout(() => overlay.remove(), 2800);
+  setTimeout(() => { dlg.close(); dlg.remove(); }, 2800);
 }
 
 // 알림 토스트: 스택 컨테이너에 동시 표시 (v0.1.110)
@@ -4791,6 +4797,43 @@ async function enrichLobbyWithPartnerBadges(players) {
         frontier = nextFrontier;
       }
     } catch { /* nickname_history 없으면 무시 */ }
+
+    // 역방향 보완: 내 user_partner_stats의 저장된 구 닉네임 → nickname_history 앞방향 → 현재 로비 닉네임
+    // (forward chain에서 못 찾은 경우를 보완)
+    try {
+      const { data: myAllStats } = await sb.from('user_partner_stats')
+        .select('partner').eq('nickname', myNickname);
+      const unresolved = (myAllStats || []).map(d => d.partner)
+        .filter(n => !visited.has(n)); // forward chain이 이미 처리한 닉네임 제외
+
+      if (unresolved.length > 0) {
+        const { data: fwd } = await sb.from('nickname_history')
+          .select('old_nickname, new_nickname')
+          .in('old_nickname', unresolved)
+          .order('changed_at', { ascending: true });
+
+        if (fwd?.length) {
+          // 체인 구성: old → (chain) → current lobby nick
+          const directFwd = {};
+          for (const h of fwd) { directFwd[h.old_nickname] = h.new_nickname; }
+
+          for (const startNick of unresolved) {
+            if (!directFwd[startNick]) continue;
+            let cur = directFwd[startNick];
+            const seen = new Set([startNick]);
+            while (cur && !seen.has(cur)) {
+              if (others.includes(cur)) {
+                oldToCurrentNick[startNick] = cur;
+                if (!currentToLatestOld[cur]) currentToLatestOld[cur] = startNick;
+                break;
+              }
+              seen.add(cur);
+              cur = directFwd[cur];
+            }
+          }
+        }
+      }
+    } catch { /* 무시 */ }
 
     // 현재 닉네임 + 모든 이전 닉네임으로 파트너 통계 조회, 현재 닉네임 기준 집계
     const allLookups = [...new Set([...others, ...Object.keys(oldToCurrentNick)])];
