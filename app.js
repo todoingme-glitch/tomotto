@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.117 — 가챠 뽀모도로
+// Tomotto v0.1.118 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -4083,10 +4083,10 @@ async function syncUserStats() {
   ];
   for (const p of periods) {
     try {
-      // v0.1.108 — count + total_minutes 함께 조회 (컬럼 없으면 count만)
+      // count + total_seconds(초 단위) 함께 조회 (컬럼 없으면 count만)
       let existing = null;
       const { data: ex1, error: selErr } = await sb.from('user_stats')
-        .select('count, total_minutes')
+        .select('count, total_seconds')
         .eq('nickname', myNickname).eq('period_type', p.period_type).eq('period_key', p.period_key)
         .maybeSingle();
       if (selErr?.code === '42703' || selErr?.code === 'PGRST204') {
@@ -4096,24 +4096,24 @@ async function syncUserStats() {
         existing = ex2;
       } else { existing = ex1; }
 
-      const sessionMins = Math.round(timer.duration / 60);
+      const sessionSecs = timer.duration || 0; // 초 단위 그대로 저장 (분 반올림 시 10초=0 버그 방지)
       const payload = {
         nickname: myNickname,
         period_type: p.period_type,
         period_key: p.period_key,
         count: (existing?.count ?? 0) + 1,
         title_emoji: getCurrentTitle()?.emoji ?? null,
-        total_minutes: (existing?.total_minutes ?? 0) + sessionMins, // v0.1.108
+        total_seconds: (existing?.total_seconds ?? 0) + sessionSecs,
         updated_at: new Date().toISOString(),
       };
-      // 컬럼 미존재 시 점진적 fallback: total_minutes → title_emoji 순으로 제거
+      // 컬럼 미존재 시 점진적 fallback: total_seconds → title_emoji 순으로 제거
       let err = (await sb.from('user_stats').upsert(payload)).error;
       if (err?.code === '42703' || err?.code === 'PGRST204') {
-        const { total_minutes, ...p2 } = payload;
+        const { total_seconds, ...p2 } = payload;
         err = (await sb.from('user_stats').upsert(p2)).error;
       }
       if (err?.code === '42703' || err?.code === 'PGRST204') {
-        const { title_emoji, total_minutes, ...p3 } = payload;
+        const { title_emoji, total_seconds, ...p3 } = payload;
         err = (await sb.from('user_stats').upsert(p3)).error;
       }
       if (err) console.warn('[syncUserStats] 최종 실패:', err.message);
@@ -4274,7 +4274,7 @@ async function renderLeaderboard() {
   let rows = [];
   try {
     const { data, error } = await sb.from('user_stats')
-      .select('nickname, count, title_emoji, total_minutes')
+      .select('nickname, count, title_emoji, total_seconds')
       .eq('period_type', lbPeriod).eq('period_key', periodKey)
       .order('count', { ascending: false }).limit(TOP_N);
     if (error?.code === '42703' || error?.code === 'PGRST204') {
@@ -4302,12 +4302,12 @@ async function renderLeaderboard() {
   let myRankRow = null;
 
   if (myNickname && myInTop === -1) {
-    let myCount = 0, myTotalMins = 0;
+    let myCount = 0, myTotalSecs = 0;
     try {
-      const { data: myData } = await sb.from('user_stats').select('count, total_minutes')
+      const { data: myData } = await sb.from('user_stats').select('count, total_seconds')
         .eq('nickname', myNickname).eq('period_type', lbPeriod).eq('period_key', periodKey)
         .maybeSingle();
-      if (myData) { myCount = myData.count ?? 0; myTotalMins = myData.total_minutes ?? 0; }
+      if (myData) { myCount = myData.count ?? 0; myTotalSecs = myData.total_seconds ?? 0; }
     } catch {}
     let aboveMe = 0;
     try {
@@ -4317,7 +4317,7 @@ async function renderLeaderboard() {
         .gte('count', myCount).neq('nickname', myNickname);
       aboveMe = count ?? 0;
     } catch {}
-    myRankRow = { nick: myNickname, count: myCount, rank: aboveMe + 1, totalMins: myTotalMins };
+    myRankRow = { nick: myNickname, count: myCount, rank: aboveMe + 1, totalSecs: myTotalSecs };
   }
 
   // 세션 유형 라벨 (평균 집중 분 기준)
@@ -4328,7 +4328,7 @@ async function renderLeaderboard() {
     return '';
   }
 
-  function buildRow(nick, count, rank, emoji = '', totalMins = 0) {
+  function buildRow(nick, count, rank, emoji = '', totalSecs = 0) {
     const isMe = nick === myNickname;
     const rankBadge = rank <= 3
       ? `<span style="font-size:1.4rem;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:28px;flex-shrink:0">${medalEmojis[rank - 1]}</span>`
@@ -4339,10 +4339,11 @@ async function renderLeaderboard() {
       : (emoji || '');
     const nickText = titleEmoji ? `${titleEmoji} ${escapeHtml(nick)}` : escapeHtml(nick);
 
-    // 보조 정보 (총 집중분 · 평균 세션 · 라벨) — total_minutes 있을 때만 표시
+    // 보조 정보 (총 집중분 · 평균 세션 · 라벨) — total_seconds 있을 때만 표시
     let subHtml = '';
-    if (totalMins > 0 && count > 0) {
-      const avgMin = Math.round(totalMins / count);
+    if (totalSecs > 0 && count > 0) {
+      const totalMins = Math.floor(totalSecs / 60);
+      const avgMin = totalMins > 0 ? Math.round(totalMins / count) : 0;
       const label = getSessionLabel(avgMin);
       const labelHtml = label ? ` <span class="lb-session-label">${label}</span>` : '';
       subHtml = `<span class="lb-sub">총 ${totalMins}분 · 평균 ${avgMin}분${labelHtml}</span>`;
@@ -4359,10 +4360,10 @@ async function renderLeaderboard() {
       </div>`;
   }
 
-  let html = rows.map((r, i) => buildRow(r.nickname, r.count, i + 1, r.title_emoji || '', r.total_minutes || 0)).join('');
+  let html = rows.map((r, i) => buildRow(r.nickname, r.count, i + 1, r.title_emoji || '', r.total_seconds || 0)).join('');
   if (myRankRow) {
     html += '<div class="league-my-rank-sep">···</div>';
-    html += buildRow(myRankRow.nick, myRankRow.count, myRankRow.rank, getCurrentTitle()?.emoji || '', myRankRow.totalMins || 0);
+    html += buildRow(myRankRow.nick, myRankRow.count, myRankRow.rank, getCurrentTitle()?.emoji || '', myRankRow.totalSecs || 0);
   }
   $body.innerHTML = html;
 }
