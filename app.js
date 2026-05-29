@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.108 — 가챠 뽀모도로
+// Tomotto v0.1.109 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -4166,10 +4166,11 @@ async function checkAndNotifyOvertake() {
     if (!myCount) return;
 
     // ① 탑 3 / 1위 진입 체크
+    // gte: 동점자도 "나보다 위"로 처리 → 동점 상태에선 진입 토스트 안 뜸
     const { count: numAbove } = await sb.from('user_stats')
       .select('*', { count: 'exact', head: true })
       .eq('period_type', 'week').eq('period_key', periodKey)
-      .gt('count', myCount);
+      .gte('count', myCount).neq('nickname', myNickname);
     const myRank = (numAbove ?? 0) + 1;
     if (myRank <= 3) _checkRankMilestoneToast(myRank, periodKey);
 
@@ -4296,7 +4297,8 @@ async function renderLeaderboard() {
     try {
       const { count } = await sb.from('user_stats')
         .select('nickname', { count: 'exact', head: true })
-        .eq('period_type', lbPeriod).eq('period_key', periodKey).gt('count', myCount);
+        .eq('period_type', lbPeriod).eq('period_key', periodKey)
+        .gte('count', myCount).neq('nickname', myNickname);
       aboveMe = count ?? 0;
     } catch {}
     myRankRow = { nick: myNickname, count: myCount, rank: aboveMe + 1, totalMins: myTotalMins };
