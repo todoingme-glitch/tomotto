@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.103 — 가챠 뽀모도로
+// Tomotto v0.1.104 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -4099,10 +4099,11 @@ async function syncUserStats() {
 }
 
 // =====================================================
-// v0.1.103 — 리더보드 앞지르기 감지
+// v0.1.104 — 리더보드 앞지르기 감지
 // =====================================================
 
-let _lbPrevAboveNicks = null; // null = 미초기화
+let _lbPrevAboveNicks = null;             // null = 미초기화
+const _overtakeShownThisSession = new Set(); // 세션 내 이미 토스트 띄운 nick
 
 // suppressToast=true 이면 상태만 업데이트 (초기화 용)
 async function checkAndNotifyOvertake(suppressToast = false) {
@@ -4110,33 +4111,93 @@ async function checkAndNotifyOvertake(suppressToast = false) {
   try {
     const now = new Date();
     const periodKey = getWeekKey(now);
+
+    // 내 현재 count 조회
     const { data: myRow } = await sb.from('user_stats').select('count')
       .eq('nickname', myNickname).eq('period_type', 'week').eq('period_key', periodKey)
       .maybeSingle();
     const myCount = myRow?.count ?? 0;
+
+    // 나보다 count 많은 유저 목록
     const { data: aboveRows } = await sb.from('user_stats').select('nickname')
       .eq('period_type', 'week').eq('period_key', periodKey)
       .gt('count', myCount).limit(30);
     const currentAbove = (aboveRows || []).map(r => r.nickname).filter(n => n !== myNickname);
+    const currentAboveSet = new Set(currentAbove);
 
-    if (!suppressToast && _lbPrevAboveNicks !== null) {
-      const currentAboveSet = new Set(currentAbove);
-      const overtaken = _lbPrevAboveNicks.filter(n => !currentAboveSet.has(n));
-      if (overtaken.length > 0) _showOvertakeToast(overtaken[0]);
+    if (!suppressToast) {
+      // ① 탑 3 진입 토스트 (해당 순위 이번 주 처음 진입 시 1번)
+      const myRank = currentAbove.length + 1;
+      if (myRank <= 3) _checkTop3Toast(myRank, periodKey);
+
+      // ② 라이벌(배틀 파트너) 앞지르기 토스트 — 세션당 1번
+      if (_lbPrevAboveNicks !== null) {
+        const newlyPassed = _lbPrevAboveNicks.filter(
+          n => !currentAboveSet.has(n) && !_overtakeShownThisSession.has(n)
+        );
+        if (newlyPassed.length > 0) {
+          // user_partner_stats에서 내 배틀 파트너 목록 조회
+          const partnerSet = await _fetchMyPartnerNicks();
+          const rivalPassed = newlyPassed.filter(n => partnerSet.has(n));
+          if (rivalPassed.length > 0) {
+            _showRivalOvertakeToast(rivalPassed[0]);
+            _overtakeShownThisSession.add(rivalPassed[0]);
+          }
+        }
+      }
     }
+
     _lbPrevAboveNicks = currentAbove;
   } catch (e) {
     console.warn('[checkOvertake] 실패:', e);
   }
 }
 
-function _showOvertakeToast(nick) {
+// 내 배틀 파트너 닉네임 Set 반환
+async function _fetchMyPartnerNicks() {
+  try {
+    const { data } = await sb.from('user_partner_stats')
+      .select('partner').eq('nickname', myNickname);
+    return new Set((data || []).map(r => r.partner));
+  } catch { return new Set(); }
+}
+
+// 탑 3 진입 토스트 — 이번 주 해당 순위 처음 진입 시만
+function _checkTop3Toast(rank, periodKey) {
+  const key = `tomotto_lb_top3_${periodKey}`;
+  const notified = JSON.parse(localStorage.getItem(key) || '{}');
+  if (notified[rank]) return; // 이미 알림 표시했음
+  notified[rank] = true;
+  localStorage.setItem(key, JSON.stringify(notified));
+
+  const medals = ['🥇', '🥈', '🥉'];
+  const msgs   = ['이번 주 1위에 올랐어요!', '2위에 진입했어요!', '탑 3에 들었어요!'];
   const toast = document.createElement('div');
   toast.className = 'achievement-toast achievement-toast--overtake';
   toast.innerHTML = `
-    <span class="achievement-toast-icon">🏆</span>
+    <span class="achievement-toast-icon">${medals[rank - 1]}</span>
     <div class="achievement-toast-body">
       <div class="achievement-toast-label">순위 상승!</div>
+      <div class="achievement-toast-name">${msgs[rank - 1]}</div>
+    </div>
+  `;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.classList.add('achievement-toast--show'), 30);
+  setTimeout(() => {
+    toast.classList.remove('achievement-toast--show');
+    toast.classList.add('achievement-toast--hide');
+    setTimeout(() => toast.remove(), 350);
+  }, 4000);
+}
+
+// 라이벌(배틀 파트너) 앞지르기 토스트
+function _showRivalOvertakeToast(nick) {
+  const toast = document.createElement('div');
+  toast.className = 'achievement-toast achievement-toast--overtake';
+  toast.innerHTML = `
+    <span class="achievement-toast-icon">⚔️</span>
+    <div class="achievement-toast-body">
+      <div class="achievement-toast-label">라이벌 추월!</div>
       <div class="achievement-toast-name">${escapeHtml(nick)}님을 앞질렀어요!</div>
     </div>
   `;
