@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.114 — 가챠 뽀모도로
+// Tomotto v0.1.115 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -1270,10 +1270,6 @@ function renderLogPartnerRecord() {
     const lastDate = d.lastAt
       ? new Date(d.lastAt).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })
       : '—';
-    let modeTag = '';
-    if (d.tom > 0 && d.moto > 0) modeTag = `TOM ${d.tom} · MOTO ${d.moto}`;
-    else if (d.tom > 0)           modeTag = 'TOM';
-    else if (d.moto > 0)          modeTag = 'MOTO';
     const tier = getPartnerTier(d.count);
     const tierBadge = tier
       ? `<span class="partner-tier-badge">${tier.emoji} ${tier.label}</span>`
@@ -1283,7 +1279,7 @@ function renderLogPartnerRecord() {
         <span class="partner-row-nick">${escapeHtml(nick)}</span>
         ${tierBadge}
       </div>
-      <span class="partner-row-stats">${d.count}회${modeTag ? ` · ${modeTag}` : ''} · 마지막 ${lastDate}</span>
+      <span class="partner-row-stats">${d.count}회 · 마지막 ${lastDate}</span>
     </div>`;
   }).join('');
 
@@ -4639,6 +4635,7 @@ async function openPublicLobby(battleId) {
     const players = data ?? currentBattleData?.players ?? [];
     currentBattleData = { battle: publicLobbyBattle, players };
     renderPublicLobby(publicLobbyBattle, players);
+    enrichLobbyWithPartnerBadges(players); // 배지 갱신
     if ($modal && typeof $modal.showModal === 'function') $modal.showModal();
     return;
   }
@@ -4672,6 +4669,7 @@ async function openPublicLobby(battleId) {
   currentBattleData = { battle: publicLobbyBattle, players };
 
   renderPublicLobby(publicLobbyBattle, players);
+  enrichLobbyWithPartnerBadges(players); // 참여자도 입장 즉시 배지 표시
   subscribePublicLobby(battleId);
 
   if ($modal && typeof $modal.showModal === 'function') $modal.showModal();
@@ -4719,16 +4717,14 @@ async function enrichLobbyWithPartnerBadges(players) {
 
       const tier    = getPartnerTier(s.battle_count);
       const oldHint = (newToOld[nick] && statsMap[newToOld[nick]]) ? ` (구: ${newToOld[nick]})` : '';
-      const badgeText = tier
-        ? `${tier.emoji} ${tier.label} · ${s.battle_count}번${oldHint}`
-        : s.battle_count >= 2
-          ? `또 만났네요 · ${s.battle_count}번${oldHint}`
-          : `저번에 만났어요${oldHint}`;
 
-      const badge = document.createElement('span');
-      badge.className = 'pub-lobby-partner-badge';
-      badge.textContent = badgeText;
-      el.appendChild(badge);
+      // 배지: 5회+(tier 있을 때)만 표시
+      if (tier) {
+        const badge = document.createElement('span');
+        badge.className = 'pub-lobby-partner-badge';
+        badge.textContent = `${tier.emoji} ${tier.label} · ${s.battle_count}번${oldHint}`;
+        el.appendChild(badge);
+      }
       knownInLobby.push({ nick, count: s.battle_count, tier });
     });
 
@@ -4739,17 +4735,23 @@ async function enrichLobbyWithPartnerBadges(players) {
     if (knownInLobby.length > 0) {
       const $msg = document.createElement('p');
       $msg.className = 'pub-lobby-partner-msg';
-      if (knownInLobby.length === 1) {
-        const { nick, count, tier } = knownInLobby[0];
-        if (tier) {
-          $msg.textContent = `${tier.emoji} ${escapeHtml(nick)}님이에요! ${tier.label} 사이예요`;
-        } else if (count === 1) {
-          $msg.textContent = `👋 ${escapeHtml(nick)}님, 저번에 같이 달렸었죠!`;
-        } else {
-          $msg.textContent = `🔥 ${escapeHtml(nick)}님과 또 만났네요!`;
-        }
-      } else {
+      // 여러 명일 때는 가장 친한 파트너(count 높은 순) 기준
+      const top = knownInLobby.sort((a, b) => b.count - a.count)[0];
+      if (knownInLobby.length > 1) {
         $msg.textContent = `🔥 아는 파트너가 ${knownInLobby.length}명이나 있어요!`;
+      } else {
+        const { nick, count } = top;
+        if (count >= 20) {
+          $msg.textContent = `⚡ ${escapeHtml(nick)}님과는 이미 숙명의 맞수예요!`;
+        } else if (count >= 10) {
+          $msg.textContent = `🌙 ${escapeHtml(nick)}님과 떼려야 뗄 수 없는 사이!`;
+        } else if (count >= 5) {
+          $msg.textContent = `🏃 ${escapeHtml(nick)}님과 자주 달리는 사이예요`;
+        } else if (count >= 2) {
+          $msg.textContent = `🔥 ${escapeHtml(nick)}님과 또 만났네요!`;
+        } else {
+          $msg.textContent = `👋 ${escapeHtml(nick)}님, 저번에 같이 달렸었죠!`;
+        }
       }
       document.getElementById('pubLobbyStatus')?.insertAdjacentElement('beforebegin', $msg);
     }
