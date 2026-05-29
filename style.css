@@ -3374,6 +3374,20 @@ dialog.modal input[type="text"]:focus {
   pointer-events: none;
   backdrop-filter: blur(4px);
 }
+/* 소감만 있을 때 — .lightbox-note 이후 + 부모 셀렉터로 명시도(0,2,0) 확보
+   .lightbox-note(0,1,0)보다 강해서 background/color 등 올바르게 override됨 */
+.lightbox-img-wrap--text-only .lightbox-note {
+  position: static !important;
+  background: transparent;
+  color: var(--text, #3a2826);
+  font-size: 1rem;
+  padding: 28px 36px;
+  border-radius: 0;
+  text-align: center;
+  max-width: min(72vw, 380px);
+  line-height: 1.8;
+  backdrop-filter: none;
+}
 /* lightbox-close는 기존 스타일(.lightbox-close) 재사용 */
 
 /* v0.1.22 — 배틀 결과 소감 */
