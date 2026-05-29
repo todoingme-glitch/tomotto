@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.129 — 가챠 뽀모도로
+// Tomotto v0.1.130 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -4966,7 +4966,8 @@ async function enrichLobbyWithPartnerBadges(players) {
 
     $list.querySelectorAll('.pub-lobby-player:not(.is-me)').forEach(el => {
       if (el.querySelector('.pub-lobby-partner-badge')) return;
-      const nick = el.querySelector('.pub-lobby-nick')?.firstChild?.textContent?.trim();
+      // data-nick 속성 우선 사용 — 16자 초과 닉네임이 truncEnd로 잘려도 원본 닉 유지
+      const nick = el.dataset.nick || el.querySelector('.pub-lobby-nick')?.firstChild?.textContent?.trim();
       if (!nick) return;
       const s = statsMap[nick]; // 이미 현재 닉네임 기준으로 집계됨
       if (!s) return;
@@ -5052,7 +5053,7 @@ function renderPublicLobby(battle, players) {
   $list.innerHTML = players.map(p => {
     const isMe = p.nickname === myNickname;
     const nickDisplay = escapeHtml(truncEnd(p.nickname ?? '', 16)); // 16자 초과 시 말줄임표
-    return `<div class="pub-lobby-player${isMe ? ' is-me' : ''}${p.is_ready ? ' is-ready' : ''}">
+    return `<div class="pub-lobby-player${isMe ? ' is-me' : ''}${p.is_ready ? ' is-ready' : ''}" data-nick="${escapeHtml(p.nickname ?? '')}">
       <span class="pub-lobby-icon">${p.is_ready ? '✅' : '⏳'}</span>
       <span class="pub-lobby-nick">${nickDisplay}${isMe ? ' <span class="lb-me-badge">나</span>' : ''}</span>
       ${p.is_creator ? '<span class="pub-lobby-badge">방장</span>' : ''}
