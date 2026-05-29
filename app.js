@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.112 — 가챠 뽀모도로
+// Tomotto v0.1.113 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -777,6 +777,11 @@ document.getElementById('devAchPreviewToggle')?.addEventListener('change', e => 
     renderAchievementsTab();
   }
 });
+
+// 개발자 옵션 — 순위·라이벌 토스트 미리보기 버튼
+document.getElementById('devRankToast1')?.addEventListener('click', () => _showRankMilestoneToast(1));
+document.getElementById('devTop3Toast')?.addEventListener('click',  () => _showRankMilestoneToast(3));
+document.getElementById('devRivalToast')?.addEventListener('click', () => _showRivalOvertakeToast('테스트닉'));
 
 // v0.1.64 — 전체 초기화
 document.getElementById('fullResetBtn')?.addEventListener('click', async () => {
@@ -5723,7 +5728,7 @@ const ACHIEVEMENT_DEFS = {
   'B-12':{ name: '오늘 좀 쉬어요', desc: '하루에 6번이나 집중했어요',              cond: '하루 완료 6회',                 icon: '😅', tier: 'rare',   hidden: false },
 
   // ── C. Moto 계열 — 랜덤·즉흥 ─────────────────────────
-  'C-1': { name: '일단 돌려!',      desc: '가챠를 10번 돌렸어요',                  cond: '가챠 누적 10회',                icon: '🎲', tier: 'normal', hidden: false },
+  'C-1': { name: '일단 돌려!',      desc: '가챠를 10번 돌렸어요',                  cond: '가챠 돌리기 10회',              icon: '🎲', tier: 'normal', hidden: false },
   'C-2': { name: '운명에 맡겨',     desc: '나온 대로 다 해냈어요',                 cond: '리롤 없이 완료 5회 누적',       icon: '🎯', tier: 'normal', hidden: false },
   'C-3': { name: '잡식성 토마토',     desc: '5가지 다른 일을 완료했어요',            cond: '서로 다른 작업 5가지 완료',     icon: '🌈', tier: 'normal', hidden: false },
   'C-4': { name: '가챠 중독',       desc: '멈출 수가 없어요',                      cond: '가챠 누적 50회',                icon: '🃏', tier: 'rare',   hidden: false },
