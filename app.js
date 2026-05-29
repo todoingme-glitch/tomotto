@@ -5662,6 +5662,13 @@ function getCurrentTitle() {
   return null;
 }
 
+// ── charImg 사전 캐싱 — 숨겨진 업적 이미지를 앱 시작 시 미리 로드 ──
+(function _preloadAchievementImages() {
+  Object.values(ACHIEVEMENT_DEFS).forEach(def => {
+    if (def.charImg) { const img = new Image(); img.src = def.charImg; }
+  });
+})();
+
 // ── 데이터 읽기/쓰기 ──────────────────────────────────────
 
 function getAchievements() {
@@ -5702,46 +5709,61 @@ function _processToastQueue() {
   const def = ACHIEVEMENT_DEFS[id];
   if (!def) { _processToastQueue(); return; }
 
-  const toast = document.createElement('div');
   const isSecret = def.hidden;
   const isRare   = !def.hidden && def.tier === 'rare';
   const hasChar  = !!def.charImg;
-  toast.className = 'achievement-toast'
-    + (isSecret ? ' achievement-toast--secret' : '')
-    + (isRare   ? ' achievement-toast--rare'   : '')
-    + (hasChar  ? ' achievement-toast--char'   : '');
 
-  const label = isSecret ? '🔍 숨겨진 업적 발견!' : isRare ? '✨ 희귀 업적 달성!' : '🏅 업적 달성!';
-  if (hasChar) {
-    toast.innerHTML = `
-      <img class="ach-toast-char-img" src="${def.charImg}" alt="">
-      <div class="achievement-toast-body">
-        <div class="achievement-toast-label">${label}</div>
-        <div class="achievement-toast-name">${def.name}</div>
-        <div class="achievement-toast-desc">${def.desc}</div>
-        <div class="ach-toast-quote">"${def.charQuote}"</div>
-      </div>
-    `;
-  } else {
-    toast.innerHTML = `
-      <span class="achievement-toast-icon">${def.icon}</span>
-      <div class="achievement-toast-body">
-        <div class="achievement-toast-label">${label}</div>
-        <div class="achievement-toast-name">${def.name}</div>
-        <div class="achievement-toast-desc">${def.desc}</div>
-      </div>
-    `;
+  function _buildAndShow() {
+    const toast = document.createElement('div');
+    toast.className = 'achievement-toast'
+      + (isSecret ? ' achievement-toast--secret' : '')
+      + (isRare   ? ' achievement-toast--rare'   : '')
+      + (hasChar  ? ' achievement-toast--char'   : '');
+
+    const label = isSecret ? '🔍 숨겨진 업적 발견!' : isRare ? '✨ 희귀 업적 달성!' : '🏅 업적 달성!';
+    if (hasChar) {
+      toast.innerHTML = `
+        <img class="ach-toast-char-img" src="${def.charImg}" alt="">
+        <div class="achievement-toast-body">
+          <div class="achievement-toast-label">${label}</div>
+          <div class="achievement-toast-name">${def.name}</div>
+          <div class="achievement-toast-desc">${def.desc}</div>
+          <div class="ach-toast-quote">"${def.charQuote}"</div>
+        </div>
+      `;
+    } else {
+      toast.innerHTML = `
+        <span class="achievement-toast-icon">${def.icon}</span>
+        <div class="achievement-toast-body">
+          <div class="achievement-toast-label">${label}</div>
+          <div class="achievement-toast-name">${def.name}</div>
+          <div class="achievement-toast-desc">${def.desc}</div>
+        </div>
+      `;
+    }
+    document.body.appendChild(toast);
+    setTimeout(() => toast.classList.add('achievement-toast--show'), 30);
+
+    const duration = hasChar ? 5500 : 4000;
+    setTimeout(() => {
+      toast.classList.remove('achievement-toast--show');
+      toast.classList.add('achievement-toast--hide');
+      setTimeout(() => { toast.remove(); setTimeout(_processToastQueue, 150); }, 350);
+    }, duration);
   }
-  document.body.appendChild(toast);
 
-  setTimeout(() => toast.classList.add('achievement-toast--show'), 30);
-
-  const duration = hasChar ? 5500 : 4000;
-  setTimeout(() => {
-    toast.classList.remove('achievement-toast--show');
-    toast.classList.add('achievement-toast--hide');
-    setTimeout(() => { toast.remove(); setTimeout(_processToastQueue, 150); }, 350);
-  }, duration);
+  if (hasChar) {
+    // 이미지 로드 완료 후 토스트 표시 — 캐시 히트 시 즉시, 미캐시 시 최대 1.5초 대기
+    let shown = false;
+    const showOnce = () => { if (!shown) { shown = true; _buildAndShow(); } };
+    const preload = new Image();
+    preload.onload  = showOnce;
+    preload.onerror = showOnce; // 로드 실패해도 토스트는 표시
+    preload.src = def.charImg;
+    setTimeout(showOnce, 1500); // 1.5초 타임아웃 (네트워크 느려도 강제 표시)
+  } else {
+    _buildAndShow();
+  }
 }
 
 // ── 스트릭 계산 ───────────────────────────────────────────
