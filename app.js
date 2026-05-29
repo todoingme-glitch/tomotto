@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.119 — 가챠 뽀모도로
+// Tomotto v0.1.120 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -1244,7 +1244,7 @@ function renderLogCalendar() {
   }
 }
 
-function renderLogPartnerRecord() {
+async function renderLogPartnerRecord() {
   const $el = document.getElementById('logPartnerSection');
   if (!$el) return;
 
@@ -1253,9 +1253,34 @@ function renderLogPartnerRecord() {
 
   if (battleLogs.length === 0) { $el.hidden = true; return; }
 
+  // 닉네임 변경 이력 조회 — 로그에 기록된 구 닉네임을 현재 닉네임으로 정규화
+  const rawNicks = [...new Set(battleLogs.map(l => l.partner))];
+  const oldToNew = {}; // { 구닉네임: 현재닉네임 }
+  if (sb) {
+    try {
+      const { data: hist } = await sb.from('nickname_history')
+        .select('old_nickname, new_nickname')
+        .in('old_nickname', rawNicks)
+        .order('changed_at', { ascending: true }); // 오래된 순으로 체인 추적
+      if (hist?.length) {
+        // 직접 매핑 먼저 구성
+        const direct = {};
+        for (const h of hist) direct[h.old_nickname] = h.new_nickname;
+        // 체인 추적: A→B→C 이면 A도 C로 매핑
+        for (const old of Object.keys(direct)) {
+          let cur = direct[old];
+          const seen = new Set([old]);
+          while (direct[cur] && !seen.has(cur)) { seen.add(cur); cur = direct[cur]; }
+          oldToNew[old] = cur;
+        }
+      }
+    } catch { /* nickname_history 없으면 무시 */ }
+  }
+
+  // 현재 닉네임 기준으로 집계 (변경된 닉네임은 현재 닉네임으로 병합)
   const partnerMap = {};
   battleLogs.forEach(l => {
-    const nick = l.partner;
+    const nick = oldToNew[l.partner] || l.partner; // 구 닉네임이면 현재 닉네임으로
     if (!partnerMap[nick]) partnerMap[nick] = { count: 0, lastAt: 0, tom: 0, moto: 0 };
     partnerMap[nick].count++;
     const at = l.completedAt || 0;
