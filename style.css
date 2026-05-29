@@ -1853,6 +1853,18 @@ dialog.modal input[type="text"]:focus {
 .brl-row--undone {
   opacity: 0.6;
 }
+/* 결과창 라이벌 메시지 */
+.brl-result-msg {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-soft);
+  text-align: center;
+  padding: 10px 12px;
+  margin-top: 6px;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+}
 
 .brl-rank {
   font-size: 1.1rem;
@@ -2680,6 +2692,17 @@ dialog.modal input[type="text"]:focus {
   white-space: nowrap;
 }
 
+/* 로비 파트너 인사 메시지 */
+.pub-lobby-partner-msg {
+  font-size: 0.78rem;
+  color: var(--text-soft);
+  text-align: center;
+  padding: 6px 12px;
+  margin: 4px 0 2px;
+  background: color-mix(in srgb, var(--accent) 5%, white);
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 15%, transparent);
+}
 .pub-lobby-status {
   font-size: 0.82rem;
   color: var(--text-muted);
@@ -2920,6 +2943,18 @@ dialog.modal input[type="text"]:focus {
   font-weight: 700;
   color: var(--text-main);
   flex-shrink: 0;
+}
+/* 파트너 성장 칭호 배지 */
+.partner-tier-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 20px;
+  background: #fffbeb;
+  border: 1px solid #d97706;
+  color: #b45309;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 .partner-row-stats {
   font-size: 0.72rem;

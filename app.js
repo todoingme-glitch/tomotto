@@ -1269,8 +1269,13 @@ function renderLogPartnerRecord() {
     if (d.tom > 0 && d.moto > 0) modeTag = `TOM ${d.tom} · MOTO ${d.moto}`;
     else if (d.tom > 0)           modeTag = 'TOM';
     else if (d.moto > 0)          modeTag = 'MOTO';
+    const tier = getPartnerTier(d.count);
+    const tierBadge = tier
+      ? `<span class="partner-tier-badge">${tier.emoji} ${tier.label}</span>`
+      : '';
     return `<div class="partner-row">
       <span class="partner-row-nick">${escapeHtml(nick)}</span>
+      ${tierBadge}
       <span class="partner-row-stats">${d.count}회${modeTag ? ` · ${modeTag}` : ''} · 마지막 ${lastDate}</span>
     </div>`;
   }).join('');
@@ -4035,6 +4040,14 @@ function getMonthKey(date = new Date()) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
+/** 배틀 횟수 기반 파트너 성장 칭호 */
+function getPartnerTier(count) {
+  if (count >= 20) return { emoji: '⚡', label: '전설의 라이벌' };
+  if (count >= 10) return { emoji: '🌙', label: '단골 파트너' };
+  if (count >= 5)  return { emoji: '🏃', label: '페이스메이커' };
+  return null;
+}
+
 // ── 파트너 통계 단방향 upsert (내 쪽 기록만, 상대방도 자신이 완료 시 자신 기록)
 async function upsertPartnerStats(partnerNick, durationSec = 0) {
   if (!sb || !myNickname || !partnerNick || partnerNick === myNickname) return;
@@ -4516,20 +4529,51 @@ async function enrichLobbyWithPartnerBadges(players) {
 
     const $list = document.getElementById('pubLobbyPlayers');
     if (!$list) return;
+    const knownInLobby = []; // 이번 로비에서 발견한 파트너
+
     $list.querySelectorAll('.pub-lobby-player:not(.is-me)').forEach(el => {
-      if (el.querySelector('.pub-lobby-partner-badge')) return; // 중복 방지
+      if (el.querySelector('.pub-lobby-partner-badge')) return;
       const nick = el.querySelector('.pub-lobby-nick')?.firstChild?.textContent?.trim();
       if (!nick) return;
-      // 현재 닉네임으로 먼저 조회, 없으면 이전 닉네임으로 조회
       const s = statsMap[nick] || (newToOld[nick] && statsMap[newToOld[nick]]);
       if (!s) return;
-      const mins = Math.round((s.total_sec || 0) / 60);
+
+      const tier    = getPartnerTier(s.battle_count);
+      const oldHint = (newToOld[nick] && statsMap[newToOld[nick]]) ? ` (구: ${newToOld[nick]})` : '';
+      const badgeText = tier
+        ? `${tier.emoji} ${tier.label} · ${s.battle_count}번${oldHint}`
+        : s.battle_count >= 2
+          ? `또 만났네요 · ${s.battle_count}번${oldHint}`
+          : `저번에 만났어요${oldHint}`;
+
       const badge = document.createElement('span');
       badge.className = 'pub-lobby-partner-badge';
-      const oldHint = (newToOld[nick] && statsMap[newToOld[nick]]) ? ` (구: ${newToOld[nick]})` : '';
-      badge.textContent = `${s.battle_count}번 함께 · ${mins}분${oldHint}`;
+      badge.textContent = badgeText;
       el.appendChild(badge);
+      knownInLobby.push({ nick, count: s.battle_count, tier });
     });
+
+    // 파트너 발견 시 로비 인사 메시지 (기존 메시지 교체)
+    const $modal  = document.getElementById('publicLobbyModal');
+    const $oldMsg = $modal?.querySelector('.pub-lobby-partner-msg');
+    if ($oldMsg) $oldMsg.remove();
+    if (knownInLobby.length > 0) {
+      const $msg = document.createElement('p');
+      $msg.className = 'pub-lobby-partner-msg';
+      if (knownInLobby.length === 1) {
+        const { nick, count, tier } = knownInLobby[0];
+        if (tier) {
+          $msg.textContent = `${tier.emoji} ${escapeHtml(nick)}님이에요! ${tier.label} 사이예요`;
+        } else if (count === 1) {
+          $msg.textContent = `👋 ${escapeHtml(nick)}님, 저번에 같이 달렸었죠!`;
+        } else {
+          $msg.textContent = `🔥 ${escapeHtml(nick)}님과 또 만났네요!`;
+        }
+      } else {
+        $msg.textContent = `🔥 아는 파트너가 ${knownInLobby.length}명이나 있어요!`;
+      }
+      document.getElementById('pubLobbyStatus')?.insertAdjacentElement('beforebegin', $msg);
+    }
   } catch {}
 }
 
@@ -5072,6 +5116,8 @@ async function openBattleResult(battleId) {
     const ranked = [...done, ...undone];
 
     $battleResultPlayers.className = 'battle-result-list';
+    // 나의 순위 미리 계산 (메시지용)
+    const myRankIdx = ranked.findIndex(p => p.nickname === myNickname);
     $battleResultPlayers.innerHTML = ranked.map((p, i) => {
       const isMe     = p.nickname === myNickname;
       // 완료자는 메달/숫자, 미완료자도 순위 번호 표시 (흐리게)
@@ -5114,6 +5160,23 @@ async function openBattleResult(battleId) {
         ${rightHtml}
       </div>`;
     }).join('');
+
+    // 결과 메시지 — 내가 완료한 경우만 표시
+    if (myRankIdx >= 0 && myRankIdx < done.length) {
+      let resultMsg = '';
+      if (myRankIdx === 0) {
+        resultMsg = `🎉 오늘은 내가 먼저 완주했어요!`;
+      } else {
+        const winner = ranked[0];
+        const prevTogether = getLogsFromStorage()
+          .filter(l => l.type === 'battle' && l.partner === winner.nickname).length;
+        resultMsg = prevTogether > 0
+          ? `⚔️ ${escapeHtml(truncEnd(winner.nickname, 10))}님이 또 앞질렀어요!`
+          : `⚔️ ${escapeHtml(truncEnd(winner.nickname, 10))}님이 먼저 완주했어요!`;
+      }
+      $battleResultPlayers.insertAdjacentHTML('beforeend',
+        `<div class="brl-result-msg">${resultMsg}</div>`);
+    }
 
   } else {
     // 1:1 친구 배틀 — 기존 VS 레이아웃
