@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.111 — 가챠 뽀모도로
+// Tomotto v0.1.112 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -4226,23 +4226,21 @@ async function _fetchMyPartnerNicks() {
 // • rank 2~3 → "탑 3 진입!" 1번
 // (주당 최대 2번: 탑3 진입 + 1위 달성)
 function _checkRankMilestoneToast(rank, periodKey) {
-  // 🧪 TEST: 주차 제한 임시 해제 — 테스트 후 복구 필요
-  _showRankMilestoneToast(rank);
-  /* 원본 (복구 시 주석 해제, 위 한 줄 삭제):
+  // 탑3 진입(처음) / 1위 달성(처음) — 주 1회씩
+  // 이미 탑3 안에 있는 상태에서 순위가 오르는 건 토스트 없음
   const key = `tomotto_lb_rank_${periodKey}`;
   const notified = JSON.parse(localStorage.getItem(key) || '{}');
   if (rank === 1 && !notified.no1) {
     notified.no1 = true;
     localStorage.setItem(key, JSON.stringify(notified));
     _showRankMilestoneToast(1);
-    return;
+    return; // 1위 달성 시 탑3 토스트 중복 생략
   }
   if (rank <= 3 && !notified.top3) {
     notified.top3 = true;
     localStorage.setItem(key, JSON.stringify(notified));
     _showRankMilestoneToast(rank);
   }
-  */
 }
 
 function _showRankMilestoneToast(rank) {
@@ -5961,8 +5959,16 @@ function _processToastQueue() {
   const hasChar  = !!def.charImg;
 
   function _buildAndShow() {
+    // 리더보드 토스트와 같은 스택 컨테이너 사용 → 동시 발생 시 겹침 없이 아래 쌓임
+    let container = document.getElementById('notif-toast-stack');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'notif-toast-stack';
+      document.body.appendChild(container);
+    }
+
     const toast = document.createElement('div');
-    toast.className = 'achievement-toast'
+    toast.className = 'achievement-toast achievement-toast--stacked'
       + (isSecret ? ' achievement-toast--secret' : '')
       + (isRare   ? ' achievement-toast--rare'   : '')
       + (hasChar  ? ' achievement-toast--char'   : '');
@@ -5988,14 +5994,18 @@ function _processToastQueue() {
         </div>
       `;
     }
-    document.body.appendChild(toast);
+    container.appendChild(toast);
     setTimeout(() => toast.classList.add('achievement-toast--show'), 30);
 
     const duration = hasChar ? 5500 : 4000;
     setTimeout(() => {
       toast.classList.remove('achievement-toast--show');
       toast.classList.add('achievement-toast--hide');
-      setTimeout(() => { toast.remove(); setTimeout(_processToastQueue, 150); }, 350);
+      setTimeout(() => {
+        toast.remove();
+        if (container && !container.children.length) container.remove();
+        setTimeout(_processToastQueue, 150);
+      }, 350);
     }, duration);
   }
 

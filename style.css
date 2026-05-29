@@ -4575,8 +4575,7 @@ dialog.modal input[type="text"]:focus {
   position: relative;
   top: auto;
   left: auto;
-  width: 100%;
-  max-width: 100%;
+  /* width/max-width는 각 변형(--char 등)이 자체 결정 */
   transform: translateY(-12px);
   opacity: 0;
 }
