@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.118 — 가챠 뽀모도로
+// Tomotto v0.1.119 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -4131,6 +4131,55 @@ async function syncUserStats() {
 
 const _overtakeShownThisSession = new Set(); // 세션 내 라이벌 토스트 표시한 nick
 
+// =====================================================
+// 이모지 비 효과 — 로비 파트너 카드 집중 (v0.1.119)
+// =====================================================
+function showEmojiRainOnElement(targetEl, emojis = ['🔥', '✨', '⚡', '💥']) {
+  if (!targetEl) return;
+  const rect = targetEl.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  const dy = rect.bottom + 40; // top:-40px 기준으로 카드 하단까지 낙하 거리
+
+  const overlay = document.createElement('div');
+  overlay.className = 'emoji-rain-overlay';
+  document.body.appendChild(overlay);
+
+  const COUNT = 28;
+  for (let i = 0; i < COUNT; i++) {
+    const span = document.createElement('span');
+    span.className = 'emoji-rain-drop';
+    span.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+
+    const spread = (Math.random() - 0.5) * Math.max(rect.width * 2, 100);
+    const dur    = (0.55 + Math.random() * 0.65).toFixed(2);
+    const delay  = (Math.random() * 1.0).toFixed(2);
+    const r0     = Math.round((Math.random() - 0.5) * 30);
+    const r1     = Math.round((Math.random() - 0.5) * 60);
+    span.style.cssText = [
+      `left:${(centerX + spread).toFixed(0)}px`,
+      `font-size:${(1.0 + Math.random() * 1.2).toFixed(1)}rem`,
+      `--dur:${dur}s`,
+      `--delay:${delay}s`,
+      `--dy:${dy}px`,
+      `--r0:${r0}deg`,
+      `--r1:${r1}deg`,
+    ].join(';');
+    overlay.appendChild(span);
+  }
+
+  // 첫 이모지가 카드에 닿는 타이밍(~450ms)에 카드 bounce
+  setTimeout(() => {
+    targetEl.style.transition = 'transform 0.12s ease';
+    targetEl.style.transform = 'scale(1.06)';
+    setTimeout(() => {
+      targetEl.style.transform = '';
+      setTimeout(() => { targetEl.style.transition = ''; }, 200);
+    }, 170);
+  }, 450);
+
+  setTimeout(() => overlay.remove(), 2800);
+}
+
 // 알림 토스트: 스택 컨테이너에 동시 표시 (v0.1.110)
 // 1위 토스트 + 라이벌 토스트가 동시에 쌓여서 보임
 function _showNotifToast(className, icon, label, name, duration = 4000) {
@@ -4732,7 +4781,7 @@ async function enrichLobbyWithPartnerBadges(players) {
         badge.textContent = `${tier.emoji} ${tier.label} · ${s.battle_count}번${oldHint}`;
         el.appendChild(badge);
       }
-      knownInLobby.push({ nick, count: s.battle_count, tier });
+      knownInLobby.push({ nick, count: s.battle_count, tier, el });
     });
 
     // 파트너 발견 시 로비 인사 메시지 (기존 메시지 교체)
@@ -4759,6 +4808,18 @@ async function enrichLobbyWithPartnerBadges(players) {
         } else {
           $msg.textContent = `👋 ${escapeHtml(nick)}님, 저번에 같이 달렸었죠!`;
         }
+      }
+      // 클릭 → 이모지 비 (파트너 카드 집중)
+      const $partnerEl = top?.el || null;
+      if ($partnerEl) {
+        $msg.classList.add('is-tappable');
+        let _rainBusy = false;
+        $msg.addEventListener('click', () => {
+          if (_rainBusy) return;
+          _rainBusy = true;
+          showEmojiRainOnElement($partnerEl, ['🔥', '✨', '⚡', '💥']);
+          setTimeout(() => { _rainBusy = false; }, 2500);
+        });
       }
       document.getElementById('pubLobbyStatus')?.insertAdjacentElement('beforebegin', $msg);
     }

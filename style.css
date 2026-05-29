@@ -4619,6 +4619,41 @@ dialog.modal input[type="text"]:focus {
 }
 .achievement-toast--rival .achievement-toast-label { color: #c2410c; }
 .achievement-toast--rival .achievement-toast-name  { color: #7c2d12; }
+
+/* =====================================================
+   이모지 비 효과 (로비 파트너 카드 집중)
+   ===================================================== */
+.emoji-rain-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 9998;
+  overflow: hidden;
+}
+.emoji-rain-drop {
+  position: absolute;
+  top: -40px;
+  animation: emojiRainFall var(--dur, 1s) var(--delay, 0s) ease-in both;
+  will-change: transform, opacity;
+  user-select: none;
+  line-height: 1;
+}
+@keyframes emojiRainFall {
+  0%   { transform: translateY(0)             rotate(var(--r0, 0deg));  opacity: 1;   }
+  72%  { opacity: 1; }
+  92%  { opacity: 0.2; }
+  100% { transform: translateY(var(--dy, 80vh)) rotate(var(--r1, 30deg)); opacity: 0; }
+}
+/* 클릭 가능한 파트너 메시지 */
+.pub-lobby-partner-msg.is-tappable {
+  cursor: pointer;
+  text-decoration: underline dotted currentColor;
+  text-underline-offset: 3px;
+  transition: opacity 0.15s;
+}
+.pub-lobby-partner-msg.is-tappable:active { opacity: 0.65; }
+
 /* 숨겨진 업적 변형 */
 .achievement-toast--secret {
   background: #ede9fe;
