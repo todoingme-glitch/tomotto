@@ -1,5 +1,9 @@
 {
   "appId": "com.tomotto.app",
   "appName": "Tomotto",
-  "webDir": "www"
+  "webDir": "www",
+  "server": {
+    "hostname": "tomotto.vercel.app",
+    "androidScheme": "https"
+  }
 }

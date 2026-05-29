@@ -1822,6 +1822,30 @@ function makeInviteLink(battleId) {
   return `${base}?battle=${battleId}`;
 }
 
+// ── v0.1.127 Capacitor 딥링크 핸들러 ────────────────────────────────────
+// Android App Links (assetlinks.json) 배포 후 활성화됨.
+// 그 전까지는 KakaoTalk 링크가 IAB(웹버전)로 열리므로 이 핸들러는 미동작.
+function _handleDeepLinkUrl(url) {
+  if (!url) return;
+  const m = url.match(/[?&]battle=([^&]+)/);
+  if (!m) return;
+  const battleId = m[1];
+  switchTab('social', { skipScroll: true });
+  setTimeout(() => openBattleRoom(battleId), 600);
+}
+
+if (window.Capacitor?.isNativePlatform?.()) {
+  // 앱이 포그라운드 상태에서 링크로 다시 열렸을 때
+  window.Capacitor?.Plugins?.App?.addListener?.('appUrlOpen', (data) => {
+    _handleDeepLinkUrl(data?.url);
+  });
+  // 앱이 완전히 종료된 상태에서 링크로 실행됐을 때
+  window.Capacitor?.Plugins?.App?.getLaunchUrl?.()
+    ?.then?.((data) => _handleDeepLinkUrl(data?.url))
+    ?.catch?.(() => {});
+}
+// ─────────────────────────────────────────────────────────────────────────
+
 function closeInviteModal() {
   if (typeof $inviteModal.close === 'function') $inviteModal.close();
   else $inviteModal.removeAttribute('open');
@@ -3013,17 +3037,14 @@ window.addEventListener('load', () => {
   const battleId = params.get('battle');
 
   if (battleId) {
-    // 배틀 링크로 진입: 온보딩 먼저 → 완료 후 배틀 룸
+    // v0.1.127 — 배틀 링크 진입: 온보딩 건너뛰고 소셜탭 → 배틀룸 바로 오픔
+    // (KakaoTalk IAB 등 첫 진입 환경에서도 온보딩이 모달을 가로막지 않도록)
     // v0.1.70 — 실제 참여자인 경우에만 잠금 배너 표시 (카드 삭제 후 재진입 버그 방지)
     loadMyBattles().then(list => {
       if (list?.some(b => b.id === battleId)) showBattleLock(battleId);
     });
-    // initOnboarding();        // v0.1.34 — Shepherd.js 버전 (보관)
-    initOnboardingTooltip(() => {
-      switchTab('social');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      setTimeout(() => openBattleRoom(battleId), 300);
-    });
+    switchTab('social', { skipScroll: true });
+    setTimeout(() => openBattleRoom(battleId), 400);
   } else {
     // 일반 진입: 온보딩 + v0.1.69 파트너 배틀룸 입장 확인
     // initOnboarding();        // v0.1.34 — Shepherd.js 버전 (보관)
