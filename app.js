@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.115 — 가챠 뽀모도로
+// Tomotto v0.1.116 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -4052,14 +4052,20 @@ async function upsertPartnerStats(partnerNick, durationSec = 0) {
       p_sec:     Math.round(durationSec),
     });
   } catch (e) {
-    // RPC 함수 미생성 시 fallback: 직접 upsert (중복 방지 미보장)
-    await sb.from('user_partner_stats').upsert({
-      nickname:       myNickname,
-      partner:        partnerNick,
-      battle_count:   1,
-      total_sec:      Math.round(durationSec),
-      last_battled_at: new Date().toISOString(),
-    }, { onConflict: 'nickname,partner', ignoreDuplicates: false }).catch(() => {});
+    // RPC 미생성 시 fallback: 기존 값 조회 후 +1 증가 (이전 bug: 항상 1로 덮어쓰던 것 수정)
+    try {
+      const { data: cur } = await sb.from('user_partner_stats')
+        .select('battle_count, total_sec')
+        .eq('nickname', myNickname).eq('partner', partnerNick)
+        .maybeSingle();
+      await sb.from('user_partner_stats').upsert({
+        nickname:        myNickname,
+        partner:         partnerNick,
+        battle_count:    (cur?.battle_count ?? 0) + 1,
+        total_sec:       (cur?.total_sec ?? 0) + Math.round(durationSec),
+        last_battled_at: new Date().toISOString(),
+      }, { onConflict: 'nickname,partner' });
+    } catch {}
   }
 }
 
