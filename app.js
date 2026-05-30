@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.132 — 가챠 뽀모도로
+// Tomotto v0.1.133 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -1585,6 +1585,11 @@ async function leaveBattleSilent(battleId) {
 
 // 배틀 삭제 내부 로직 (confirm 없음 — 단일/일괄 삭제 공유)
 async function deleteBattleSilent(battleId) {
+  // 공개 배틀 채널이 열려있으면 참가자들에게 방 삭제 broadcast (DB 삭제 전에 전송)
+  if (publicLobbyBattleId === battleId && publicLobbyChannel) {
+    try { publicLobbyChannel.send({ type: 'broadcast', event: 'room-deleted', payload: {} }); } catch (_) {}
+    await new Promise(r => setTimeout(r, 250)); // broadcast 전달 대기
+  }
   if (sb) {
     const { error: playersError } = await sb.from('battle_players').delete().eq('battle_id', battleId);
     if (playersError) { console.error('battle_players 삭제 실패:', playersError); return false; }
@@ -4873,7 +4878,12 @@ async function openPublicLobby(battleId) {
 
 /** 로비 플레이어 목록에 파트너 이력 배지 추가 (비동기, 렌더 후 호출) */
 async function enrichLobbyWithPartnerBadges(players) {
-  if (!sb || !myNickname || !players.length) return;
+  // 플레이어 없음(방 삭제 or 빈 방) → 잔류 인사 버튼 제거 후 종료
+  if (!players?.length) {
+    document.getElementById('publicLobbyModal')?.querySelector('.pub-lobby-greet-btn')?.remove();
+    return;
+  }
+  if (!sb || !myNickname) return;
   const others = players.filter(p => p.nickname !== myNickname).map(p => p.nickname);
   if (!others.length) {
     // 혼자 있는 방: 이전 방에서 남은 인사 버튼 제거
@@ -5148,6 +5158,28 @@ function subscribePublicLobby(battleId) {
       { event: 'UPDATE', schema: 'public', table: 'battles', filter: `id=eq.${battleId}` },
       () => _refreshLobbyPlayers()
     )
+    // 수신자: 방장이 방 삭제 — 로비 종료 처리
+    .on('broadcast', { event: 'room-deleted' }, () => {
+      const $modal = document.getElementById('publicLobbyModal');
+      $modal?.querySelector('.pub-lobby-greet-btn')?.remove();
+      if ($modal?.open) {
+        // 모달 열려있음 → 삭제 메시지 표시 후 2초 뒤 닫기
+        const $list = document.getElementById('pubLobbyPlayers');
+        if ($list) $list.innerHTML =
+          '<p style="text-align:center;color:var(--text-sub,#888);padding:28px 0;font-size:0.9rem;">방장이 방을 삭제했어요.</p>';
+        const $readyBtn = document.getElementById('pubLobbyReadyBtn');
+        if ($readyBtn) $readyBtn.disabled = true;
+        setTimeout(() => {
+          _cleanupLobbyState();
+          if ($modal.open) { if (typeof $modal.close === 'function') $modal.close(); else $modal.removeAttribute('open'); }
+          renderPublicBattles();
+        }, 2000);
+      } else {
+        // 모달 닫혀있음 → 즉시 상태 정리
+        _cleanupLobbyState();
+        renderPublicBattles();
+      }
+    })
     // 수신자: 방장의 카운트다운 시작 신호 수신
     .on('broadcast', { event: 'pub-lobby-start' }, async () => {
       if (isStartingPublicLobby || timer.isRunning) return;
