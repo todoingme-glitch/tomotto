@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.131 — 가챠 뽀모도로
+// Tomotto v0.1.132 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -5110,6 +5110,18 @@ function subscribePublicLobby(battleId) {
     const { data: players } = await sb.from('battle_players')
       .select('*').eq('battle_id', battleId).order('created_at', { ascending: true });
     if (!publicLobbyBattle) return;
+
+    // 방장이 방 삭제 시 battle_players 전체 삭제 → 내 row 사라짐 → 로비 강제 종료
+    if (players !== null && !players.some(p => p.nickname === myNickname)) {
+      _cleanupLobbyState();
+      const $modal = document.getElementById('publicLobbyModal');
+      if ($modal?.open) {
+        if (typeof $modal.close === 'function') $modal.close();
+        else $modal.removeAttribute('open');
+      }
+      renderPublicBattles();
+      return;
+    }
 
     currentBattleData = { battle: publicLobbyBattle, players: players ?? [] };
     renderPublicLobby(publicLobbyBattle, players ?? []);
