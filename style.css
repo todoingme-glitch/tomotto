@@ -1525,6 +1525,23 @@ dialog.modal input[type="text"]:focus {
   line-height: 1.4;
 }
 
+/* SHUFFLE MODE: 두 칸 전체 너비 + 가로 레이아웃 */
+.battle-mode-option:has(input[value="shuffle"]) {
+  grid-column: 1 / -1;
+}
+.battle-mode-option:has(input[value="shuffle"]) .battle-mode-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.battle-mode-option:has(input[value="shuffle"]) .battle-mode-card strong {
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+.battle-mode-option:has(input[value="shuffle"]) .battle-mode-card small {
+  white-space: nowrap;
+}
+
 .battle-mode-option input[type="radio"]:checked + .battle-mode-card {
   border-color: var(--accent);
   background: var(--accent-soft);
