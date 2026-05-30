@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.141 — 가챠 뽀모도로
+// Tomotto v0.1.142 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -1536,10 +1536,12 @@ async function renderMyBattles() {
   `;
 
   $battleList.innerHTML = toolbarHtml + list.map((b, idx) => {
-    const modeLabel  = b.mode === 'common' ? '🍅 TOM MODE' : '🎲 MOTO MODE';
+    const modeLabel  = b.mode === 'common' ? '🍅 TOM MODE'
+      : b.mode === 'shuffle' ? '🔀 SHUFFLE MODE'
+      : '🎲 MOTO MODE';
     const { label: statusLabel, cls: statusCls } = getBattleDisplayStatus(b);
-    const taskLabel  = b.mode === 'common'
-      ? escapeHtml(b.task_common || '')
+    const taskLabel  = b.mode === 'common' || b.mode === 'shuffle'
+      ? escapeHtml(b.task_common || (b.mode === 'shuffle' ? '가챠 전' : ''))
       : escapeHtml(b._myTask || '가챠 전');
     const minutes    = Math.round(b.duration_sec / 60);
     const roleLabel  = b._isCreator ? '내가 만듦' : '초대받음';
@@ -2377,7 +2379,8 @@ async function spinShuffleGacha() {
   await new Promise(r => requestAnimationFrame(r));
   await new Promise(r => requestAnimationFrame(r));
 
-  const targetY = -(targetIndex - 1) * ITEM_HEIGHT;
+  // 80px 단일 창 — winner가 창 정상(position 0)에 오게 (240px 3칸 창과 달리 -1 오프셋 불필요)
+  const targetY = -targetIndex * ITEM_HEIGHT;
   $reel.style.transition = `transform ${SPIN_DURATION}ms cubic-bezier(0.12, 0.5, 0.18, 1)`;
   $reel.style.transform = `translateY(${targetY}px)`;
 
@@ -5801,7 +5804,9 @@ async function openBattleResult(battleId) {
 
   const { battle, players } = result;
   const minutes = Math.round(battle.duration_sec / 60);
-  const modeLabel = battle.mode === 'common' ? '🍅 TOM MODE' : '🎲 MOTO MODE';
+  const modeLabel = battle.mode === 'common' ? '🍅 TOM MODE'
+    : battle.mode === 'shuffle' ? '🔀 SHUFFLE MODE'
+    : '🎲 MOTO MODE';
   $battleResultSummary.textContent = `${modeLabel} · ${minutes}분 · ${battle.task_common || '각자 랜덤 가챠'}`;
 
   // 1:1 → VS 레이아웃 / 3명+ → 순위 리스트형
