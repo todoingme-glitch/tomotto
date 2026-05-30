@@ -3,6 +3,7 @@
   "appName": "Tomotto",
   "webDir": "www",
   "server": {
+    "url": "https://tomotto.vercel.app",
     "hostname": "tomotto.vercel.app",
     "androidScheme": "https"
   }
