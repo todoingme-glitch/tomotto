@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.133 — 가챠 뽀모도로
+// Tomotto v0.1.134 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -4747,7 +4747,8 @@ async function renderPublicBattles() {
       // 참여자: battle_players에 내 닉네임이 있으면 이미 방에 있는 것 → '대기 중'
       const imParticipant = (b.battle_players ?? []).some(p => p.nickname === myNickname);
       if (imParticipant) {
-        actionHtml = `<button class="btn-mini btn-join-public btn-reopen-lobby" data-battle-id="${b.id}" type="button">대기 중</button>`;
+        // btn-join-public 제거: 두 핸들러 동시 부착 방지 (중복 openPublicLobby 호출 → 팝업 2번)
+        actionHtml = `<button class="btn-mini btn-reopen-lobby" data-battle-id="${b.id}" type="button">대기 중</button>`;
       } else if (isFull) {
         actionHtml = '<span class="pb-full">마감</span>';
       } else {
@@ -4845,7 +4846,12 @@ async function openPublicLobby(battleId) {
   publicLobbyBattleId = battleId;
 
   const result = await fetchBattle(battleId);
-  if (!result?.battle) { alert('배틀을 찾을 수 없어요.'); return; }
+  if (!result?.battle) {
+    publicLobbyBattleId = null; // 잘못 선점한 ID 초기화
+    renderPublicBattles();      // 삭제된 방 목록에서 제거
+    _showNotifToast('achievement-toast--greet', '🚫', '방 없음', '방장이 방을 삭제했어요', 2500);
+    return;
+  }
 
   publicLobbyBattle = result.battle;
   let players = result.players ?? [];
