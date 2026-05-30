@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.140 — 가챠 뽀모도로
+// Tomotto v0.1.141 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -2184,7 +2184,10 @@ function renderBattleRoom() {
     $battleRoomTask.textContent = `🍅 오늘의 공통 미션: ${battle.task_common}`;
     $battleRoomTask.className = 'battle-room-task';
   } else if (battle.mode === 'shuffle') {
-    $battleRoomTask.textContent = `🔀 SHUFFLE — 내 할 일 ${categories.length}개, 둘이 합쳐서 한번에 가챠!`;
+    const _taskCommon = battle.task_common;
+    $battleRoomTask.textContent = _taskCommon
+      ? `🔀 SHUFFLE 미션: ${_taskCommon}`
+      : `🔀 SHUFFLE — 내 할 일 ${categories.length}개, 둘이 합쳐서 한번에 가챠!`;
     $battleRoomTask.className = 'battle-room-task';
   } else if (battle.mode === 'separate') {
     $battleRoomTask.textContent = '🎲 MOTO MODE — 각자 카테고리에서 가챠 돌리기';
@@ -2227,13 +2230,23 @@ function renderBattleRoom() {
         .then(() => console.log('[Sync] currentTask → battle_players.task 동기화'));
     }
 
-    // 셔플은 DB task 기준 (currentTask는 이전 배틀 값일 수 있음), MOTO는 기존 방식
-    const _needsGacha = battle.mode === 'shuffle' ? !myDbTask : (battle.mode === 'separate' && !currentTask);
+    // 셔플: task_common 없으면 가챠 필요 / MOTO: 개인 task 없으면 가챠 필요
+    const _needsGacha = battle.mode === 'shuffle' ? !battle.task_common : (battle.mode === 'separate' && !currentTask);
+
+    // 셔플 task_common이 이미 설정돼 있으면 결과 표시 복원 (모달 닫았다 재오픈 시 유지)
+    if (battle.mode === 'shuffle' && battle.task_common) {
+      const $slot = document.getElementById('battleRoomShuffleSlot');
+      if ($slot && $slot.innerHTML === '') {
+        $slot.hidden = false;
+        $slot.innerHTML = `<div class="shuffle-gacha-done">🎰 ${escapeHtml(battle.task_common)}</div>`;
+      }
+    }
+
     if (_needsGacha) {
       $battleRoomGachaBtn.hidden = false;
       $battleRoomGachaBtn.textContent = battle.mode === 'shuffle' ? '🎰 가챠 돌리기' : '🎰 가챠 먼저 돌리기';
       $battleRoomStatus.textContent = battle.mode === 'shuffle'
-        ? '🔀 합쳐진 풀에서 가챠 돌리기!'
+        ? '🔀 먼저 누르는 사람이 공통 미션을 뽑아요!'
         : '가챠를 먼저 돌려서 내 작업을 정해주세요!';
     } else if (meIsCreator) {
       if (battle.mode === 'separate') {
@@ -2245,20 +2258,18 @@ function renderBattleRoom() {
           $battleRoomStatus.innerHTML = '둘 다 준비됐어요! 시작하면 친구도 동시에 카운트다운돼요. <span class="live-dot">●</span>';
         }
       } else if (battle.mode === 'shuffle') {
-        const friendHasTask = !!(friend?.task);
-        if (!friendHasTask) {
-          $battleRoomStatus.innerHTML = '친구가 가챠를 돌리길 기다리는 중··· <span class="live-dot">●</span>';
-        } else {
-          $battleRoomStartBtn.hidden = false;
-          $battleRoomStatus.innerHTML = '둘 다 준비됐어요! 시작하면 친구도 동시에 시작돼요. <span class="live-dot">●</span>';
-        }
+        // task_common 확정 → 둘 다 바로 시작 가능
+        $battleRoomStartBtn.hidden = false;
+        $battleRoomStatus.innerHTML = '공통 미션 확정! 시작하면 친구도 동시에 시작돼요. <span class="live-dot">●</span>';
       } else {
         $battleRoomStartBtn.hidden = false;
         $battleRoomStatus.textContent = '둘 다 준비됐어요. 시작하면 친구도 동시에 시작돼요.';
       }
     } else {
-      // v0.1.28/30 — 친구: 가챠 완료 or TOM MODE
-      $battleRoomStatus.innerHTML = '둘 다 준비됐어요. 시작하면 친구도 동시에 시작돼요. <span class="live-dot">●</span>';
+      // 친구(수락자): 가챠 완료 or TOM MODE or SHUFFLE(task_common 확정)
+      $battleRoomStatus.innerHTML = battle.mode === 'shuffle'
+        ? '공통 미션 확정! 시작하면 친구도 동시에 시작돼요. <span class="live-dot">●</span>'
+        : '둘 다 준비됐어요. 시작하면 친구도 동시에 시작돼요. <span class="live-dot">●</span>';
       $battleRoomStartBtn.hidden = false;
       $battleRoomStartBtn.textContent = '▶ 타이머 시작';
     }
@@ -2377,17 +2388,24 @@ async function spinShuffleGacha() {
 
   await new Promise(r => setTimeout(r, 450));
 
-  // 결과 저장 (currentTask + battle_players.task DB)
-  showGachaResult(winner, true);
+  // 결과 저장: battle_players.task 아닌 battles.task_common (공유 결과)
+  currentTask = winner;
+  localStorage.setItem(STORAGE.currentTask, winner);
+  if (sb && currentBattleId) {
+    try {
+      await sb.from('battles').update({ task_common: winner }).eq('id', currentBattleId);
+      if (currentBattleData?.battle) currentBattleData.battle.task_common = winner;
+    } catch (e) { console.warn('[Shuffle] task_common 저장 실패:', e); }
+  }
 
   // 슬롯 → 결과 표시 교체
   $slot.innerHTML = `<div class="shuffle-gacha-done">🎰 ${escapeHtml(winner)}</div>`;
 
-  // 가챠 버튼 → 타이머 시작 버튼
+  // 가챠 버튼 → 타이머 시작 버튼 (친구도 Realtime으로 자동 갱신됨)
   $battleRoomGachaBtn.hidden = true;
   $battleRoomStartBtn.hidden = false;
   $battleRoomStartBtn.textContent = '▶ 타이머 시작';
-  $battleRoomStatus.innerHTML = '가챠 완료! 친구도 준비되면 시작할 수 있어요. <span class="live-dot">●</span>';
+  $battleRoomStatus.innerHTML = '공통 미션 확정! 친구도 같은 결과를 받았어요. <span class="live-dot">●</span>';
 }
 
 // v0.1.17 — 3·2·1 카운트다운 (얼굴 양 옆 배치)
@@ -2401,7 +2419,8 @@ async function startBattleWithCountdown(scheduledStartAt = null) {
   // v0.1.68 — localStorage currentTask 대신 DB값(battle_players.task) 사용 (stale 방지)
   const _meRow = currentBattleData?.players?.find(p => p.nickname === myNickname);
   const _myDbTask = _meRow?.task || null;
-  if ((currentBattleData.battle?.mode === 'separate' || currentBattleData.battle?.mode === 'shuffle') && !_myDbTask) return;
+  // MOTO MODE만 개인 가챠 완료 필요, SHUFFLE은 task_common 사용
+  if (currentBattleData.battle?.mode === 'separate' && !_myDbTask) return;
   isStartingBattle = true;
 
   // v0.1.19/75/78 — 창조자만 DB 업데이트 + Broadcast 발송
@@ -2496,8 +2515,8 @@ function startBattleTimer(overrideRemaining = null) {
     history.replaceState({}, '', location.pathname);
   }
   // 메인 타이머에 배틀 작업 적용
-  // TOM: task_common / MOTO·SHUFFLE: 본인 가챠 결과
-  let task = (battle.mode === 'separate' || battle.mode === 'shuffle') ? currentTask : battle.task_common;
+  // MOTO: 본인 가챠 결과 / TOM·SHUFFLE: task_common (공통 미션)
+  let task = battle.mode === 'separate' ? currentTask : battle.task_common;
   currentTask = task;
   localStorage.setItem(STORAGE.currentTask, task);
   showGachaResult(task, false);
@@ -2586,6 +2605,13 @@ function subscribeBattleRoom(battleId) {
       { event: 'UPDATE', schema: 'public', table: 'battles', filter: `id=eq.${battleId}` },
       async (payload) => {
         console.log('[Realtime] battles UPDATE 감지:', payload);
+        // 셔플 task_common 업데이트 → 파트너 화면에 결과 반영
+        if (payload.new?.mode === 'shuffle' && payload.new?.task_common && payload.new?.status !== 'active') {
+          if ($battleRoomModal.open && currentBattleId === battleId) {
+            await refreshBattleRoom();
+          }
+          return;
+        }
         if (payload.new?.status !== 'active') return;
         if (isStartingBattle || timer.isRunning) return;  // 내가 이미 시작 중이면 무시
 
@@ -2794,6 +2820,11 @@ function subscribeWatchBattle(battleId) {
       { event: 'UPDATE', schema: 'public', table: 'battles', filter: `id=eq.${battleId}` },
       async (payload) => {
         console.log('[Watch] battles UPDATE 감지:', payload);
+        // 셔플 task_common 업데이트 → 파트너 화면 반영
+        if (payload.new?.mode === 'shuffle' && payload.new?.task_common && payload.new?.status !== 'active') {
+          if ($battleRoomModal.open && currentBattleId === battleId) await refreshBattleRoom();
+          return;
+        }
         if (payload.new?.status !== 'active') return;
         if (isStartingBattle || timer.isRunning) return;
 
