@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.134 — 가챠 뽀모도로
+// Tomotto v0.1.135 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -4849,7 +4849,7 @@ async function openPublicLobby(battleId) {
   if (!result?.battle) {
     publicLobbyBattleId = null; // 잘못 선점한 ID 초기화
     renderPublicBattles();      // 삭제된 방 목록에서 제거
-    _showNotifToast('achievement-toast--greet', '🚫', '방 없음', '방장이 방을 삭제했어요', 2500);
+    alert('방장이 방을 삭제했어요.');
     return;
   }
 
