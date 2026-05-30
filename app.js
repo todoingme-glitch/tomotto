@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.130 — 가챠 뽀모도로
+// Tomotto v0.1.131 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -4875,7 +4875,12 @@ async function openPublicLobby(battleId) {
 async function enrichLobbyWithPartnerBadges(players) {
   if (!sb || !myNickname || !players.length) return;
   const others = players.filter(p => p.nickname !== myNickname).map(p => p.nickname);
-  if (!others.length) return;
+  if (!others.length) {
+    // 혼자 있는 방: 이전 방에서 남은 인사 버튼 제거
+    const $modal = document.getElementById('publicLobbyModal');
+    $modal?.querySelector('.pub-lobby-greet-btn')?.remove();
+    return;
+  }
   try {
     // 닉네임 체인 추적: 다단계 변경(A→B→C)까지 모두 역추적
     // oldToCurrentNick: { 이전닉네임: 현재로비닉네임 }
