@@ -1709,6 +1709,38 @@ dialog.modal input[type="text"]:focus {
   font-style: italic;
 }
 
+/* SHUFFLE MODE 인라인 가챠 슬롯 */
+.battle-room-shuffle-slot {
+  margin: 4px 0 8px;
+}
+.battle-room-shuffle-slot .slot-window {
+  height: 80px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--accent);
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+.battle-room-shuffle-slot .slot-item {
+  height: 80px;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 0 16px;
+}
+.battle-room-shuffle-slot .slot-item.is-center {
+  color: var(--accent);
+  font-size: 17px;
+}
+.shuffle-gacha-done {
+  text-align: center;
+  padding: 10px 14px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 0.9rem;
+}
+
 .battle-room-status {
   text-align: center;
   font-size: 13px;

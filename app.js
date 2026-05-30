@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.139 — 가챠 뽀모도로
+// Tomotto v0.1.140 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -2081,6 +2081,9 @@ async function openBattleRoom(battleId) {
   $battleRoomCancelBtn.hidden = false; // v0.1.27 — 카운트다운 후 hidden 상태 복원
   $battleRoomAcceptBtn.hidden = true;
   $battleRoomStartBtn.hidden = true;
+  // 셔플 슬롯 초기화 (이전 배틀 결과 잔류 방지)
+  const _shuffleSlot = document.getElementById('battleRoomShuffleSlot');
+  if (_shuffleSlot) { _shuffleSlot.hidden = true; _shuffleSlot.innerHTML = ''; }
 
   if (typeof $battleRoomModal.showModal === 'function') $battleRoomModal.showModal();
   else $battleRoomModal.setAttribute('open', '');
@@ -2181,9 +2184,7 @@ function renderBattleRoom() {
     $battleRoomTask.textContent = `🍅 오늘의 공통 미션: ${battle.task_common}`;
     $battleRoomTask.className = 'battle-room-task';
   } else if (battle.mode === 'shuffle') {
-    let poolSize = 0;
-    try { poolSize = JSON.parse(battle.shared_pool || '[]').length; } catch {}
-    $battleRoomTask.textContent = `🔀 SHUFFLE — 내 할 일 ${poolSize}개, 둘이 합쳐서 한번에 가챠!`;
+    $battleRoomTask.textContent = `🔀 SHUFFLE — 내 할 일 ${categories.length}개, 둘이 합쳐서 한번에 가챠!`;
     $battleRoomTask.className = 'battle-room-task';
   } else if (battle.mode === 'separate') {
     $battleRoomTask.textContent = '🎲 MOTO MODE — 각자 카테고리에서 가챠 돌리기';
@@ -2230,8 +2231,9 @@ function renderBattleRoom() {
     const _needsGacha = battle.mode === 'shuffle' ? !myDbTask : (battle.mode === 'separate' && !currentTask);
     if (_needsGacha) {
       $battleRoomGachaBtn.hidden = false;
+      $battleRoomGachaBtn.textContent = battle.mode === 'shuffle' ? '🎰 가챠 돌리기' : '🎰 가챠 먼저 돌리기';
       $battleRoomStatus.textContent = battle.mode === 'shuffle'
-        ? '🔀 가챠를 돌리면 합쳐진 풀에서 뽑혀요!'
+        ? '🔀 합쳐진 풀에서 가챠 돌리기!'
         : '가챠를 먼저 돌려서 내 작업을 정해주세요!';
     } else if (meIsCreator) {
       if (battle.mode === 'separate') {
@@ -2310,6 +2312,82 @@ async function acceptBattle() {
 
   // v0.1.62 — 수락자도 watchBattle 구독: 창조자가 배틀룸 열었을 때 Broadcast 수신 보장
   if (currentBattleId) subscribeWatchBattle(currentBattleId);
+}
+
+/** SHUFFLE MODE 전용: 배틀룸 모달 안에서 인라인 가챠 스핀 */
+async function spinShuffleGacha() {
+  let pool = [];
+  try { pool = JSON.parse(currentBattleData?.battle?.shared_pool || '[]'); } catch {}
+  if (pool.length < 1) { alert('할 일 풀이 비어있어요. 잠시 후 다시 시도해주세요.'); return; }
+
+  const $slot = document.getElementById('battleRoomShuffleSlot');
+  if (!$slot) return;
+
+  $battleRoomGachaBtn.disabled = true;
+  $slot.hidden = false;
+
+  const ITEM_HEIGHT = 80;
+  const TOTAL_FILL = 30;
+  const SPIN_DURATION = 1800;
+
+  // 결과 결정 (연속 중복 방지)
+  let winner = pool[Math.floor(Math.random() * pool.length)];
+  if (pool.length >= 2 && winner === currentTask) {
+    do { winner = pool[Math.floor(Math.random() * pool.length)]; } while (winner === currentTask);
+  }
+
+  // 릴 시퀀스 생성
+  const sequence = [];
+  let lastIdx = -1;
+  for (let i = 0; i < TOTAL_FILL; i++) {
+    let idx;
+    do { idx = Math.floor(Math.random() * pool.length); } while (pool.length > 1 && idx === lastIdx);
+    lastIdx = idx;
+    sequence.push(pool[idx]);
+  }
+  sequence.push(winner);
+  const targetIndex = sequence.length - 1;
+
+  $slot.innerHTML = `
+    <div class="slot-window">
+      <div class="slot-reel" id="shuffleSlotReel">
+        ${sequence.map((c, i) => `
+          <div class="slot-item${i === targetIndex ? ' winner-item' : ''}" data-idx="${i}">
+            ${escapeHtml(c)}
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
+
+  const $reel = document.getElementById('shuffleSlotReel');
+  $reel.style.transition = 'none';
+  $reel.style.transform = 'translateY(0)';
+  $reel.offsetHeight; // force reflow
+  await new Promise(r => requestAnimationFrame(r));
+  await new Promise(r => requestAnimationFrame(r));
+
+  const targetY = -(targetIndex - 1) * ITEM_HEIGHT;
+  $reel.style.transition = `transform ${SPIN_DURATION}ms cubic-bezier(0.12, 0.5, 0.18, 1)`;
+  $reel.style.transform = `translateY(${targetY}px)`;
+
+  await new Promise(r => setTimeout(r, SPIN_DURATION));
+
+  const $winnerEl = $reel.querySelector('.winner-item');
+  if ($winnerEl) $winnerEl.classList.add('locked', 'is-center');
+
+  await new Promise(r => setTimeout(r, 450));
+
+  // 결과 저장 (currentTask + battle_players.task DB)
+  showGachaResult(winner, true);
+
+  // 슬롯 → 결과 표시 교체
+  $slot.innerHTML = `<div class="shuffle-gacha-done">🎰 ${escapeHtml(winner)}</div>`;
+
+  // 가챠 버튼 → 타이머 시작 버튼
+  $battleRoomGachaBtn.hidden = true;
+  $battleRoomStartBtn.hidden = false;
+  $battleRoomStartBtn.textContent = '▶ 타이머 시작';
+  $battleRoomStatus.innerHTML = '가챠 완료! 친구도 준비되면 시작할 수 있어요. <span class="live-dot">●</span>';
 }
 
 // v0.1.17 — 3·2·1 카운트다운 (얼굴 양 옆 배치)
@@ -2929,9 +3007,15 @@ document.getElementById('logDayClose')?.addEventListener('click', () => {
 $battleRoomAcceptBtn.addEventListener('click', acceptBattle);
 // v0.1.15 — 가챠 유도: 모달 닫고 개인 탭 → 가챠 섹션으로 이동
 $battleRoomGachaBtn.addEventListener('click', () => {
-  showBattleLock(currentBattleId);   // 배너 유지 (없으면 새로 켜기)
+  // 셔플 모드: 모달 안에서 인라인 가챠
+  if (currentBattleData?.battle?.mode === 'shuffle') {
+    spinShuffleGacha();
+    return;
+  }
+  // MOTO 등 기존 모드: 개인 탭으로 이동
+  showBattleLock(currentBattleId);
   closeBattleRoom();
-  switchTab('personal');  // v0.1.17 — 개인 탭 자동 전환
+  switchTab('personal');
   document.querySelector('.category-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 $battleRoomStartBtn.addEventListener('click', () => startBattleWithCountdown());  // v0.1.77 — MouseEvent 전달 방지 (scheduledStartAt=null 보장)
