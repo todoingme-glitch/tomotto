@@ -4629,6 +4629,7 @@ dialog.modal input[type="text"]:focus {
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 8px;
   z-index: 9000;
   pointer-events: none;

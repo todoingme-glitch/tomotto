@@ -43,6 +43,11 @@
             android:foregroundServiceType="specialUse"
             android:exported="false" />
 
+        <!-- Android 14+ specialUse 타입 필수 속성 -->
+        <property
+            android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+            android:value="timer" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
