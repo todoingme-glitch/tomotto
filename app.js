@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.137 — 가챠 뽀모도로
+// Tomotto v0.1.138 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -836,6 +836,27 @@ $battleCreateBtn.addEventListener('click', () => {
 function updateBattleTaskPreview(mode) {
   if (mode === 'common') {
     $battleTaskLabel.textContent = '🍅 TOM MODE — 공통 작업 (내 가챠 결과가 자동으로 사용돼요)';
+  } else if (mode === 'shuffle') {
+    $battleTaskLabel.textContent = '🔀 SHUFFLE MODE — 둘의 할일 합쳐서 가챠';
+    // 셔플: 가챠 결과 불필요, 카테고리 유무만 체크
+    if (categories.length > 0) {
+      $battleTaskText.textContent = `내 할일 ${categories.length}개 풀에 제공`;
+      $battleTaskText.className = 'has-task';
+      $battleTaskHint.textContent = '수락한 친구의 할일도 합쳐져서 섞인 풀에서 랜덤 뽑기!';
+      $battleTaskHint.style.color = '';
+      $battleCreateConfirmBtn.disabled = false;
+      $battleCreateConfirmBtn.textContent = '만들기';
+      delete $battleCreateConfirmBtn.dataset.noGacha;
+    } else {
+      $battleTaskText.textContent = '할일 없음';
+      $battleTaskText.className = 'no-task';
+      $battleTaskHint.textContent = '⚠ 먼저 할일을 카테고리에 추가해주세요!';
+      $battleTaskHint.style.color = 'var(--accent)';
+      $battleCreateConfirmBtn.disabled = true;
+      $battleCreateConfirmBtn.textContent = '만들기';
+      delete $battleCreateConfirmBtn.dataset.noGacha;
+    }
+    return; // 셔플은 여기서 종료
   } else {
     $battleTaskLabel.textContent = '🎲 MOTO MODE — 내 가챠 결과 (친구는 각자 가챠를 돌려요)';
   }
@@ -919,8 +940,14 @@ $battleCreateConfirmBtn.addEventListener('click', async () => {
   const durationSec = getBattleDurationSec();
   let taskCommon = null;
 
-  // v0.1.15 — 두 모드 모두 가챠 결과 필수 (방어 코드)
-  if (!currentTask) {
+  // v0.1.15 — TOM/MOTO는 가챠 결과 필수, SHUFFLE은 카테고리 유무 체크
+  if (mode === 'shuffle') {
+    if (categories.length === 0) {
+      closeBattleCreateModal();
+      switchTab('personal');
+      return;
+    }
+  } else if (!currentTask) {
     closeBattleCreateModal();
     switchTab('personal');
     return;
@@ -941,6 +968,11 @@ $battleCreateConfirmBtn.addEventListener('click', async () => {
     status: 'waiting',  // waiting → active → completed
     created_at: new Date().toISOString(),
   };
+
+  // 셔플 모드: 창조자의 카테고리 배열을 shared_pool에 저장
+  if (mode === 'shuffle') {
+    battle.shared_pool = JSON.stringify(categories);
+  }
 
   // 저장 — 일단 localStorage (Supabase 연동되면 서버로)
   await saveBattle(battle);
@@ -1798,7 +1830,9 @@ function openInviteModal(battle) {
   unlockAchievement('A-5');
 
   const link = makeInviteLink(battle.id);
-  const modeLabel = battle.mode === 'common' ? '🍅 TOM MODE' : '🎲 MOTO MODE';
+  const modeLabel = battle.mode === 'common' ? '🍅 TOM MODE'
+    : battle.mode === 'shuffle' ? '🔀 SHUFFLE MODE'
+    : '🎲 MOTO MODE';
   const taskLabel = battle.mode === 'common' ? ` · "${battle.task_common}"` : '';
   const minutes = Math.round(battle.duration_sec / 60);
   $inviteSummary.textContent = `${modeLabel}${taskLabel} · ${minutes}분`;
@@ -2111,7 +2145,9 @@ async function refreshBattleRoom() {
 function renderBattleRoom() {
   const { battle, players } = currentBattleData;
   const minutes = Math.round(battle.duration_sec / 60);
-  const modeLabel = battle.mode === 'common' ? '🍅 TOM MODE' : '🎲 MOTO MODE';
+  const modeLabel = battle.mode === 'common' ? '🍅 TOM MODE'
+    : battle.mode === 'shuffle' ? '🔀 SHUFFLE MODE'
+    : '🎲 MOTO MODE';
   // v0.1.31 — 로컬 타이머 상태 기준
   const { label: statusLabel } = getBattleDisplayStatus(battle);
 
@@ -2140,9 +2176,14 @@ function renderBattleRoom() {
     </div>
   `;
 
-  // 작업 표시 — 공통 모드일 때
+  // 작업 표시
   if (battle.mode === 'common' && battle.task_common) {
     $battleRoomTask.textContent = `🍅 오늘의 공통 미션: ${battle.task_common}`;
+    $battleRoomTask.className = 'battle-room-task';
+  } else if (battle.mode === 'shuffle') {
+    let poolSize = 0;
+    try { poolSize = JSON.parse(battle.shared_pool || '[]').length; } catch {}
+    $battleRoomTask.textContent = `🔀 SHUFFLE — ${poolSize}개 할일 풀 (수락 시 자동 병합)`;
     $battleRoomTask.className = 'battle-room-task';
   } else if (battle.mode === 'separate') {
     $battleRoomTask.textContent = '🎲 MOTO MODE — 각자 카테고리에서 가챠 돌리기';
@@ -2185,9 +2226,11 @@ function renderBattleRoom() {
         .then(() => console.log('[Sync] currentTask → battle_players.task 동기화'));
     }
 
-    if (battle.mode === 'separate' && !currentTask) {
+    if ((battle.mode === 'separate' || battle.mode === 'shuffle') && !currentTask) {
       $battleRoomGachaBtn.hidden = false;
-      $battleRoomStatus.textContent = '가챠를 먼저 돌려서 내 작업을 정해주세요!';
+      $battleRoomStatus.textContent = battle.mode === 'shuffle'
+        ? '🔀 가챠를 돌리면 합쳐진 풀에서 뽑혀요!'
+        : '가챠를 먼저 돌려서 내 작업을 정해주세요!';
     } else if (meIsCreator) {
       if (battle.mode === 'separate') {
         const friendHasTask = !!(friend?.task);
@@ -2231,6 +2274,19 @@ async function acceptBattle() {
     return;
   }
 
+  // 셔플 모드: 수락자의 카테고리를 창조자의 shared_pool에 병합
+  if (currentBattleData?.battle?.mode === 'shuffle' && categories.length > 0) {
+    try {
+      const existing = JSON.parse(currentBattleData.battle.shared_pool || '[]');
+      const merged = [...new Set([...existing, ...categories])].slice(0, 50); // 중복 제거, 최대 50개
+      const mergedJson = JSON.stringify(merged);
+      await sb.from('battles').update({ shared_pool: mergedJson }).eq('id', currentBattleId);
+      if (currentBattleData.battle) currentBattleData.battle.shared_pool = mergedJson;
+    } catch (e) {
+      console.warn('[Shuffle] 풀 병합 실패:', e);
+    }
+  }
+
   await refreshBattleRoom();
 
   // v0.1.17 — 수락자 쪽 localStorage에도 배틀 저장 (Supabase SELECT 정책 없을 때 fallback 보장)
@@ -2257,7 +2313,7 @@ async function startBattleWithCountdown(scheduledStartAt = null) {
   // v0.1.68 — localStorage currentTask 대신 DB값(battle_players.task) 사용 (stale 방지)
   const _meRow = currentBattleData?.players?.find(p => p.nickname === myNickname);
   const _myDbTask = _meRow?.task || null;
-  if (currentBattleData.battle?.mode === 'separate' && !_myDbTask) return;
+  if ((currentBattleData.battle?.mode === 'separate' || currentBattleData.battle?.mode === 'shuffle') && !_myDbTask) return;
   isStartingBattle = true;
 
   // v0.1.19/75/78 — 창조자만 DB 업데이트 + Broadcast 발송
@@ -2352,8 +2408,8 @@ function startBattleTimer(overrideRemaining = null) {
     history.replaceState({}, '', location.pathname);
   }
   // 메인 타이머에 배틀 작업 적용
-  // v0.1.15 — 따로 가챠 모드는 본인 가챠 결과 사용 (공통 작업은 task_common)
-  let task = battle.mode === 'separate' ? currentTask : battle.task_common;
+  // TOM: task_common / MOTO·SHUFFLE: 본인 가챠 결과
+  let task = (battle.mode === 'separate' || battle.mode === 'shuffle') ? currentTask : battle.task_common;
   currentTask = task;
   localStorage.setItem(STORAGE.currentTask, task);
   showGachaResult(task, false);
@@ -3630,7 +3686,15 @@ function spawnConfetti() {
 
 // 슬롯머신 reel 방식 — 카테고리들이 위→아래로 흐르다가 점점 느려져 멈춤
 async function spinGacha() {
-  if (categories.length < 1) return;
+  // 셔플 배틀 중이면 shared_pool 사용, 아니면 개인 categories
+  let pool = categories;
+  if (activeBattleId && currentBattleData?.battle?.mode === 'shuffle') {
+    try {
+      const sharedPool = JSON.parse(currentBattleData.battle.shared_pool || '[]');
+      if (sharedPool.length > 0) pool = sharedPool;
+    } catch {}
+  }
+  if (pool.length < 1) return;
 
   // v0.1.9 — 사이클 3 도달 시 자동 리셋. 운영 모드면 광고 confirm 후 리셋.
   if (gachaCount >= 3) {
@@ -3651,10 +3715,10 @@ async function spinGacha() {
   $gachaResult.classList.remove('revealed');
 
   // 최종 결과 미리 결정 — 직전 결과와 연속 중복 방지
-  let winner = categories[Math.floor(Math.random() * categories.length)];
-  if (categories.length >= 2 && winner === currentTask) {
+  let winner = pool[Math.floor(Math.random() * pool.length)];
+  if (pool.length >= 2 && winner === currentTask) {
     do {
-      winner = categories[Math.floor(Math.random() * categories.length)];
+      winner = pool[Math.floor(Math.random() * pool.length)];
     } while (winner === currentTask);
   }
 
@@ -3669,10 +3733,10 @@ async function spinGacha() {
   for (let i = 0; i < TOTAL_FILL; i++) {
     let idx;
     do {
-      idx = Math.floor(Math.random() * categories.length);
-    } while (categories.length > 1 && idx === lastIdx);
+      idx = Math.floor(Math.random() * pool.length);
+    } while (pool.length > 1 && idx === lastIdx);
     lastIdx = idx;
-    sequence.push(categories[idx]);
+    sequence.push(pool[idx]);
   }
   // 마지막에 winner
   sequence.push(winner);
