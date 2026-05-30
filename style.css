@@ -107,7 +107,7 @@ header {
   .logo-svg { width: min(320px, 100%); }
   .logo-wrap {
     transform: translateX(-8px);  /* T 하단 공백 보정 — 시각적 중앙정렬 */
-    margin-top: 10px;             /* 설정 버튼과 로고 클릭 영역 분리 */
+    margin-top: max(24px, env(safe-area-inset-top, 24px)); /* 상단 여백 + 노치 대응 */
   }
   .header-settings-btn {
     top: 0;

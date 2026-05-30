@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.138 — 가챠 뽀모도로
+// Tomotto v0.1.139 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -2183,7 +2183,7 @@ function renderBattleRoom() {
   } else if (battle.mode === 'shuffle') {
     let poolSize = 0;
     try { poolSize = JSON.parse(battle.shared_pool || '[]').length; } catch {}
-    $battleRoomTask.textContent = `🔀 SHUFFLE — ${poolSize}개 할일 풀 (수락 시 자동 병합)`;
+    $battleRoomTask.textContent = `🔀 SHUFFLE — 내 할 일 ${poolSize}개, 둘이 합쳐서 한번에 가챠!`;
     $battleRoomTask.className = 'battle-room-task';
   } else if (battle.mode === 'separate') {
     $battleRoomTask.textContent = '🎲 MOTO MODE — 각자 카테고리에서 가챠 돌리기';
@@ -2226,7 +2226,9 @@ function renderBattleRoom() {
         .then(() => console.log('[Sync] currentTask → battle_players.task 동기화'));
     }
 
-    if ((battle.mode === 'separate' || battle.mode === 'shuffle') && !currentTask) {
+    // 셔플은 DB task 기준 (currentTask는 이전 배틀 값일 수 있음), MOTO는 기존 방식
+    const _needsGacha = battle.mode === 'shuffle' ? !myDbTask : (battle.mode === 'separate' && !currentTask);
+    if (_needsGacha) {
       $battleRoomGachaBtn.hidden = false;
       $battleRoomStatus.textContent = battle.mode === 'shuffle'
         ? '🔀 가챠를 돌리면 합쳐진 풀에서 뽑혀요!'
@@ -2239,6 +2241,14 @@ function renderBattleRoom() {
         } else {
           $battleRoomStartBtn.hidden = false;
           $battleRoomStatus.innerHTML = '둘 다 준비됐어요! 시작하면 친구도 동시에 카운트다운돼요. <span class="live-dot">●</span>';
+        }
+      } else if (battle.mode === 'shuffle') {
+        const friendHasTask = !!(friend?.task);
+        if (!friendHasTask) {
+          $battleRoomStatus.innerHTML = '친구가 가챠를 돌리길 기다리는 중··· <span class="live-dot">●</span>';
+        } else {
+          $battleRoomStartBtn.hidden = false;
+          $battleRoomStatus.innerHTML = '둘 다 준비됐어요! 시작하면 친구도 동시에 시작돼요. <span class="live-dot">●</span>';
         }
       } else {
         $battleRoomStartBtn.hidden = false;
@@ -3686,9 +3696,10 @@ function spawnConfetti() {
 
 // 슬롯머신 reel 방식 — 카테고리들이 위→아래로 흐르다가 점점 느려져 멈춤
 async function spinGacha() {
-  // 셔플 배틀 중이면 shared_pool 사용, 아니면 개인 categories
+  // 셔플 배틀 중(대기 포함)이면 shared_pool 사용, 아니면 개인 categories
+  // activeBattleId는 타이머 시작 후 설정, 대기 중엔 currentBattleId 사용
   let pool = categories;
-  if (activeBattleId && currentBattleData?.battle?.mode === 'shuffle') {
+  if ((activeBattleId || currentBattleId) && currentBattleData?.battle?.mode === 'shuffle') {
     try {
       const sharedPool = JSON.parse(currentBattleData.battle.shared_pool || '[]');
       if (sharedPool.length > 0) pool = sharedPool;
