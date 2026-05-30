@@ -105,7 +105,7 @@ public class TimerForegroundService extends Service {
             this, 0, tap, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         return new NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+            .setSmallIcon(R.drawable.ic_tomato_notif)
             .setContentTitle("Tomotto — 집중 중")
             .setContentText(content)
             .setContentIntent(pi)
@@ -131,7 +131,7 @@ public class TimerForegroundService extends Service {
             this, 0, tap, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         NotificationCompat.Builder b = new NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+            .setSmallIcon(R.drawable.ic_tomato_notif)
             .setContentTitle("Tomotto")
             .setContentText(content)
             .setContentIntent(pi)
