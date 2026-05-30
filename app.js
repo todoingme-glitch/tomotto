@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.136 — 가챠 뽀모도로
+// Tomotto v0.1.137 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -4489,6 +4489,15 @@ async function renderLeaderboard() {
     $body.innerHTML = '<p class="lb-empty">아직 기록이 없어요. 타이머를 완료하면 집계돼요!</p>';
     return;
   }
+
+  // 동률 시 "나"를 후순위로 — DB 2차 정렬 기준 없음 보정
+  // 규칙: 같은 횟수면 먼저 도달한 사람이 위, 나는 초과해야 앞서기 가능
+  rows.sort((a, b) => {
+    if (b.count !== a.count) return b.count - a.count;
+    if (a.nickname === myNickname) return 1;   // 나는 뒤로
+    if (b.nickname === myNickname) return -1;
+    return 0; // 타인 간 동률은 DB 순서 유지
+  });
 
   const isMobile = window.matchMedia?.('(max-width: 480px)').matches ?? false;
   const medalEmojis = ['🥇', '🥈', '🥉'];
