@@ -1,11 +1,17 @@
 package com.tomotto.app;
 
+import android.app.NotificationManager;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
+
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebViewClient;
@@ -25,6 +31,41 @@ public class MainActivity extends BridgeActivity {
             String id = mLaunchBattleId;
             mLaunchBattleId = null; // 한 번만 반환 — 새로고침 시 재오픔 방지
             return id != null ? id : "";
+        }
+
+        /**
+         * 타이머 포그라운드 서비스 시작.
+         * @param endTimeMs  타이머 종료 시각 (System.currentTimeMillis() 기준 ms)
+         * @param taskName   현재 작업명 (알림에 표시, 빈 문자열 허용)
+         */
+        @JavascriptInterface
+        public void startTimerNotification(long endTimeMs, String taskName) {
+            requestNotificationPermissionIfNeeded();
+            Intent intent = new Intent(MainActivity.this, TimerForegroundService.class);
+            intent.setAction(TimerForegroundService.ACTION_START);
+            intent.putExtra(TimerForegroundService.EXTRA_END_MS, endTimeMs);
+            intent.putExtra(TimerForegroundService.EXTRA_TASK, taskName != null ? taskName : "");
+            ContextCompat.startForegroundService(MainActivity.this, intent);
+        }
+
+        /** 타이머 포그라운드 서비스 중지 (취소·완료 시 JS에서 호출) */
+        @JavascriptInterface
+        public void stopTimerNotification() {
+            Intent intent = new Intent(MainActivity.this, TimerForegroundService.class);
+            intent.setAction(TimerForegroundService.ACTION_STOP);
+            stopService(intent);
+        }
+    }
+
+    /** Android 13+ 알림 권한 요청 */
+    private void requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this,
+                    android.Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                    new String[]{ android.Manifest.permission.POST_NOTIFICATIONS }, 200);
+            }
         }
     }
 

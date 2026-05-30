@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.142 — 가챠 뽀모도로
+// Tomotto v0.1.143 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -4085,6 +4085,11 @@ function startTimer() {
   if (_spinsSinceReset === 1) unlockAchievement('A-3');
   _spinsSinceReset = 0; // 체크 직후 초기화 (spinGacha 내부 resetTimer 호출과 분리)
 
+  // 알림 영역 타이머 서비스 시작 (Android APK 전용)
+  if (window.AndroidBridge?.startTimerNotification) {
+    try { window.AndroidBridge.startTimerNotification(timer.endTime, currentTask || ''); } catch (_e) {}
+  }
+
   startTimerInternal();
 }
 
@@ -4095,6 +4100,10 @@ function pauseTimer() {
   timer.intervalId = null;
   timer.isRunning = false;
   timer.endTime = null;
+  // 일시정지 시 알림 서비스 중지
+  if (window.AndroidBridge?.stopTimerNotification) {
+    try { window.AndroidBridge.stopTimerNotification(); } catch (_e) {}
+  }
   $timerDisplay.classList.remove('running');
   $startBtn.disabled = false;
   $pauseBtn.disabled = true;
@@ -4164,6 +4173,10 @@ function finishTimer() {
   if (timer.intervalId) clearInterval(timer.intervalId);
   timer.intervalId = null;
   timer.isRunning = false;
+  // 타이머 완료 — 서비스가 자체적으로 완료 알림을 표시하고 종료하지만 안전하게 stop도 호출
+  if (window.AndroidBridge?.stopTimerNotification) {
+    try { window.AndroidBridge.stopTimerNotification(); } catch (_e) {}
+  }
   timer.remaining = 0;
   timer.endTime = null;
   updateTimerDisplay();
