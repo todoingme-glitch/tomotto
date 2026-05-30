@@ -1287,6 +1287,19 @@ dialog.modal input[type="text"]:focus {
   border-color: #c0392b;
 }
 
+/* 편집 모드 활성 상태 ("완료" 버튼) — 악센트 틴트로 편집 중임을 표시 */
+.btn-mini--editing {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+.btn-mini--editing:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
 .settings-section--dev {
   border-top: 1px dashed var(--border);
   opacity: 0.6;

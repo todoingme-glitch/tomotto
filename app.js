@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.135 — 가챠 뽀모도로
+// Tomotto v0.1.136 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -5392,7 +5392,10 @@ function subscribePublicBattles() {
   const $editBtn = document.getElementById('editPublicBattleBtn');
   $editBtn?.addEventListener('click', async () => {
     pubBattleEditMode = !pubBattleEditMode;
-    if ($editBtn) $editBtn.textContent = pubBattleEditMode ? '완료' : '편집';
+    if ($editBtn) {
+      $editBtn.textContent = pubBattleEditMode ? '완료' : '편집';
+      $editBtn.classList.toggle('btn-mini--editing', pubBattleEditMode);
+    }
     await renderPublicBattles();
     if (pubBattleEditMode) {
       document.getElementById('publicBattleBody')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
