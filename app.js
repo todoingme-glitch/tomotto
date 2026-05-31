@@ -4354,23 +4354,22 @@ function cancelNotification() {
   }
 }
 
-// 타이머 완료 시 즉시 웹 알림 표시 (setTimeout 경쟁 조건 우회)
+// 타이머 완료 시 즉시 웹 알림 표시
 async function showWebNotificationNow(task) {
-  if (window.Capacitor?.isNativePlatform()) return; // Android는 OS가 처리
+  if (window.Capacitor?.isNativePlatform()) return;
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   const title = 'Tomotto 🍅 타이머 완료!';
   const body  = task ? `"${task}" 완료! 수고하셨어요 🎉` : '집중 시간이 끝났어요! 수고하셨어요 🎉';
-  try {
-    if ('serviceWorker' in navigator) {
+  const opts  = { body, icon: 'assets/icon-192.png', badge: 'assets/icon-192.png', tag: 'tomotto-timer' };
+  // SW가 페이지를 제어 중이면 SW 알림 (백그라운드 탭 지원), 아니면 new Notification() fallback
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    try {
       const reg = await navigator.serviceWorker.ready;
-      await reg.showNotification(title, {
-        body, icon: 'assets/icon-192.png', badge: 'assets/icon-192.png',
-        tag: 'tomotto-timer', renotify: true,
-      });
-    } else {
-      new Notification(title, { body, icon: 'assets/icon-192.png' });
-    }
-  } catch (e) { console.warn('[Notification] 표시 실패:', e); }
+      await reg.showNotification(title, opts);
+      return;
+    } catch (e) { console.warn('[SW Notification] 실패, fallback:', e); }
+  }
+  try { new Notification(title, opts); } catch (e) { console.warn('[Notification] 표시 실패:', e); }
 }
 
 function saveTimerState(state) {
