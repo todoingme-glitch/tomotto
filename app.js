@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.169 — 가챠 뽀모도로
+// Tomotto v0.1.170 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -4001,27 +4001,60 @@ function updatePipBtn() {
 function _pipRender() {
   if (!pip.canvas) return;
   const ctx = pip.canvas.getContext('2d');
-  const W = pip.canvas.width;
-  const H = pip.canvas.height;
-  ctx.fillStyle = '#1a1a1a';
+  const W = pip.canvas.width;   // 400
+  const H = pip.canvas.height;  // 240
+
+  // Background
+  ctx.fillStyle = '#0f0f11';
   ctx.fillRect(0, 0, W, H);
-  ctx.font = `${Math.floor(H * 0.22)}px serif`;
+
+  // Left accent bar
+  ctx.fillStyle = '#ef4444';
+  ctx.fillRect(0, 0, 3, H);
+
+  // 🍅 brand mark (top-left, small)
+  ctx.font = '15px serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText('🍅', 14, 14);
+
+  // Paused badge (top-right)
+  if (!timer.isRunning && timer.remaining > 0) {
+    ctx.fillStyle = '#27272a';
+    ctx.beginPath();
+    ctx.roundRect(W - 82, 10, 70, 22, 11);
+    ctx.fill();
+    ctx.fillStyle = '#a1a1aa';
+    ctx.font = 'bold 11px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('⏸  일시정지', W - 47, 21);
+  }
+
+  // Main timer
+  ctx.fillStyle = '#f4f4f5';
+  ctx.font = 'bold 62px "Helvetica Neue", Arial, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('🍅', W / 2, H * 0.26);
-  ctx.fillStyle = '#ffffff';
-  ctx.font = `bold ${Math.floor(H * 0.3)}px monospace`;
-  ctx.fillText(formatTime(timer.remaining), W / 2, H * 0.56);
+  ctx.fillText(formatTime(timer.remaining), W / 2, currentTask ? 100 : 110);
+
+  // Task name
   if (currentTask) {
-    ctx.fillStyle = '#f36f30';
-    ctx.font = `${Math.floor(H * 0.1)}px sans-serif`;
-    const task = currentTask.length > 22 ? currentTask.slice(0, 22) + '…' : currentTask;
-    ctx.fillText(task, W / 2, H * 0.76);
+    ctx.fillStyle = '#fb923c';
+    ctx.font = '500 14px "Helvetica Neue", Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    const task = currentTask.length > 30 ? currentTask.slice(0, 30) + '…' : currentTask;
+    ctx.fillText(task, W / 2, 142);
   }
-  if (!timer.isRunning && timer.remaining > 0) {
-    ctx.fillStyle = 'rgba(255,255,255,0.45)';
-    ctx.font = `${Math.floor(H * 0.09)}px sans-serif`;
-    ctx.fillText('⏸ 일시정지', W / 2, H * 0.91);
+
+  // Progress bar (bottom)
+  const pct = timer.duration > 0 ? (timer.duration - timer.remaining) / timer.duration : 0;
+  ctx.fillStyle = '#27272a';
+  ctx.fillRect(3, H - 5, W - 3, 5);
+  if (pct > 0) {
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(3, H - 5, (W - 3) * pct, 5);
   }
 }
 
@@ -4034,8 +4067,8 @@ function _pipDraw() {
 async function startPip() {
   if (!_pipSupported()) return;
   pip.canvas = document.createElement('canvas');
-  pip.canvas.width = 320;
-  pip.canvas.height = 200;
+  pip.canvas.width = 400;
+  pip.canvas.height = 240;
   pip.active = true;
   _pipRender(); // 스트림 시작 전 초기 프레임 먼저 렌더
 
@@ -4079,6 +4112,8 @@ function _isPersonalTabActive() {
 function updateFloatingTimerBar() {
   const bar = document.getElementById('floatingTimerBar');
   if (!bar) return;
+  // PiP 지원 환경(데스크탑 Chrome 등)에서는 플로팅 바 대신 PiP 사용
+  if (_pipSupported()) { bar.hidden = true; document.querySelector('.container')?.classList.remove('ftb-visible'); return; }
   // timer가 초기화되기 전(initBottomTab IIFE 조기 호출) 에는 숨김 처리
   let isRunning = false;
   let remaining = 0;
@@ -4968,17 +5003,17 @@ async function renderLeaderboard() {
       : (emoji || '');
     const nickText = titleEmoji ? `${titleEmoji} ${escapeHtml(nick)}` : escapeHtml(nick);
 
-    // 보조 정보 — total_seconds 있을 때만 표시 (세션 라벨 우선, 없으면 평균 수치)
+    // 보조 정보 — total_seconds 있을 때만 표시
     let subHtml = '';
     if (totalSecs > 0 && count > 0) {
       const totalMins = Math.floor(totalSecs / 60);
       const avgMin = totalMins > 0 ? Math.round(totalMins / count) : 0;
       const label = getSessionLabel(avgMin);
-      if (label) {
-        subHtml = `<span class="lb-sub"><span class="lb-session-label">${label}</span></span>`;
-      } else if (avgMin > 0) {
-        subHtml = `<span class="lb-sub">세션 평균 ${avgMin}분</span>`;
-      }
+      const labelHtml = label ? `<span class="lb-session-label">${label}</span>` : '';
+      const totalText = totalMins >= 60
+        ? `총 ${Math.floor(totalMins / 60)}시간 ${totalMins % 60}분`
+        : `총 ${totalMins}분`;
+      subHtml = `<span class="lb-sub">${totalText}${labelHtml ? ' · ' + labelHtml : (avgMin > 0 ? ` · 평균 ${avgMin}분` : '')}</span>`;
     }
 
     return `
