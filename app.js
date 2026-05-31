@@ -4007,10 +4007,11 @@ function updateFloatingTimerBar() {
   if (timeEl) timeEl.textContent = formatTime(remaining);
   if (taskEl) taskEl.textContent = currentTask || '';
 
-  // 진행 바: 남은 시간 비율로 높이 조정
+  // 진행 바: 경과 시간 비율로 너비 조정 (붉은색 = 경과, 회색 배경 = 남은 시간)
   if (progressBar) {
-    const pct = duration > 0 ? Math.max(0, Math.min(100, (remaining / duration) * 100)) : 0;
-    progressBar.style.height = pct + '%';
+    const elapsed = Math.max(0, duration - remaining);
+    const pct = duration > 0 ? Math.min(100, (elapsed / duration) * 100) : 0;
+    progressBar.style.width = pct + '%';
   }
 
   // 버튼 도형 전환 (일시정지↔재생)
@@ -6417,7 +6418,7 @@ const ACHIEVEMENT_DEFS = {
   'F-6': { name: '만원 사례',       desc: '10명이 꽉 찬 방에서 완주했어요!',       cond: '10명 공개 배틀 완료',              icon: '🎪', tier: 'rare',   hidden: false },
 
   // ── E. 숨겨진 업적 ────────────────────────────────────
-  'E-1': { name: '잠깐만요 진짜 잠깐', desc: '타이머 켜놓고 딴 짓 했죠?',          cond: '타이머 실행 중 탭 전환 5회',       icon: '👀', tier: 'hidden', hidden: true,  charImg: 'assets/react-moto-relate.png',    charQuote: '어... 나도 그랬는데~ 괜찮아 괜찮아 😎' },
+  'E-1': { name: '잠깐만요', desc: '타이머 켜놓고 딴 짓 했죠?',          cond: '타이머 실행 중 탭 전환 5회',       icon: '👀', tier: 'hidden', hidden: true,  charImg: 'assets/react-moto-relate.png',    charQuote: '어... 나도 그랬는데~ 괜찮아 괜찮아 😎' },
   'E-2': { name: '거의 다 왔는데',  desc: '10초 남기고 도망쳤어요',               cond: '10초 이하 남기고 취소',            icon: '🏃', tier: 'hidden', hidden: true  },
   'E-3': { name: '완전한 하루',    desc: '하루에 4번이나 집중했어요!',            cond: '하루 4회 이상 타이머 완료',        icon: '☀️', tier: 'hidden', hidden: true  },
   'E-4': { name: '새벽 감성',      desc: '새벽 4~6시에 혼자 집중했어요',         cond: '새벽 4~6시에 타이머 완료',        icon: '⭐', tier: 'hidden', hidden: true,  charImg: 'assets/react-tom-dawn.png',       charQuote: '하아암~ 오늘도 열일해야지...' },
