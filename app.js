@@ -3987,12 +3987,16 @@ function _isPersonalTabActive() {
 function updateFloatingTimerBar() {
   const bar = document.getElementById('floatingTimerBar');
   if (!bar) return;
-  const show = timer.isRunning && !_isPersonalTabActive();
+  // timer가 초기화되기 전(initBottomTab IIFE 조기 호출) 에는 숨김 처리
+  let isRunning = false;
+  let remaining = 0;
+  try { isRunning = timer.isRunning; remaining = timer.remaining; } catch (_e) { return; }
+  const show = isRunning && !_isPersonalTabActive();
   bar.hidden = !show;
   if (!show) return;
   const timeEl = document.getElementById('ftbTime');
   const taskEl = document.getElementById('ftbTask');
-  if (timeEl) timeEl.textContent = formatTime(timer.remaining);
+  if (timeEl) timeEl.textContent = formatTime(remaining);
   if (taskEl) taskEl.textContent = currentTask || '';
 }
 
