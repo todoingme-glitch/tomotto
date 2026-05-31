@@ -57,6 +57,11 @@ body {
   margin: 0 auto;
   /* 하단 고정 탭(약 70px) + 여유 공간 */
   padding: 40px 20px 100px;
+  transition: padding-bottom 0.2s ease;
+}
+/* 플로팅 타이머 바 표시 시 하단 여유 추가 (~56px 바 높이) */
+.container.ftb-visible {
+  padding-bottom: 160px;
 }
 
 /* Header */

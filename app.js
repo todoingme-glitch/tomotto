@@ -3993,6 +3993,8 @@ function updateFloatingTimerBar() {
   try { isRunning = timer.isRunning; remaining = timer.remaining; } catch (_e) { return; }
   const show = (isRunning || _ftbPausedVisible) && !_isPersonalTabActive();
   bar.hidden = !show;
+  // 컨테이너 하단 패딩 토글 — 바가 내용 가리지 않도록
+  document.querySelector('.container')?.classList.toggle('ftb-visible', show);
   if (!show) { _ftbPausedVisible = false; return; }
   const timeEl = document.getElementById('ftbTime');
   const taskEl = document.getElementById('ftbTask');
@@ -4025,44 +4027,18 @@ window.addEventListener('load', () => {
     });
   }
 
-  // 바 전체 탭: 개인 탭으로 이동
+  // 바 전체 탭: 개인 탭으로 이동 후 타이머 섹션으로 스크롤
   if (bar) {
-    bar.addEventListener('click', () => { switchTab('personal'); });
+    bar.addEventListener('click', () => {
+      switchTab('personal');
+      requestAnimationFrame(() => {
+        const timerSection = document.querySelector('.timer-section');
+        if (timerSection) timerSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
   }
 });
 
-// ── 스와이프로 탭 전환 ──────────────────────────────────────
-(function initSwipeNav() {
-  const TAB_ORDER = ['personal', 'social', 'log'];
-  let swipeStartX = 0, swipeStartY = 0;
-
-  function getCurrentTabIndex() {
-    const active = document.querySelector('.tab-btn.active');
-    return active ? TAB_ORDER.indexOf(active.dataset.tab) : 0;
-  }
-
-  document.addEventListener('touchstart', (e) => {
-    swipeStartX = e.touches[0].clientX;
-    swipeStartY = e.touches[0].clientY;
-  }, { passive: true });
-
-  document.addEventListener('touchend', (e) => {
-    const dx = e.changedTouches[0].clientX - swipeStartX;
-    const dy = e.changedTouches[0].clientY - swipeStartY;
-    // 수평 이동이 수직보다 크고 50px 이상일 때만 탭 전환
-    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-    const cur = getCurrentTabIndex();
-    if (dx < 0) {
-      // 왼쪽 스와이프 → 다음 탭
-      const next = TAB_ORDER[(cur + 1) % TAB_ORDER.length];
-      switchTab(next);
-    } else {
-      // 오른쪽 스와이프 → 이전 탭
-      const prev = TAB_ORDER[(cur - 1 + TAB_ORDER.length) % TAB_ORDER.length];
-      switchTab(prev);
-    }
-  }, { passive: true });
-})();
 
 function saveTimerState(state) {
   if (!state) {
