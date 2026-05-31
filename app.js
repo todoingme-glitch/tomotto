@@ -4092,16 +4092,17 @@ async function startDocPip() {
     body{background:#fffaf9;font-family:"Helvetica Neue",Arial,sans-serif;overflow:hidden;height:100vh;display:flex;flex-direction:column}
     .dpp-root{flex:1;display:flex;flex-direction:column;position:relative}
     .dpp-accent{width:3px;background:#d94e3a;position:absolute;left:0;top:0;bottom:0}
-    .dpp-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 16px 0;gap:8px}
+    .dpp-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 16px 0;gap:3px}
     .dpp-emoji{font-size:13px;position:absolute;top:8px;left:12px;line-height:1}
     .dpp-time{font-size:58px;font-weight:800;color:#d94e3a;letter-spacing:-0.03em;display:flex;align-items:center;line-height:1}
     .dpp-colon{padding:0 0.09em;line-height:1}
-    .dpp-task{margin-top:-5px;font-size:15px;font-weight:500;color:#a07060;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .dpp-task{font-size:15px;font-weight:500;color:#a07060;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .dpp-pause{position:absolute;top:8px;right:10px;background:#f5ebe8;color:#c07060;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px}
     .dpp-progress{height:3px;background:#f0e0da}
     .dpp-progress-fill{height:100%;background:#d94e3a;transition:width 0.5s linear}
   `;
   pipWindow.document.head.appendChild(style);
+  const themeColor = pipWindow.document.createElement('meta'); themeColor.name = 'theme-color'; themeColor.content = '#fffaf9'; pipWindow.document.head.appendChild(themeColor);
 
   pipWindow.document.body.innerHTML = `
     <div class="dpp-root">
