@@ -23,8 +23,6 @@ self.addEventListener('notificationclick', (event) => {
             return client.focus();
           }
         }
-        // 열린 탭 없으면 새 탭으로 열기
-        return self.clients.openWindow('/?from=notification');
       })
   );
 });
