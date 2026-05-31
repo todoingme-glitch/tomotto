@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.173 — 가챠 뽀모도로
+// Tomotto v0.1.174 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -4007,23 +4007,19 @@ function updatePipBtn() {
 }
 
 // ── Document PiP 렌더 (DOM 업데이트) ──
-const _PIP_R = 72; // SVG arc radius
-const _PIP_CIRC = 2 * Math.PI * _PIP_R; // ≈452.4
-
 function _pipRenderDoc() {
   const w = pip.docWindow;
   if (!w || w.closed) return;
   const d = w.document;
   const timeEl  = d.getElementById('dppTime');
   const taskEl  = d.getElementById('dppTask');
-  const arcEl   = d.getElementById('dppArc');
+  const fillEl  = d.getElementById('dppFill');
   const pauseEl = d.getElementById('dppPause');
-  if (timeEl) timeEl.textContent = formatTime(timer.remaining);
-  if (taskEl) taskEl.textContent = currentTask || '';
-  if (arcEl) {
-    const elapsed = timer.duration > 0 ? (timer.duration - timer.remaining) / timer.duration : 0;
-    arcEl.setAttribute('stroke-dasharray', _PIP_CIRC);
-    arcEl.setAttribute('stroke-dashoffset', _PIP_CIRC * elapsed);
+  if (timeEl)  timeEl.textContent  = formatTime(timer.remaining);
+  if (taskEl)  taskEl.textContent  = currentTask || '';
+  if (fillEl) {
+    const pct = timer.duration > 0 ? (timer.duration - timer.remaining) / timer.duration * 100 : 0;
+    fillEl.style.width = pct + '%';
   }
   if (pauseEl) pauseEl.hidden = timer.isRunning || timer.remaining === 0;
 }
@@ -4080,65 +4076,34 @@ function _pipDraw() {
 
 // ── Document PiP 시작 ──
 async function startDocPip() {
-  const pipWindow = await window.documentPictureInPicture.requestWindow({ width: 210, height: 230 });
+  const pipWindow = await window.documentPictureInPicture.requestWindow({ width: 320, height: 180 });
 
   const style = pipWindow.document.createElement('style');
   style.textContent = `
     *{margin:0;padding:0;box-sizing:border-box}
-    body{background:#f0efed;font-family:"Helvetica Neue",Arial,sans-serif;overflow:hidden;
-         height:100vh;display:flex;align-items:center;justify-content:center}
-    .dpp-wrap{position:relative;display:flex;flex-direction:column;align-items:center}
-    /* ── 토마토 꼭지 ── */
-    .dpp-stem{position:relative;width:36px;height:22px;margin-bottom:-4px;z-index:2}
-    .dpp-stem-stalk{position:absolute;left:50%;bottom:0;transform:translateX(-50%);
-      width:3px;height:14px;background:#16a34a;border-radius:2px}
-    .dpp-stem-left{position:absolute;left:2px;bottom:6px;
-      width:14px;height:9px;background:#22c55e;border-radius:50% 50% 0 50%;
-      transform:rotate(-25deg)}
-    .dpp-stem-right{position:absolute;right:2px;bottom:6px;
-      width:14px;height:9px;background:#22c55e;border-radius:50% 50% 50% 0;
-      transform:rotate(25deg)}
-    /* ── 원형 링 ── */
-    .dpp-ring-wrap{position:relative;width:180px;height:180px}
-    .dpp-svg{position:absolute;top:0;left:0;width:180px;height:180px}
-    .dpp-inner{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-      text-align:center;width:130px}
-    .dpp-time{font-size:46px;font-weight:700;color:#e03030;letter-spacing:-0.03em;line-height:1}
-    .dpp-task{font-size:11px;color:#9b7b7b;margin-top:4px;
-      overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;margin-inline:auto}
-    .dpp-pause{font-size:11px;color:#b0a0a0;margin-top:3px}
+    body{background:#0f0f11;font-family:"Helvetica Neue",Arial,sans-serif;overflow:hidden;height:100vh;display:flex;flex-direction:column}
+    .dpp-root{flex:1;display:flex;flex-direction:column;position:relative}
+    .dpp-accent{width:3px;background:#ef4444;position:absolute;left:0;top:0;bottom:0}
+    .dpp-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 16px;gap:5px}
+    .dpp-emoji{font-size:14px;position:absolute;top:10px;left:14px}
+    .dpp-time{font-size:52px;font-weight:700;color:#f4f4f5;letter-spacing:-0.02em;line-height:1}
+    .dpp-task{font-size:12px;color:#fb923c;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:15px}
+    .dpp-pause{position:absolute;top:10px;right:10px;background:#27272a;color:#a1a1aa;font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px}
+    .dpp-progress{height:4px;background:#27272a}
+    .dpp-progress-fill{height:100%;background:#ef4444;transition:width 0.5s linear}
   `;
   pipWindow.document.head.appendChild(style);
 
-  const elapsed0 = timer.duration > 0 ? (timer.duration - timer.remaining) / timer.duration : 0;
-  const circ = _PIP_CIRC;
-  const r = _PIP_R;
-
   pipWindow.document.body.innerHTML = `
-    <div class="dpp-wrap">
-      <div class="dpp-stem">
-        <div class="dpp-stem-left"></div>
-        <div class="dpp-stem-right"></div>
-        <div class="dpp-stem-stalk"></div>
+    <div class="dpp-root">
+      <div class="dpp-accent"></div>
+      <div class="dpp-body">
+        <span class="dpp-emoji">🍅</span>
+        <div class="dpp-time" id="dppTime">${formatTime(timer.remaining)}</div>
+        <div class="dpp-task" id="dppTask">${escapeHtml(currentTask || '')}</div>
+        <div class="dpp-pause" id="dppPause"${timer.isRunning ? ' hidden' : ''}>⏸ 일시정지</div>
       </div>
-      <div class="dpp-ring-wrap">
-        <svg class="dpp-svg" viewBox="0 0 180 180" fill="none">
-          <!-- 흰 원 배경 -->
-          <circle cx="90" cy="90" r="${r}" fill="white"/>
-          <!-- 링 배경 (연한 핑크) -->
-          <circle cx="90" cy="90" r="${r}" stroke="#f5d5d5" stroke-width="11"/>
-          <!-- 진행 arc (남은 시간, 빨강) -->
-          <circle id="dppArc" cx="90" cy="90" r="${r}"
-            stroke="#e03030" stroke-width="11" stroke-linecap="round"
-            stroke-dasharray="${circ}" stroke-dashoffset="${circ * elapsed0}"
-            transform="rotate(-90 90 90)"/>
-        </svg>
-        <div class="dpp-inner">
-          <div class="dpp-time" id="dppTime">${formatTime(timer.remaining)}</div>
-          <div class="dpp-task" id="dppTask">${escapeHtml(currentTask || '')}</div>
-          <div class="dpp-pause" id="dppPause"${timer.isRunning ? ' hidden' : ''}>⏸ 일시정지</div>
-        </div>
-      </div>
+      <div class="dpp-progress"><div class="dpp-progress-fill" id="dppFill"></div></div>
     </div>`;
 
   pip.docWindow = pipWindow;
