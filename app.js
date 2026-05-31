@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.171 — 가챠 뽀모도로
+// Tomotto v0.1.172 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -3980,12 +3980,20 @@ function updateTimerDisplay() {
   updatePipBtn();
 }
 
-// ── Picture-in-Picture (Canvas) ──────────────────────────────
-const pip = { canvas: null, video: null, rafId: null, active: false };
+// ── Picture-in-Picture ───────────────────────────────────────
+// Document PiP (Chrome 116+/Edge): 실제 HTML 렌더 — LIVE 배지 없음
+// Canvas PiP (Safari 등): canvas captureStream fallback
+const pip = {
+  active: false, type: null, rafId: null,
+  // canvas pip
+  canvas: null, video: null,
+  // document pip
+  docWindow: null,
+};
 
-function _pipSupported() {
-  return 'pictureInPictureEnabled' in document && document.pictureInPictureEnabled;
-}
+function _docPipSupported() { return !!window.documentPictureInPicture; }
+function _canvasPipSupported() { return 'pictureInPictureEnabled' in document && document.pictureInPictureEnabled; }
+function _pipSupported() { return _docPipSupported() || _canvasPipSupported(); }
 
 function updatePipBtn() {
   const btn = document.getElementById('pipBtn');
@@ -3998,27 +4006,38 @@ function updatePipBtn() {
   btn.classList.toggle('pip-active', pip.active);
 }
 
-function _pipRender() {
+// ── Document PiP 렌더 (DOM 업데이트) ──
+function _pipRenderDoc() {
+  const w = pip.docWindow;
+  if (!w || w.closed) return;
+  const d = w.document;
+  const timeEl  = d.getElementById('dppTime');
+  const taskEl  = d.getElementById('dppTask');
+  const fillEl  = d.getElementById('dppFill');
+  const pauseEl = d.getElementById('dppPause');
+  if (timeEl)  timeEl.textContent  = formatTime(timer.remaining);
+  if (taskEl)  taskEl.textContent  = currentTask || '';
+  if (fillEl) {
+    const pct = timer.duration > 0 ? (timer.duration - timer.remaining) / timer.duration * 100 : 0;
+    fillEl.style.width = pct + '%';
+  }
+  if (pauseEl) pauseEl.hidden = timer.isRunning || timer.remaining === 0;
+}
+
+// ── Canvas PiP 렌더 ──
+function _pipRenderCanvas() {
   if (!pip.canvas) return;
   const ctx = pip.canvas.getContext('2d');
-  const W = pip.canvas.width;   // 400
-  const H = pip.canvas.height;  // 240
-
-  // Background
+  const W = pip.canvas.width;
+  const H = pip.canvas.height;
   ctx.fillStyle = '#0f0f11';
   ctx.fillRect(0, 0, W, H);
-
-  // Left accent bar
   ctx.fillStyle = '#ef4444';
   ctx.fillRect(0, 0, 3, H);
-
-  // 🍅 brand mark (top-left, small)
   ctx.font = '15px serif';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
   ctx.fillText('🍅', 14, 14);
-
-  // Paused badge (top-right)
   if (!timer.isRunning && timer.remaining > 0) {
     ctx.fillStyle = '#27272a';
     ctx.beginPath();
@@ -4030,15 +4049,11 @@ function _pipRender() {
     ctx.textBaseline = 'middle';
     ctx.fillText('⏸  일시정지', W - 47, 21);
   }
-
-  // Main timer
   ctx.fillStyle = '#f4f4f5';
   ctx.font = 'bold 62px "Helvetica Neue", Arial, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(formatTime(timer.remaining), W / 2, currentTask ? 100 : 110);
-
-  // Task name
   if (currentTask) {
     ctx.fillStyle = '#fb923c';
     ctx.font = '500 14px "Helvetica Neue", Arial, sans-serif';
@@ -4047,30 +4062,66 @@ function _pipRender() {
     const task = currentTask.length > 30 ? currentTask.slice(0, 30) + '…' : currentTask;
     ctx.fillText(task, W / 2, 142);
   }
-
-  // Progress bar (bottom)
   const pct = timer.duration > 0 ? (timer.duration - timer.remaining) / timer.duration : 0;
   ctx.fillStyle = '#27272a';
   ctx.fillRect(3, H - 5, W - 3, 5);
-  if (pct > 0) {
-    ctx.fillStyle = '#ef4444';
-    ctx.fillRect(3, H - 5, (W - 3) * pct, 5);
-  }
+  if (pct > 0) { ctx.fillStyle = '#ef4444'; ctx.fillRect(3, H - 5, (W - 3) * pct, 5); }
 }
 
 function _pipDraw() {
   if (!pip.active) return;
-  _pipRender();
+  if (pip.type === 'doc') { _pipRenderDoc(); } else { _pipRenderCanvas(); }
   pip.rafId = requestAnimationFrame(_pipDraw);
 }
 
-async function startPip() {
-  if (!_pipSupported()) return;
+// ── Document PiP 시작 ──
+async function startDocPip() {
+  const pipWindow = await window.documentPictureInPicture.requestWindow({ width: 320, height: 180 });
+
+  const style = pipWindow.document.createElement('style');
+  style.textContent = `
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:#0f0f11;font-family:"Helvetica Neue",Arial,sans-serif;overflow:hidden;height:100vh;display:flex;flex-direction:column}
+    .dpp-root{flex:1;display:flex;flex-direction:column;position:relative}
+    .dpp-accent{width:3px;background:#ef4444;position:absolute;left:0;top:0;bottom:0}
+    .dpp-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 16px;gap:5px}
+    .dpp-emoji{font-size:14px;position:absolute;top:10px;left:14px}
+    .dpp-time{font-size:52px;font-weight:700;color:#f4f4f5;letter-spacing:-0.02em;line-height:1}
+    .dpp-task{font-size:12px;color:#fb923c;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:15px}
+    .dpp-pause{position:absolute;top:10px;right:10px;background:#27272a;color:#a1a1aa;font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px}
+    .dpp-progress{height:4px;background:#27272a}
+    .dpp-progress-fill{height:100%;background:#ef4444;transition:width 0.5s linear}
+  `;
+  pipWindow.document.head.appendChild(style);
+
+  pipWindow.document.body.innerHTML = `
+    <div class="dpp-root">
+      <div class="dpp-accent"></div>
+      <div class="dpp-body">
+        <span class="dpp-emoji">🍅</span>
+        <div class="dpp-time" id="dppTime">${formatTime(timer.remaining)}</div>
+        <div class="dpp-task" id="dppTask">${escapeHtml(currentTask || '')}</div>
+        <div class="dpp-pause" id="dppPause"${timer.isRunning ? ' hidden' : ''}>⏸ 일시정지</div>
+      </div>
+      <div class="dpp-progress"><div class="dpp-progress-fill" id="dppFill"></div></div>
+    </div>`;
+
+  pip.docWindow = pipWindow;
+  pip.active = true;
+  pip.type = 'doc';
+  pipWindow.addEventListener('pagehide', stopPip, { once: true });
+  _pipDraw();
+  updatePipBtn();
+}
+
+// ── Canvas PiP 시작 (Safari fallback) ──
+async function startCanvasPip() {
   pip.canvas = document.createElement('canvas');
   pip.canvas.width = 400;
   pip.canvas.height = 240;
   pip.active = true;
-  _pipRender(); // 스트림 시작 전 초기 프레임 먼저 렌더
+  pip.type = 'canvas';
+  _pipRenderCanvas();
 
   pip.video = document.createElement('video');
   pip.video.muted = true;
@@ -4081,26 +4132,38 @@ async function startPip() {
     await pip.video.play();
     await pip.video.requestPictureInPicture();
   } catch (err) {
-    console.warn('[PiP] 진입 실패:', err);
+    console.warn('[PiP] Canvas PiP 실패:', err);
     stopPip();
     return;
   }
-  _pipDraw(); // PiP 창 열린 후 rAF 루프 시작
+  _pipDraw();
   updatePipBtn();
 }
 
+async function startPip() {
+  if (!_pipSupported()) return;
+  if (_docPipSupported()) {
+    try { await startDocPip(); return; } catch (err) {
+      console.warn('[PiP] Document PiP 실패, Canvas로 fallback:', err);
+    }
+  }
+  if (_canvasPipSupported()) await startCanvasPip();
+}
+
 function stopPip() {
+  if (!pip.active && !pip.docWindow && !pip.video) return;
   pip.active = false;
   if (pip.rafId) { cancelAnimationFrame(pip.rafId); pip.rafId = null; }
-  if (document.pictureInPictureElement) {
-    document.exitPictureInPicture().catch(() => {});
+  if (pip.type === 'doc') {
+    try { if (pip.docWindow && !pip.docWindow.closed) pip.docWindow.close(); } catch (_e) {}
+    pip.docWindow = null;
+  } else {
+    if (document.pictureInPictureElement) document.exitPictureInPicture().catch(() => {});
+    if (pip.video?.srcObject) { pip.video.srcObject.getTracks().forEach(t => t.stop()); pip.video.srcObject = null; }
+    pip.canvas = null;
+    pip.video = null;
   }
-  if (pip.video?.srcObject) {
-    pip.video.srcObject.getTracks().forEach(t => t.stop());
-    pip.video.srcObject = null;
-  }
-  pip.canvas = null;
-  pip.video = null;
+  pip.type = null;
   updatePipBtn();
 }
 
