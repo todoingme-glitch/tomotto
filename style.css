@@ -2257,13 +2257,16 @@ dialog.modal input[type="text"]:focus {
   display: block;
 }
 
-/* 재생: 아코디언 chevron SVG -90도 회전 */
+/* 재생: CSS 삼각형 */
 .ftb-play-shape {
-  width: 16px;
-  height: 16px;
-  transform: rotate(-90deg);
   display: block;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 9px 0 9px 16px;
+  border-color: transparent transparent transparent #d94e3a;
   flex-shrink: 0;
+  margin-left: 3px;
 }
 
 /* ====== v0.1.17 — 하단 탭 네비게이션 ====== */
