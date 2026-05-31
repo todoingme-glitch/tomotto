@@ -138,7 +138,7 @@ public class MainActivity extends BridgeActivity {
             "  switchTab('personal');" +
             "  requestAnimationFrame(function(){" +
             "    var el=document.querySelector('.timer-section');" +
-            "    if(el)el.scrollIntoView({behavior:'smooth',block:'start'});" +
+            "    if(el)el.scrollIntoView({behavior:'instant',block:'start'});" +
             "  });" +
             "}";
         getBridge().getWebView().post(() ->
