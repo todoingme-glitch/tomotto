@@ -4102,7 +4102,6 @@ async function startDocPip() {
     .dpp-progress-fill{height:100%;background:#d94e3a;transition:width 0.5s linear}
   `;
   pipWindow.document.head.appendChild(style);
-  const themeColor = pipWindow.document.createElement('meta'); themeColor.name = 'theme-color'; themeColor.content = '#fffaf9'; pipWindow.document.head.appendChild(themeColor);
 
   pipWindow.document.body.innerHTML = `
     <div class="dpp-root">
