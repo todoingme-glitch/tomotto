@@ -3992,11 +3992,13 @@ function updateFloatingTimerBar() {
   let remaining = 0;
   let duration = 1500;
   try { isRunning = timer.isRunning; remaining = timer.remaining; duration = timer.duration || 1500; } catch (_e) { return; }
-  const show = (isRunning || _ftbPausedVisible) && !_isPersonalTabActive();
+  // 타이머가 실행 중이거나 일시정지 상태(남은 시간 있고 duration과 다름)일 때 표시
+  const isPaused = !isRunning && remaining > 0 && remaining < duration;
+  const show = (isRunning || isPaused) && !_isPersonalTabActive();
   bar.hidden = !show;
   // 컨테이너 하단 패딩 토글 — 바가 내용 가리지 않도록
   document.querySelector('.container')?.classList.toggle('ftb-visible', show);
-  if (!show) { _ftbPausedVisible = false; return; }
+  if (!show) { return; }
 
   const timeEl      = document.getElementById('ftbTime');
   const taskEl      = document.getElementById('ftbTask');
@@ -4019,8 +4021,6 @@ function updateFloatingTimerBar() {
   if (playShape)  playShape.hidden  = isRunning;
 }
 
-// 일시정지 상태에서도 플로팅 바 잠깐 유지용 플래그
-let _ftbPausedVisible = false;
 
 // 플로팅 바 이벤트 (window.load 이후 등록)
 window.addEventListener('load', () => {
@@ -4032,10 +4032,8 @@ window.addEventListener('load', () => {
     toggleBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       if (timer.isRunning) {
-        _ftbPausedVisible = true;
         pauseTimer();
       } else {
-        _ftbPausedVisible = false;
         startTimer();
       }
       updateFloatingTimerBar();
