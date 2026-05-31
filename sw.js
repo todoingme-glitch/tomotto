@@ -3,7 +3,6 @@
 self.addEventListener('install', () => self.skipWaiting());
 
 self.addEventListener('activate', (event) => {
-  // 이전 캐시 정리 후 즉시 제어권 획득
   event.waitUntil(
     caches.keys()
       .then(keys => Promise.all(keys.map(k => caches.delete(k))))
@@ -11,7 +10,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// 알림 클릭 → 탭 포커스 또는 새 탭 열기
+// 알림 클릭 → 탭 포커스 + 타이머 섹션 이동 메시지 전달
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   event.waitUntil(
@@ -19,9 +18,13 @@ self.addEventListener('notificationclick', (event) => {
       .matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientList) => {
         for (const client of clientList) {
-          if ('focus' in client) return client.focus();
+          if ('focus' in client) {
+            client.postMessage({ type: 'NOTIF_CLICK_FOCUS_TIMER' });
+            return client.focus();
+          }
         }
-        return self.clients.openWindow('/');
+        // 열린 탭 없으면 새 탭으로 열기
+        return self.clients.openWindow('/?from=notification');
       })
   );
 });

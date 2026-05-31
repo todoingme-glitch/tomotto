@@ -3234,6 +3234,16 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(err => {
     console.warn('[SW] 등록 실패:', err);
   });
+  // 알림 클릭 시 SW로부터 메시지 수신 → 타이머 섹션으로 이동
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data?.type === 'NOTIF_CLICK_FOCUS_TIMER') {
+      switchTab('personal');
+      requestAnimationFrame(() => {
+        document.querySelector('.timer-section')
+          ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+  });
 }
 
 window.addEventListener('load', () => {
