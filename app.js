@@ -3231,8 +3231,8 @@ async function checkPartnerInRoomOnInit() {
 // 페이지 로드 시 닉네임 + 내 배틀 복원 + 온보딩 순서 처리
 // v0.1.76 — PWA 롤백: 이전에 등록된 서비스 워커 제거 (캐시 충돌 방지)
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(regs => {
-    regs.forEach(r => r.unregister());
+  navigator.serviceWorker.register('/sw.js').catch(err => {
+    console.warn('[SW] 등록 실패:', err);
   });
 }
 
