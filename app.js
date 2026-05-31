@@ -4829,7 +4829,8 @@ async function renderLeaderboard() {
   }
 
   let html = rows.map((r, i) => buildRow(r.nickname, r.count, i + 1, r.title_emoji || '', r.total_seconds || 0)).join('');
-  if (myRankRow) {
+  // 11위 이상일 때만 말줄임표 + 내 순위 표시 (10위 이내면 위 목록에 포함되거나 생략)
+  if (myRankRow && myRankRow.rank > 10) {
     html += '<div class="league-my-rank-sep">···</div>';
     html += buildRow(myRankRow.nick, myRankRow.count, myRankRow.rank, getCurrentTitle()?.emoji || '', myRankRow.totalSecs || 0);
   }

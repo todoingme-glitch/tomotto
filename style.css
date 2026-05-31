@@ -2167,7 +2167,7 @@ dialog.modal input[type="text"]:focus {
   transform: translateX(-50%);
   width: calc(100% - 40px);
   max-width: 680px;
-  z-index: 190;
+  z-index: 210; /* 탭바(200)보다 위 */
   display: flex;
   align-items: center;
   gap: 8px;
