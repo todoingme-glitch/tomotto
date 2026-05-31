@@ -4022,7 +4022,14 @@ function _pipRenderDoc() {
     const pct = timer.duration > 0 ? (timer.duration - timer.remaining) / timer.duration * 100 : 0;
     fillEl.style.width = pct + '%';
   }
-  if (taskEl) taskEl.textContent = (!timer.isRunning && timer.remaining > 0 ? '⏸  ' : '') + (currentTask || '');
+  if (taskEl) taskEl.textContent = currentTask || '';
+  const ctrlBarEl = d.getElementById('dppCtrlBar');
+  if (ctrlBarEl) {
+    const paused = !timer.isRunning && timer.remaining > 0;
+    ctrlBarEl.textContent = timer.isRunning ? '⏸' : (paused ? '▶' : '');
+    ctrlBarEl.style.opacity = paused ? '0.85' : '0.25';
+    ctrlBarEl.style.color = '#d94e3a';
+  }
 }
 
 // ── Canvas PiP 렌더 ──
@@ -4090,7 +4097,7 @@ async function startDocPip() {
   style.textContent = `
     *{margin:0;padding:0;box-sizing:border-box}
     body{background:#fffaf9;font-family:"Helvetica Neue",Arial,sans-serif;overflow:hidden;height:100vh;display:flex;flex-direction:column}
-    .dpp-root{flex:1;display:flex;flex-direction:column;position:relative;cursor:pointer;user-select:none}
+    .dpp-root{flex:1;display:flex;flex-direction:column;position:relative;}
     .dpp-accent{width:3px;background:#d94e3a;position:absolute;left:0;top:0;bottom:0}
     .dpp-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 16px 0;gap:3px}
     .dpp-emoji{font-size:13px;position:absolute;top:8px;left:12px;line-height:1}
@@ -4098,6 +4105,7 @@ async function startDocPip() {
     .dpp-colon{padding:0 0.09em;line-height:1}
     .dpp-task{font-size:15px;font-weight:500;color:#a07060;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .dpp-pause{position:absolute;top:8px;right:10px;background:#f5ebe8;color:#c07060;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px}
+    .dpp-ctrl-bar{width:100%;height:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;letter-spacing:0.1em;transition:opacity 0.15s;user-select:none}
     .dpp-progress{height:3px;background:#f0e0da}
     .dpp-progress-fill{height:100%;background:#d94e3a;transition:width 0.5s linear}
   `;
@@ -4111,6 +4119,7 @@ async function startDocPip() {
         <div class="dpp-time"><span id="dppMins"></span><span class="dpp-colon">:</span><span id="dppSecs"></span></div>
         <div class="dpp-task" id="dppTask">${escapeHtml(currentTask || '')}</div>
       </div>
+      <div class="dpp-ctrl-bar" id="dppCtrlBar"></div>
       <div class="dpp-progress"><div class="dpp-progress-fill" id="dppFill"></div></div>
     </div>`;
 
@@ -4118,7 +4127,7 @@ async function startDocPip() {
   pip.active = true;
   pip.type = 'doc';
   pipWindow.addEventListener('pagehide', stopPip, { once: true });
-  pipWindow.document.getElementById('dppRoot')?.addEventListener('click', () => { if (timer.isRunning) pauseTimer(); else startTimer(); _pipRenderDoc(); });
+  pipWindow.document.getElementById('dppCtrlBar')?.addEventListener('click', () => { if (timer.isRunning) pauseTimer(); else startTimer(); _pipRenderDoc(); });
   _pipDraw();
   updatePipBtn();
 }
