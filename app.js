@@ -4354,6 +4354,25 @@ function cancelNotification() {
   }
 }
 
+// 타이머 완료 시 즉시 웹 알림 표시 (setTimeout 경쟁 조건 우회)
+async function showWebNotificationNow(task) {
+  if (window.Capacitor?.isNativePlatform()) return; // Android는 OS가 처리
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const title = 'Tomotto 🍅 타이머 완료!';
+  const body  = task ? `"${task}" 완료! 수고하셨어요 🎉` : '집중 시간이 끝났어요! 수고하셨어요 🎉';
+  try {
+    if ('serviceWorker' in navigator) {
+      const reg = await navigator.serviceWorker.ready;
+      await reg.showNotification(title, {
+        body, icon: 'assets/icon-192.png', badge: 'assets/icon-192.png',
+        tag: 'tomotto-timer', renotify: true,
+      });
+    } else {
+      new Notification(title, { body, icon: 'assets/icon-192.png' });
+    }
+  } catch (e) { console.warn('[Notification] 표시 실패:', e); }
+}
+
 function saveTimerState(state) {
   if (!state) {
     localStorage.removeItem(STORAGE.timerState);
@@ -4587,7 +4606,8 @@ function finishTimer() {
   if (window.AndroidBridge?.stopTimerNotification) {
     try { window.AndroidBridge.stopTimerNotification(); } catch (_e) {}
   }
-  cancelNotification(); // 웹: setTimeout 취소 (이미 fired), Android: 혹시 남은 예약 취소
+  cancelNotification();        // web setTimeout 취소 + Android 예약 취소
+  showWebNotificationNow(currentTask); // 웹: 즉시 표시 (setTimeout 경쟁 조건 우회)
   timer.remaining = 0;
   timer.endTime = null;
   updateTimerDisplay();
