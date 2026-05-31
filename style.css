@@ -2167,7 +2167,7 @@ dialog.modal input[type="text"]:focus {
 /* ====== 플로팅 타이머 바 ====== */
 .floating-timer-bar {
   position: fixed;
-  bottom: calc(70px + 4px + env(safe-area-inset-bottom, 0px)); /* 탭바 바로 위 */
+  bottom: calc(70px + 2px + env(safe-area-inset-bottom, 0px)); /* 탭바 바로 위 */
   left: 50%;
   transform: translateX(-50%);
   width: calc(100% - 40px);
@@ -2262,8 +2262,10 @@ dialog.modal input[type="text"]:focus {
   width: 16px;
   height: 16px;
   color: var(--accent);
+  fill: var(--accent);
   transform: rotate(-90deg);
   display: block;
+  flex-shrink: 0;
 }
 
 /* ====== v0.1.17 — 하단 탭 네비게이션 ====== */
