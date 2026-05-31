@@ -1323,7 +1323,12 @@ async function renderLogPartnerRecord() {
     else if (l.battleMode === 'separate') partnerMap[nick].moto++;
   });
 
-  const sorted = Object.entries(partnerMap).sort((a, b) => b[1].count - a[1].count);
+  // 2회 이상 함께한 파트너만 표시 (공개방 1회성 만남 제외)
+  const sorted = Object.entries(partnerMap)
+    .filter(([, d]) => d.count >= 2)
+    .sort((a, b) => b[1].count - a[1].count);
+
+  if (sorted.length === 0) { $el.hidden = true; return; }
 
   const rows = sorted.map(([nick, d]) => {
     const lastDate = d.lastAt
@@ -4131,6 +4136,10 @@ function resetTimer() {
   timer.intervalId = null;
   timer.isRunning = false;
   timer.endTime = null;
+  // 리셋 시 알림 서비스 중지
+  if (window.AndroidBridge?.stopTimerNotification) {
+    try { window.AndroidBridge.stopTimerNotification(); } catch (_e) {}
+  }
   timer.duration = getCurrentDurationSeconds();
   timer.remaining = timer.duration;
   updateTimerDisplay();
