@@ -2261,8 +2261,6 @@ dialog.modal input[type="text"]:focus {
 .ftb-play-shape {
   width: 16px;
   height: 16px;
-  color: var(--accent);
-  fill: var(--accent);
   transform: rotate(-90deg);
   display: block;
   flex-shrink: 0;
