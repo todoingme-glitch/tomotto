@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.170 — 가챠 뽀모도로
+// Tomotto v0.1.171 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -4986,9 +4986,9 @@ async function renderLeaderboard() {
 
   // 세션 유형 라벨 (평균 집중 분 기준)
   function getSessionLabel(avgMin) {
-    if (avgMin > 0 && avgMin < 10) return '🍅 방울토마토 러너';
-    if (avgMin >= 20 && avgMin <= 35) return '🌿 정석 수확러';
-    if (avgMin >= 60) return '⏳ 장기 숙성 토마토';
+    if (avgMin > 0 && avgMin < 10) return '방울토마토 러너';
+    if (avgMin >= 20 && avgMin <= 35) return '정석 수확러';
+    if (avgMin >= 60) return '장기 숙성 토마토';
     return '';
   }
 
