@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.176 — 가챠 뽀모도로
+// Tomotto v0.1.177 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -4004,6 +4004,7 @@ function updatePipBtn() {
   btn.disabled = !canShow;
   btn.title = pip.active ? '미니 창 닫기' : '미니 창으로 보기 (PiP)';
   btn.classList.toggle('pip-active', pip.active);
+  btn.textContent = pip.active ? '✕' : '⧉';
 }
 
 // ── Document PiP 렌더 (DOM 업데이트) ──
@@ -4076,7 +4077,7 @@ function _pipDraw() {
 
 // ── Document PiP 시작 ──
 async function startDocPip() {
-  const pipWindow = await window.documentPictureInPicture.requestWindow({ width: 320, height: 110 });
+  const pipWindow = await window.documentPictureInPicture.requestWindow({ width: 320, height: 130 });
 
   const style = pipWindow.document.createElement('style');
   style.textContent = `
@@ -4086,8 +4087,8 @@ async function startDocPip() {
     .dpp-accent{width:3px;background:#d94e3a;position:absolute;left:0;top:0;bottom:0}
     .dpp-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 16px;gap:2px}
     .dpp-emoji{font-size:13px;position:absolute;top:8px;left:12px;line-height:1}
-    .dpp-time{font-size:62px;font-weight:800;color:#d94e3a;letter-spacing:-0.03em;line-height:1}
-    .dpp-task{font-size:13px;font-weight:500;color:#a07060;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .dpp-time{font-size:58px;font-weight:800;color:#d94e3a;letter-spacing:-0.03em;line-height:1}
+    .dpp-task{font-size:15px;font-weight:500;color:#a07060;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .dpp-pause{position:absolute;top:8px;right:10px;background:#f5ebe8;color:#c07060;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px}
     .dpp-progress{height:3px;background:#f0e0da}
     .dpp-progress-fill{height:100%;background:#d94e3a;transition:width 0.5s linear}

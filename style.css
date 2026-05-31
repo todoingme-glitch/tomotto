@@ -757,21 +757,39 @@ br.mobile-br { display: none; }
   cursor: not-allowed;
 }
 
-.btn-timer.btn-pip {
-  font-size: 1rem;
-  padding: 6px 10px;
-  background: var(--bg-card, #fff);
+.timer-section { position: relative; }
+
+/* PiP 우상단 고정 버튼 */
+.btn-pip-corner {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
   border: 1.5px solid var(--border, #e0e0e0);
-  color: var(--text-soft, #888);
+  border-radius: 6px;
+  color: var(--text-soft, #aaa);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
-.btn-timer.btn-pip:not(:disabled):hover {
-  border-color: var(--tomato, #f36f30);
-  color: var(--tomato, #f36f30);
+.btn-pip-corner:not(:disabled):hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
-.btn-timer.btn-pip.pip-active {
-  background: var(--tomato, #f36f30);
-  border-color: var(--tomato, #f36f30);
+.btn-pip-corner.pip-active {
+  background: var(--accent);
+  border-color: var(--accent);
   color: #fff;
+}
+.btn-pip-corner:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .timer-settings {
