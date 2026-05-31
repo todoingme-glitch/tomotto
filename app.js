@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.175 — 가챠 뽀모도로
+// Tomotto v0.1.176 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -4076,21 +4076,21 @@ function _pipDraw() {
 
 // ── Document PiP 시작 ──
 async function startDocPip() {
-  const pipWindow = await window.documentPictureInPicture.requestWindow({ width: 320, height: 180 });
+  const pipWindow = await window.documentPictureInPicture.requestWindow({ width: 320, height: 110 });
 
   const style = pipWindow.document.createElement('style');
   style.textContent = `
     *{margin:0;padding:0;box-sizing:border-box}
-    body{background:#0f0f11;font-family:"Helvetica Neue",Arial,sans-serif;overflow:hidden;height:100vh;display:flex;flex-direction:column}
+    body{background:#fffaf9;font-family:"Helvetica Neue",Arial,sans-serif;overflow:hidden;height:100vh;display:flex;flex-direction:column}
     .dpp-root{flex:1;display:flex;flex-direction:column;position:relative}
-    .dpp-accent{width:3px;background:#ef4444;position:absolute;left:0;top:0;bottom:0}
-    .dpp-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 16px;gap:5px}
-    .dpp-emoji{font-size:14px;position:absolute;top:10px;left:14px}
-    .dpp-time{font-size:52px;font-weight:700;color:#f4f4f5;letter-spacing:-0.02em;line-height:1}
-    .dpp-task{font-size:12px;color:#fb923c;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:15px}
-    .dpp-pause{position:absolute;top:10px;right:10px;background:#27272a;color:#a1a1aa;font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px}
-    .dpp-progress{height:4px;background:#27272a}
-    .dpp-progress-fill{height:100%;background:#ef4444;transition:width 0.5s linear}
+    .dpp-accent{width:3px;background:#d94e3a;position:absolute;left:0;top:0;bottom:0}
+    .dpp-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 16px;gap:2px}
+    .dpp-emoji{font-size:13px;position:absolute;top:8px;left:12px;line-height:1}
+    .dpp-time{font-size:62px;font-weight:800;color:#d94e3a;letter-spacing:-0.03em;line-height:1}
+    .dpp-task{font-size:13px;font-weight:500;color:#a07060;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .dpp-pause{position:absolute;top:8px;right:10px;background:#f5ebe8;color:#c07060;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px}
+    .dpp-progress{height:3px;background:#f0e0da}
+    .dpp-progress-fill{height:100%;background:#d94e3a;transition:width 0.5s linear}
   `;
   pipWindow.document.head.appendChild(style);
 
