@@ -4720,15 +4720,6 @@ function finishTimer() {
     finishedAt: Date.now(),
   });
 
-  // 브라우저 알림
-  if ('Notification' in window && Notification.permission === 'granted') {
-    try {
-      new Notification('Tomotto 타이머 완료!', {
-        body: `"${currentTask}" 작업 시간 끝!`,
-      });
-    } catch {}
-  }
-
   // 사운드 (간단한 beep)
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
