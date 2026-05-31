@@ -4092,7 +4092,7 @@ async function startDocPip() {
     body{background:#fffaf9;font-family:"Helvetica Neue",Arial,sans-serif;overflow:hidden;height:100vh;display:flex;flex-direction:column}
     .dpp-root{flex:1;display:flex;flex-direction:column;position:relative}
     .dpp-accent{width:3px;background:#d94e3a;position:absolute;left:0;top:0;bottom:0}
-    .dpp-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 16px;gap:8px}
+    .dpp-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 16px 0;gap:8px}
     .dpp-emoji{font-size:13px;position:absolute;top:8px;left:12px;line-height:1}
     .dpp-time{font-size:58px;font-weight:800;color:#d94e3a;letter-spacing:-0.03em;display:flex;align-items:center;line-height:1}
     .dpp-colon{padding:0 0.09em;line-height:1}
