@@ -24,7 +24,8 @@ public class TimerForegroundService extends Service {
     public static final String EXTRA_END_MS  = "endTimeMs";
     public static final String EXTRA_TASK    = "taskName";
 
-    private static final String CHANNEL_ID   = "tomotto_timer";
+    private static final String CHANNEL_ID      = "tomotto_timer";
+    private static final String CHANNEL_DONE_ID = "tomotto_done";
     private static final int    NOTIF_ID     = 1001;
 
     private long    mEndTimeMs = 0;
@@ -92,12 +93,20 @@ public class TimerForegroundService extends Service {
     // ── 알림 빌드 ─────────────────────────────────────────────
 
     private void createChannel() {
+        NotificationManager nm = getSystemService(NotificationManager.class);
+        // 진행 중 채널 — 소리 없는 조용한 알림
         NotificationChannel ch = new NotificationChannel(
             CHANNEL_ID, "Tomotto 타이머", NotificationManager.IMPORTANCE_LOW);
         ch.setDescription("집중 타이머 진행 상황");
         ch.setSound(null, null);
         ch.enableVibration(false);
-        getSystemService(NotificationManager.class).createNotificationChannel(ch);
+        nm.createNotificationChannel(ch);
+        // 완료 채널 — 소리+진동 팝업 알림
+        NotificationChannel done = new NotificationChannel(
+            CHANNEL_DONE_ID, "Tomotto 타이머 완료", NotificationManager.IMPORTANCE_HIGH);
+        done.setDescription("타이머 완료 알림");
+        done.enableVibration(true);
+        nm.createNotificationChannel(done);
     }
 
     private Notification buildNotification(long remainingMs) {
@@ -138,7 +147,7 @@ public class TimerForegroundService extends Service {
         PendingIntent pi = PendingIntent.getActivity(
             this, 0, tap, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
-        NotificationCompat.Builder b = new NotificationCompat.Builder(this, CHANNEL_ID)
+        NotificationCompat.Builder b = new NotificationCompat.Builder(this, CHANNEL_DONE_ID)
             .setSmallIcon(R.drawable.ic_tomato_notif)
             .setContentTitle("Tomotto")
             .setContentText(content)

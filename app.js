@@ -3417,22 +3417,6 @@ let timer = {
 };
 
 // ====== 초기화 — 페이지 로드 ======
-// ── Android 알림 채널 초기화 (앱 로드 시 1회) ──────────────
-window.addEventListener('load', () => {
-  if (window.Capacitor?.isNativePlatform()) {
-    const LN = window.Capacitor?.Plugins?.LocalNotifications;
-    LN?.createChannel?.({
-      id: 'tomotto_timer',
-      name: 'Tomotto 타이머',
-      description: '타이머 완료 알림',
-      importance: 4,   // IMPORTANCE_HIGH
-      sound: 'default',
-      vibration: true,
-      visibility: 1,
-    }).catch(() => {});
-  }
-});
-
 window.addEventListener('load', () => {
   // 옛 키(pomocha_*) 데이터를 새 키로 이전 — 첫 로드 때 한 번
   migrateStorage();
@@ -4310,37 +4294,15 @@ window.addEventListener('load', () => {
 
 async function scheduleNotification(task) {
   cancelNotification();
-  const title = 'Tomotto 🍅 타이머 완료!';
-  const body  = task ? `"${task}" 완료! 수고하셨어요 🎉` : '집중 시간이 끝났어요! 수고하셨어요 🎉';
+  // Android는 AndroidBridge.startTimerNotification() + TimerForegroundService가 처리
+  if (window.Capacitor?.isNativePlatform()) return;
 
-  // ── Android (Capacitor Local Notifications) ──────────────
-  if (window.Capacitor?.isNativePlatform()) {
-    const LN = window.Capacitor?.Plugins?.LocalNotifications;
-    if (!LN || !timer.endTime) return;
-    try {
-      const perm = await LN.requestPermissions();
-      if (perm.display !== 'granted') return;
-      await LN.cancel({ notifications: [{ id: 9001 }] }).catch(() => {});
-      await LN.schedule({
-        notifications: [{
-          id: 9001,
-          title,
-          body,
-          schedule: { at: new Date(timer.endTime), allowWhileIdle: true },
-          sound: 'default',
-          smallIcon: 'res://mipmap/ic_launcher',
-          iconColor: '#D94E3A',
-          channelId: 'tomotto_timer',
-        }],
-      });
-    } catch (e) { console.warn('[LocalNotif] 예약 실패:', e); }
-    return;
-  }
-
-  // ── 웹 (Service Worker showNotification) ─────────────────
+  // 웹 (Service Worker showNotification)
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   const ms = timer.endTime ? timer.endTime - Date.now() : 0;
   if (ms <= 0) return;
+  const title = 'Tomotto 🍅 타이머 완료!';
+  const body  = task ? `"${task}" 완료! 수고하셨어요 🎉` : '집중 시간이 끝났어요! 수고하셨어요 🎉';
   _notifTimeoutId = setTimeout(async () => {
     try {
       if ('serviceWorker' in navigator) {
@@ -4358,10 +4320,6 @@ async function scheduleNotification(task) {
 
 function cancelNotification() {
   if (_notifTimeoutId) { clearTimeout(_notifTimeoutId); _notifTimeoutId = null; }
-  if (window.Capacitor?.isNativePlatform()) {
-    const LN = window.Capacitor?.Plugins?.LocalNotifications;
-    LN?.cancel({ notifications: [{ id: 9001 }] }).catch(() => {});
-  }
 }
 
 // 타이머 완료 시 즉시 웹 알림 표시
