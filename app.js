@@ -3990,18 +3990,32 @@ function updateFloatingTimerBar() {
   // timer가 초기화되기 전(initBottomTab IIFE 조기 호출) 에는 숨김 처리
   let isRunning = false;
   let remaining = 0;
-  try { isRunning = timer.isRunning; remaining = timer.remaining; } catch (_e) { return; }
+  let duration = 1500;
+  try { isRunning = timer.isRunning; remaining = timer.remaining; duration = timer.duration || 1500; } catch (_e) { return; }
   const show = (isRunning || _ftbPausedVisible) && !_isPersonalTabActive();
   bar.hidden = !show;
   // 컨테이너 하단 패딩 토글 — 바가 내용 가리지 않도록
   document.querySelector('.container')?.classList.toggle('ftb-visible', show);
   if (!show) { _ftbPausedVisible = false; return; }
-  const timeEl = document.getElementById('ftbTime');
-  const taskEl = document.getElementById('ftbTask');
-  const toggleBtn = document.getElementById('ftbToggleBtn');
+
+  const timeEl      = document.getElementById('ftbTime');
+  const taskEl      = document.getElementById('ftbTask');
+  const progressBar = document.getElementById('ftbProgressBar');
+  const pauseShape  = document.getElementById('ftbPauseShape');
+  const playShape   = document.getElementById('ftbPlayShape');
+
   if (timeEl) timeEl.textContent = formatTime(remaining);
   if (taskEl) taskEl.textContent = currentTask || '';
-  if (toggleBtn) toggleBtn.textContent = isRunning ? '⏸' : '▶';
+
+  // 진행 바: 남은 시간 비율로 높이 조정
+  if (progressBar) {
+    const pct = duration > 0 ? Math.max(0, Math.min(100, (remaining / duration) * 100)) : 0;
+    progressBar.style.height = pct + '%';
+  }
+
+  // 버튼 도형 전환 (일시정지↔재생)
+  if (pauseShape) pauseShape.hidden = !isRunning;
+  if (playShape)  playShape.hidden  = isRunning;
 }
 
 // 일시정지 상태에서도 플로팅 바 잠깐 유지용 플래그
@@ -4027,13 +4041,13 @@ window.addEventListener('load', () => {
     });
   }
 
-  // 바 전체 탭: 개인 탭으로 이동 후 타이머 섹션으로 스크롤
+  // 바 전체 탭: 개인 탭으로 이동 후 타이머 섹션으로 즉시 이동 (애니메이션 없음)
   if (bar) {
     bar.addEventListener('click', () => {
       switchTab('personal');
       requestAnimationFrame(() => {
         const timerSection = document.querySelector('.timer-section');
-        if (timerSection) timerSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (timerSection) timerSection.scrollIntoView({ behavior: 'instant', block: 'start' });
       });
     });
   }
