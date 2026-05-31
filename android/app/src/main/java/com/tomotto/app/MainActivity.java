@@ -124,6 +124,25 @@ public class MainActivity extends BridgeActivity {
 
         // 앱이 배틀 링크로 시작된 경우 battle ID 추출
         extractBattleIdFromIntent(getIntent());
+
+        // 타이머 완료 알림 탭으로 시작된 경우 타이머 섹션으로 이동
+        if (getIntent() != null && getIntent().getBooleanExtra("from_timer_notification", false)) {
+            getBridge().getWebView().postDelayed(() -> navigateToTimer(), 800);
+        }
+    }
+
+    /** 타이머 섹션으로 JS 이동 */
+    private void navigateToTimer() {
+        final String js =
+            "if(typeof switchTab==='function'){" +
+            "  switchTab('personal');" +
+            "  requestAnimationFrame(function(){" +
+            "    var el=document.querySelector('.timer-section');" +
+            "    if(el)el.scrollIntoView({behavior:'smooth',block:'start'});" +
+            "  });" +
+            "}";
+        getBridge().getWebView().post(() ->
+            getBridge().getWebView().evaluateJavascript(js, null));
     }
 
     /**
@@ -134,6 +153,11 @@ public class MainActivity extends BridgeActivity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
+        // 타이머 완료 알림에서 복귀
+        if (intent.getBooleanExtra("from_timer_notification", false)) {
+            getBridge().getWebView().postDelayed(() -> navigateToTimer(), 300);
+            return;
+        }
         String battleId = getBattleIdFromUri(intent.getData());
         if (battleId == null) return;
         final String safeId = battleId;

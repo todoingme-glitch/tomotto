@@ -33,9 +33,10 @@ public class TimerAlarmReceiver extends BroadcastReceiver {
         ch.enableVibration(true);
         nm.createNotificationChannel(ch);
 
-        // 탭 시 앱 복귀
+        // 탭 시 앱 복귀 + 타이머 섹션 이동 플래그
         Intent tap = new Intent(context, MainActivity.class);
         tap.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        tap.putExtra("from_timer_notification", true);
         PendingIntent pi = PendingIntent.getActivity(
             context, 0, tap,
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
