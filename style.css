@@ -762,8 +762,8 @@ br.mobile-br { display: none; }
 /* PiP 우상단 고정 버튼 */
 .btn-pip-corner {
   position: absolute;
-  top: 14px;
-  right: 16px;
+  top: 20px;
+  right: 20px;
   width: 28px;
   height: 28px;
   display: flex;
@@ -773,7 +773,7 @@ br.mobile-br { display: none; }
   border: 1.5px solid var(--border, #e0e0e0);
   border-radius: 6px;
   color: var(--text-soft, #aaa);
-  font-size: 0.85rem;
+  font-size: 0;
   cursor: pointer;
   padding: 0;
   transition: border-color 0.15s, color 0.15s, background 0.15s;

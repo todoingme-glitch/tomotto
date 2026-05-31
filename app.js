@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.177 — 가챠 뽀모도로
+// Tomotto v0.1.178 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -3763,7 +3763,7 @@ function splitCond(cond) {
 // v0.1.9 — 가챠 카운트는 "이번 사이클 N/3" 표시. 3 도달 → 다음엔 광고 사이클 시작.
 function updateGachaCounter() {
   $gachaCount.textContent = String(gachaCount);
-  $adHint.hidden = gachaCount < 3;
+  $adHint.hidden = gachaCount < 5;
   localStorage.setItem(STORAGE.gachaCount, String(gachaCount));
 }
 
@@ -3850,11 +3850,11 @@ async function spinGacha() {
   }
   if (pool.length < 1) return;
 
-  // v0.1.9 — 사이클 3 도달 시 자동 리셋. 운영 모드면 광고 confirm 후 리셋.
-  if (gachaCount >= 3) {
+  // v0.1.9 — 사이클 5 도달 시 자동 리셋. 운영 모드면 광고 confirm 후 리셋.
+  if (gachaCount >= 5) {
     if (SHOW_AD_PROMPT) {
       const confirmAd = confirm(
-        '이번 사이클(3회) 다 썼어요!\n광고 보고 새 사이클 시작?\n\n(현재는 시뮬레이션 — 실제 광고는 W3-W4에 연동 예정)'
+        '이번 사이클(5회) 다 썼어요!\n광고 보고 새 사이클 시작?\n\n(현재는 시뮬레이션 — 실제 광고는 추후 연동 예정)'
       );
       if (!confirmAd) return;
     }
@@ -4004,7 +4004,6 @@ function updatePipBtn() {
   btn.disabled = !canShow;
   btn.title = pip.active ? '미니 창 닫기' : '미니 창으로 보기 (PiP)';
   btn.classList.toggle('pip-active', pip.active);
-  btn.textContent = pip.active ? '✕' : '⧉';
 }
 
 // ── Document PiP 렌더 (DOM 업데이트) ──
