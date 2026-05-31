@@ -3392,6 +3392,8 @@ let categories = [];
 let gachaCount = 0;
 let totalGachaCount = 0;            // v0.1.69 — 전체 누적 가챠 횟수 (업적용)
 let _spinsSinceReset = 0;           // v0.1.69 — 리셋 후 가챠 횟수 (A-3 판별)
+let _notifTimeoutId = null;  // 웹 알림 예약 타임아웃 ID
+
 let _pausedThisSession = false;     // v0.1.70 — 이번 세션 일시정지 여부 (B-4/B-5)
 let currentTask = null;
 let completedCount = 0;             // v0.1.8 — 누적 완료
@@ -4015,14 +4017,12 @@ function _pipRenderDoc() {
   const secsEl  = d.getElementById('dppSecs');
   const taskEl  = d.getElementById('dppTask');
   const fillEl  = d.getElementById('dppFill');
-  const ctrlEl  = d.getElementById('dppCtrl');
   if (minsEl && secsEl) { const p = formatTime(timer.remaining).split(':'); minsEl.textContent = p.slice(0,-1).join(':'); secsEl.textContent = p[p.length-1]; }
-  if (taskEl)  taskEl.textContent  = currentTask || '';
   if (fillEl) {
     const pct = timer.duration > 0 ? (timer.duration - timer.remaining) / timer.duration * 100 : 0;
     fillEl.style.width = pct + '%';
   }
-  if (ctrlEl) ctrlEl.textContent = timer.isRunning ? '⏸' : '▶';
+  if (taskEl) taskEl.textContent = (!timer.isRunning && timer.remaining > 0 ? '⏸  ' : '') + (currentTask || '');
 }
 
 // ── Canvas PiP 렌더 ──
@@ -4090,7 +4090,7 @@ async function startDocPip() {
   style.textContent = `
     *{margin:0;padding:0;box-sizing:border-box}
     body{background:#fffaf9;font-family:"Helvetica Neue",Arial,sans-serif;overflow:hidden;height:100vh;display:flex;flex-direction:column}
-    .dpp-root{flex:1;display:flex;flex-direction:column;position:relative}
+    .dpp-root{flex:1;display:flex;flex-direction:column;position:relative;cursor:pointer;user-select:none}
     .dpp-accent{width:3px;background:#d94e3a;position:absolute;left:0;top:0;bottom:0}
     .dpp-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 16px 0;gap:3px}
     .dpp-emoji{font-size:13px;position:absolute;top:8px;left:12px;line-height:1}
@@ -4098,21 +4098,18 @@ async function startDocPip() {
     .dpp-colon{padding:0 0.09em;line-height:1}
     .dpp-task{font-size:15px;font-weight:500;color:#a07060;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .dpp-pause{position:absolute;top:8px;right:10px;background:#f5ebe8;color:#c07060;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px}
-    .dpp-ctrl{margin-top:6px;width:30px;height:30px;border-radius:50%;border:1.5px solid #d94e3a;background:transparent;color:#d94e3a;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
-    .dpp-ctrl:hover{background:rgba(217,78,58,0.1)}
     .dpp-progress{height:3px;background:#f0e0da}
     .dpp-progress-fill{height:100%;background:#d94e3a;transition:width 0.5s linear}
   `;
   pipWindow.document.head.appendChild(style);
 
   pipWindow.document.body.innerHTML = `
-    <div class="dpp-root">
+    <div class="dpp-root" id="dppRoot">
       <div class="dpp-accent"></div>
       <div class="dpp-body">
         <span class="dpp-emoji">🍅</span>
         <div class="dpp-time"><span id="dppMins"></span><span class="dpp-colon">:</span><span id="dppSecs"></span></div>
         <div class="dpp-task" id="dppTask">${escapeHtml(currentTask || '')}</div>
-        <button class="dpp-ctrl" id="dppCtrl">${timer.isRunning ? '⏸' : '▶'}</button>
       </div>
       <div class="dpp-progress"><div class="dpp-progress-fill" id="dppFill"></div></div>
     </div>`;
@@ -4121,7 +4118,7 @@ async function startDocPip() {
   pip.active = true;
   pip.type = 'doc';
   pipWindow.addEventListener('pagehide', stopPip, { once: true });
-  pipWindow.document.getElementById('dppCtrl')?.addEventListener('click', () => { if (timer.isRunning) pauseTimer(); else startTimer(); _pipRenderDoc(); });
+  pipWindow.document.getElementById('dppRoot')?.addEventListener('click', () => { if (timer.isRunning) pauseTimer(); else startTimer(); _pipRenderDoc(); });
   _pipDraw();
   updatePipBtn();
 }
@@ -4277,6 +4274,24 @@ window.addEventListener('load', () => {
 });
 
 
+function scheduleNotification(task) {
+  cancelNotification();
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const ms = timer.endTime ? timer.endTime - Date.now() : 0;
+  if (ms <= 0) return;
+  _notifTimeoutId = setTimeout(() => {
+    new Notification('Tomotto 🍅 타이머 완료!', {
+      body: task ? `"${task}" 완료! 수고하셨어요 🎉` : '집중 시간이 끝났어요! 수고하셨어요 🎉',
+      icon: 'assets/icon-192.png',
+      badge: 'assets/icon-192.png',
+    });
+  }, ms);
+}
+
+function cancelNotification() {
+  if (_notifTimeoutId) { clearTimeout(_notifTimeoutId); _notifTimeoutId = null; }
+}
+
 function saveTimerState(state) {
   if (!state) {
     localStorage.removeItem(STORAGE.timerState);
@@ -4415,6 +4430,7 @@ function startTimer() {
   }
 
   startTimerInternal();
+  scheduleNotification(currentTask);
 }
 
 function pauseTimer() {
@@ -4428,6 +4444,7 @@ function pauseTimer() {
   if (window.AndroidBridge?.stopTimerNotification) {
     try { window.AndroidBridge.stopTimerNotification(); } catch (_e) {}
   }
+  cancelNotification();
   $timerDisplay.classList.remove('running');
   $startBtn.disabled = false;
   $pauseBtn.disabled = true;
@@ -4460,6 +4477,7 @@ function resetTimer() {
   if (window.AndroidBridge?.stopTimerNotification) {
     try { window.AndroidBridge.stopTimerNotification(); } catch (_e) {}
   }
+  cancelNotification();
   timer.duration = getCurrentDurationSeconds();
   timer.remaining = timer.duration;
   updateTimerDisplay();
@@ -4506,6 +4524,13 @@ function finishTimer() {
   // 타이머 완료 — 서비스가 자체적으로 완료 알림을 표시하고 종료하지만 안전하게 stop도 호출
   if (window.AndroidBridge?.stopTimerNotification) {
     try { window.AndroidBridge.stopTimerNotification(); } catch (_e) {}
+  }
+  cancelNotification();
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification('Tomotto 🍅 타이머 완료!', {
+      body: currentTask ? `"${currentTask}" 완료! 수고하셨어요 🎉` : '집중 시간이 끝났어요! 수고하셨어요 🎉',
+      icon: 'assets/icon-192.png',
+    });
   }
   timer.remaining = 0;
   timer.endTime = null;
