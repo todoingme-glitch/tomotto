@@ -1,16 +1,27 @@
-// Tomotto Service Worker — 비활성화 버전
-// 이전에 등록된 SW를 즉시 해제하고 캐시를 전부 삭제합니다.
-// (캐싱 전략 제거: Vercel CDN이 파일 갱신을 담당합니다)
+// Tomotto Service Worker — 웹 로컬 알림 전용 (캐싱 없음)
 
-self.addEventListener('install', () => {
-  self.skipWaiting();
+self.addEventListener('install', () => self.skipWaiting());
+
+self.addEventListener('activate', (event) => {
+  // 이전 캐시 정리 후 즉시 제어권 획득
+  event.waitUntil(
+    caches.keys()
+      .then(keys => Promise.all(keys.map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
+  );
 });
 
-self.addEventListener('activate', async () => {
-  // 모든 캐시 삭제
-  const keys = await caches.keys();
-  await Promise.all(keys.map(k => caches.delete(k)));
-  // SW 스스로 등록 해제
-  await self.registration.unregister();
-  self.clients.claim();
+// 알림 클릭 → 탭 포커스 또는 새 탭 열기
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if ('focus' in client) return client.focus();
+        }
+        return self.clients.openWindow('/');
+      })
+  );
 });

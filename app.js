@@ -3407,6 +3407,22 @@ let timer = {
 };
 
 // ====== 초기화 — 페이지 로드 ======
+// ── Android 알림 채널 초기화 (앱 로드 시 1회) ──────────────
+window.addEventListener('load', () => {
+  if (window.Capacitor?.isNativePlatform()) {
+    const LN = window.Capacitor?.Plugins?.LocalNotifications;
+    LN?.createChannel?.({
+      id: 'tomotto_timer',
+      name: 'Tomotto 타이머',
+      description: '타이머 완료 알림',
+      importance: 4,   // IMPORTANCE_HIGH
+      sound: 'default',
+      vibration: true,
+      visibility: 1,
+    }).catch(() => {});
+  }
+});
+
 window.addEventListener('load', () => {
   // 옛 키(pomocha_*) 데이터를 새 키로 이전 — 첫 로드 때 한 번
   migrateStorage();
@@ -4282,22 +4298,60 @@ window.addEventListener('load', () => {
 });
 
 
-function scheduleNotification(task) {
+async function scheduleNotification(task) {
   cancelNotification();
+  const title = 'Tomotto 🍅 타이머 완료!';
+  const body  = task ? `"${task}" 완료! 수고하셨어요 🎉` : '집중 시간이 끝났어요! 수고하셨어요 🎉';
+
+  // ── Android (Capacitor Local Notifications) ──────────────
+  if (window.Capacitor?.isNativePlatform()) {
+    const LN = window.Capacitor?.Plugins?.LocalNotifications;
+    if (!LN || !timer.endTime) return;
+    try {
+      const perm = await LN.requestPermissions();
+      if (perm.display !== 'granted') return;
+      await LN.cancel({ notifications: [{ id: 9001 }] }).catch(() => {});
+      await LN.schedule({
+        notifications: [{
+          id: 9001,
+          title,
+          body,
+          schedule: { at: new Date(timer.endTime), allowWhileIdle: true },
+          sound: 'default',
+          smallIcon: 'res://mipmap/ic_launcher',
+          iconColor: '#D94E3A',
+          channelId: 'tomotto_timer',
+        }],
+      });
+    } catch (e) { console.warn('[LocalNotif] 예약 실패:', e); }
+    return;
+  }
+
+  // ── 웹 (Service Worker showNotification) ─────────────────
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   const ms = timer.endTime ? timer.endTime - Date.now() : 0;
   if (ms <= 0) return;
-  _notifTimeoutId = setTimeout(() => {
-    new Notification('Tomotto 🍅 타이머 완료!', {
-      body: task ? `"${task}" 완료! 수고하셨어요 🎉` : '집중 시간이 끝났어요! 수고하셨어요 🎉',
-      icon: 'assets/icon-192.png',
-      badge: 'assets/icon-192.png',
-    });
+  _notifTimeoutId = setTimeout(async () => {
+    try {
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.ready;
+        await reg.showNotification(title, {
+          body, icon: 'assets/icon-192.png', badge: 'assets/icon-192.png',
+          tag: 'tomotto-timer', renotify: true,
+        });
+      } else {
+        new Notification(title, { body, icon: 'assets/icon-192.png' });
+      }
+    } catch (e) { console.warn('[Notification] 표시 실패:', e); }
   }, ms);
 }
 
 function cancelNotification() {
   if (_notifTimeoutId) { clearTimeout(_notifTimeoutId); _notifTimeoutId = null; }
+  if (window.Capacitor?.isNativePlatform()) {
+    const LN = window.Capacitor?.Plugins?.LocalNotifications;
+    LN?.cancel({ notifications: [{ id: 9001 }] }).catch(() => {});
+  }
 }
 
 function saveTimerState(state) {
@@ -4533,13 +4587,7 @@ function finishTimer() {
   if (window.AndroidBridge?.stopTimerNotification) {
     try { window.AndroidBridge.stopTimerNotification(); } catch (_e) {}
   }
-  cancelNotification();
-  if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification('Tomotto 🍅 타이머 완료!', {
-      body: currentTask ? `"${currentTask}" 완료! 수고하셨어요 🎉` : '집중 시간이 끝났어요! 수고하셨어요 🎉',
-      icon: 'assets/icon-192.png',
-    });
-  }
+  cancelNotification(); // 웹: setTimeout 취소 (이미 fired), Android: 혹시 남은 예약 취소
   timer.remaining = 0;
   timer.endTime = null;
   updateTimerDisplay();
