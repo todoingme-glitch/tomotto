@@ -4015,14 +4015,14 @@ function _pipRenderDoc() {
   const secsEl  = d.getElementById('dppSecs');
   const taskEl  = d.getElementById('dppTask');
   const fillEl  = d.getElementById('dppFill');
-  const pauseEl = d.getElementById('dppPause');
+  const ctrlEl  = d.getElementById('dppCtrl');
   if (minsEl && secsEl) { const p = formatTime(timer.remaining).split(':'); minsEl.textContent = p.slice(0,-1).join(':'); secsEl.textContent = p[p.length-1]; }
   if (taskEl)  taskEl.textContent  = currentTask || '';
   if (fillEl) {
     const pct = timer.duration > 0 ? (timer.duration - timer.remaining) / timer.duration * 100 : 0;
     fillEl.style.width = pct + '%';
   }
-  if (pauseEl) pauseEl.hidden = timer.isRunning || timer.remaining === 0;
+  if (ctrlEl) ctrlEl.textContent = timer.isRunning ? '⏸' : '▶';
 }
 
 // ── Canvas PiP 렌더 ──
@@ -4084,7 +4084,7 @@ function _pipDraw() {
 
 // ── Document PiP 시작 ──
 async function startDocPip() {
-  const pipWindow = await window.documentPictureInPicture.requestWindow({ width: 320, height: 130 });
+  const pipWindow = await window.documentPictureInPicture.requestWindow({ width: 320, height: 160 });
 
   const style = pipWindow.document.createElement('style');
   style.textContent = `
@@ -4098,6 +4098,8 @@ async function startDocPip() {
     .dpp-colon{padding:0 0.09em;line-height:1}
     .dpp-task{font-size:15px;font-weight:500;color:#a07060;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .dpp-pause{position:absolute;top:8px;right:10px;background:#f5ebe8;color:#c07060;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px}
+    .dpp-ctrl{margin-top:6px;width:30px;height:30px;border-radius:50%;border:1.5px solid #d94e3a;background:transparent;color:#d94e3a;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+    .dpp-ctrl:hover{background:rgba(217,78,58,0.1)}
     .dpp-progress{height:3px;background:#f0e0da}
     .dpp-progress-fill{height:100%;background:#d94e3a;transition:width 0.5s linear}
   `;
@@ -4110,7 +4112,7 @@ async function startDocPip() {
         <span class="dpp-emoji">🍅</span>
         <div class="dpp-time"><span id="dppMins"></span><span class="dpp-colon">:</span><span id="dppSecs"></span></div>
         <div class="dpp-task" id="dppTask">${escapeHtml(currentTask || '')}</div>
-        <div class="dpp-pause" id="dppPause"${timer.isRunning ? ' hidden' : ''}>⏸ 일시정지</div>
+        <button class="dpp-ctrl" id="dppCtrl">${timer.isRunning ? '⏸' : '▶'}</button>
       </div>
       <div class="dpp-progress"><div class="dpp-progress-fill" id="dppFill"></div></div>
     </div>`;
@@ -4119,6 +4121,7 @@ async function startDocPip() {
   pip.active = true;
   pip.type = 'doc';
   pipWindow.addEventListener('pagehide', stopPip, { once: true });
+  pipWindow.document.getElementById('dppCtrl')?.addEventListener('click', () => { if (timer.isRunning) pauseTimer(); else startTimer(); _pipRenderDoc(); });
   _pipDraw();
   updatePipBtn();
 }
