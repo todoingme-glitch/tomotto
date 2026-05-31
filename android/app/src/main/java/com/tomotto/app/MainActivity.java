@@ -55,6 +55,21 @@ public class MainActivity extends BridgeActivity {
             intent.setAction(TimerForegroundService.ACTION_STOP);
             stopService(intent);
         }
+
+        /**
+         * 앱 종료로 인해 중단된 타이머의 남은 시간(ms)을 반환하고 플래그를 지운다.
+         * 중단 이력 없으면 0 반환.
+         */
+        @JavascriptInterface
+        public long getInterruptedTimerRemaining() {
+            android.content.SharedPreferences prefs =
+                getSharedPreferences("tomotto_prefs", MODE_PRIVATE);
+            long remaining = prefs.getLong("interrupted_remaining_ms", 0);
+            if (remaining > 0) {
+                prefs.edit().remove("interrupted_remaining_ms").apply();
+            }
+            return remaining;
+        }
     }
 
     /** Android 13+ 알림 권한 요청 */

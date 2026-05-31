@@ -75,6 +75,14 @@ public class TimerForegroundService extends Service {
     @Override
     public void onDestroy() {
         mHandler.removeCallbacks(mTickRunnable);
+        // 앱 스와이프 종료 등으로 서비스가 중단될 때 남은 시간 저장 → 앱 재시작 시 일시정지 복원
+        long remaining = mEndTimeMs - System.currentTimeMillis();
+        if (remaining > 0) {
+            getSharedPreferences("tomotto_prefs", MODE_PRIVATE)
+                .edit()
+                .putLong("interrupted_remaining_ms", remaining)
+                .apply();
+        }
         super.onDestroy();
     }
 

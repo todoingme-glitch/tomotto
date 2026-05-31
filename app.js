@@ -3494,12 +3494,29 @@ function restoreTimerState() {
         finishedAt: state.endTime,
       }));
     } else {
-      // 남은 시간으로 계속 진행
-      timer.remaining = Math.ceil((state.endTime - now) / 1000);
-      timer.endTime = state.endTime;
-      $timerStatus.textContent = `⟳ "${currentTask}" 자리 비운 사이도 계속 돌아가는 중···`;
-      $timerStatus.classList.add('resumed');
-      startTimerInternal();  // 자동 재개
+      // 앱 스와이프 종료로 서비스가 중단된 경우 → 일시정지 상태로 복원
+      const interruptedMs = window.AndroidBridge?.getInterruptedTimerRemaining
+        ? (() => { try { return window.AndroidBridge.getInterruptedTimerRemaining(); } catch { return 0; } })()
+        : 0;
+
+      if (interruptedMs > 0) {
+        // 스와이프 종료 시 저장한 남은 시간으로 일시정지 복원
+        timer.remaining = Math.ceil(interruptedMs / 1000);
+        timer.endTime = null;
+        $timerStatus.textContent = '⏸ 앱이 종료되어 일시정지됨 — 시작 누르면 이어서';
+        $timerStatus.classList.remove('success', 'resumed');
+        $startBtn.disabled = false;
+        $pauseBtn.disabled = true;
+        $resetBtn.disabled = false;
+        saveTimerState({ status: 'paused', remaining: timer.remaining, duration: timer.duration, task: currentTask });
+      } else {
+        // 남은 시간으로 계속 진행
+        timer.remaining = Math.ceil((state.endTime - now) / 1000);
+        timer.endTime = state.endTime;
+        $timerStatus.textContent = `⟳ "${currentTask}" 자리 비운 사이도 계속 돌아가는 중···`;
+        $timerStatus.classList.add('resumed');
+        startTimerInternal();  // 자동 재개
+      }
     }
   }
   // paused 상태로 저장돼 있었음 → 남은 시간 복원, 시작 안 함
