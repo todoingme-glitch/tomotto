@@ -3991,22 +3991,78 @@ function updateFloatingTimerBar() {
   let isRunning = false;
   let remaining = 0;
   try { isRunning = timer.isRunning; remaining = timer.remaining; } catch (_e) { return; }
-  const show = isRunning && !_isPersonalTabActive();
+  const show = (isRunning || _ftbPausedVisible) && !_isPersonalTabActive();
   bar.hidden = !show;
-  if (!show) return;
+  if (!show) { _ftbPausedVisible = false; return; }
   const timeEl = document.getElementById('ftbTime');
   const taskEl = document.getElementById('ftbTask');
+  const toggleBtn = document.getElementById('ftbToggleBtn');
   if (timeEl) timeEl.textContent = formatTime(remaining);
   if (taskEl) taskEl.textContent = currentTask || '';
+  if (toggleBtn) toggleBtn.textContent = isRunning ? '⏸' : '▶';
 }
 
-// 버튼 이벤트는 DOM 준비 후 등록
-document.addEventListener('DOMContentLoaded', () => {
-  const pauseBtn = document.getElementById('ftbPauseBtn');
-  const goBtn    = document.getElementById('ftbGoBtn');
-  if (pauseBtn) pauseBtn.addEventListener('click', () => { pauseTimer(); });
-  if (goBtn)    goBtn.addEventListener('click',    () => { switchTab('personal'); });
+// 일시정지 상태에서도 플로팅 바 잠깐 유지용 플래그
+let _ftbPausedVisible = false;
+
+// 플로팅 바 이벤트 (window.load 이후 등록)
+window.addEventListener('load', () => {
+  const bar       = document.getElementById('floatingTimerBar');
+  const toggleBtn = document.getElementById('ftbToggleBtn');
+
+  // 토글 버튼: 클릭 시 일시정지/재생 (이벤트 버블링 차단)
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (timer.isRunning) {
+        _ftbPausedVisible = true;
+        pauseTimer();
+      } else {
+        _ftbPausedVisible = false;
+        startTimer();
+      }
+      updateFloatingTimerBar();
+    });
+  }
+
+  // 바 전체 탭: 개인 탭으로 이동
+  if (bar) {
+    bar.addEventListener('click', () => { switchTab('personal'); });
+  }
 });
+
+// ── 스와이프로 탭 전환 ──────────────────────────────────────
+(function initSwipeNav() {
+  const TAB_ORDER = ['personal', 'social', 'log'];
+  let swipeStartX = 0, swipeStartY = 0;
+
+  function getCurrentTabIndex() {
+    const active = document.querySelector('.tab-btn.active');
+    return active ? TAB_ORDER.indexOf(active.dataset.tab) : 0;
+  }
+
+  document.addEventListener('touchstart', (e) => {
+    swipeStartX = e.touches[0].clientX;
+    swipeStartY = e.touches[0].clientY;
+  }, { passive: true });
+
+  document.addEventListener('touchend', (e) => {
+    const dx = e.changedTouches[0].clientX - swipeStartX;
+    const dy = e.changedTouches[0].clientY - swipeStartY;
+    // 수평 이동이 수직보다 크고 50px 이상일 때만 탭 전환
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    const cur = getCurrentTabIndex();
+    if (dx < 0) {
+      // 왼쪽 스와이프 → 다음 탭
+      const next = TAB_ORDER[(cur + 1) % TAB_ORDER.length];
+      switchTab(next);
+    } else {
+      // 오른쪽 스와이프 → 이전 탭
+      const prev = TAB_ORDER[(cur - 1 + TAB_ORDER.length) % TAB_ORDER.length];
+      switchTab(prev);
+    }
+  }, { passive: true });
+})();
 
 function saveTimerState(state) {
   if (!state) {

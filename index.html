@@ -683,15 +683,12 @@
     </div>
   </dialog>
 
-  <!-- 플로팅 타이머 바 (타이머 실행 중 다른 탭에서 표시) -->
-  <div class="floating-timer-bar" id="floatingTimerBar" hidden>
+  <!-- 플로팅 타이머 바 (타이머 실행 중 다른 탭에서 표시) — 바 전체 탭 시 개인 탭 이동 -->
+  <div class="floating-timer-bar" id="floatingTimerBar" hidden role="button" tabindex="0" aria-label="개인 탭으로 이동">
     <span class="ftb-icon">🍅</span>
     <span class="ftb-time" id="ftbTime">00:00</span>
     <span class="ftb-task" id="ftbTask"></span>
-    <div class="ftb-actions">
-      <button class="ftb-btn" id="ftbPauseBtn" type="button">⏸</button>
-      <button class="ftb-btn ftb-go" id="ftbGoBtn" type="button">개인 탭 →</button>
-    </div>
+    <button class="ftb-toggle-btn" id="ftbToggleBtn" type="button" aria-label="일시정지/재생">⏸</button>
   </div>
 
   <!-- v0.1.23 — 하단 고정 탭 네비게이션 (position:fixed) -->
