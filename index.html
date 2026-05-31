@@ -292,7 +292,19 @@
 
     <!-- 리더보드 섹션 -->
     <section class="card leaderboard-section">
-      <h2><span class="step">3</span> 리더보드</h2>
+      <h2><span class="step">3</span> 리더보드 <button id="lbInfoBtn" class="lb-info-btn" type="button" aria-label="호칭 안내">!</button></h2>
+      <dialog id="lbInfoDialog" class="lb-info-dialog">
+        <div class="lb-info-dialog-inner">
+          <p class="lb-info-title">세션 호칭 안내</p>
+          <ul class="lb-info-list">
+            <li>🍅 <b>방울토마토 러너</b> — 세션 평균 10분 미만</li>
+            <li>🌿 <b>정석 수확러</b> — 세션 평균 20~35분</li>
+            <li>⏳ <b>장기 숙성 토마토</b> — 세션 평균 60분 이상</li>
+          </ul>
+          <p class="lb-info-desc">세션 평균 = 기간 내 총 집중 시간 ÷ 완료 횟수</p>
+          <button id="lbInfoCloseBtn" class="btn-mini" type="button">닫기</button>
+        </div>
+      </dialog>
       <div class="lb-period-tabs">
         <button class="lb-period-btn active" data-period="week" type="button">이번 주</button>
         <button class="lb-period-btn" data-period="month" type="button">이번 달</button>

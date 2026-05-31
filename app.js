@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.168 — 가챠 뽀모도로
+// Tomotto v0.1.169 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -624,7 +624,7 @@ function renderBattleNickname() {
   const $settingsTitle = document.getElementById('settingsTitleDisplay');
   if ($settingsTitle) {
     const title = getCurrentTitle();
-    $settingsTitle.textContent = title ? `${title.emoji} ${title.name}` : '—';
+    $settingsTitle.textContent = title ? `${title.emoji} ${title.name}` : '—'; // 설정 모달은 textContent 그대로
   }
 
   const $battleMeEl = $battleNick.closest('.battle-me');
@@ -3998,37 +3998,36 @@ function updatePipBtn() {
   btn.classList.toggle('pip-active', pip.active);
 }
 
-function _pipDraw() {
-  if (!pip.canvas || !pip.active) return;
+function _pipRender() {
+  if (!pip.canvas) return;
   const ctx = pip.canvas.getContext('2d');
   const W = pip.canvas.width;
   const H = pip.canvas.height;
-
   ctx.fillStyle = '#1a1a1a';
   ctx.fillRect(0, 0, W, H);
-
   ctx.font = `${Math.floor(H * 0.22)}px serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText('🍅', W / 2, H * 0.26);
-
   ctx.fillStyle = '#ffffff';
   ctx.font = `bold ${Math.floor(H * 0.3)}px monospace`;
   ctx.fillText(formatTime(timer.remaining), W / 2, H * 0.56);
-
   if (currentTask) {
     ctx.fillStyle = '#f36f30';
     ctx.font = `${Math.floor(H * 0.1)}px sans-serif`;
     const task = currentTask.length > 22 ? currentTask.slice(0, 22) + '…' : currentTask;
     ctx.fillText(task, W / 2, H * 0.76);
   }
-
   if (!timer.isRunning && timer.remaining > 0) {
     ctx.fillStyle = 'rgba(255,255,255,0.45)';
     ctx.font = `${Math.floor(H * 0.09)}px sans-serif`;
     ctx.fillText('⏸ 일시정지', W / 2, H * 0.91);
   }
+}
 
+function _pipDraw() {
+  if (!pip.active) return;
+  _pipRender();
   pip.rafId = requestAnimationFrame(_pipDraw);
 }
 
@@ -4037,20 +4036,23 @@ async function startPip() {
   pip.canvas = document.createElement('canvas');
   pip.canvas.width = 320;
   pip.canvas.height = 200;
+  pip.active = true;
+  _pipRender(); // 스트림 시작 전 초기 프레임 먼저 렌더
+
   pip.video = document.createElement('video');
   pip.video.muted = true;
-  pip.video.srcObject = pip.canvas.captureStream(2);
-  await pip.video.play();
+  pip.video.srcObject = pip.canvas.captureStream(1);
   pip.video.addEventListener('leavepictureinpicture', stopPip, { once: true });
-  pip.active = true;
-  _pipDraw();
+
   try {
+    await pip.video.play();
     await pip.video.requestPictureInPicture();
   } catch (err) {
     console.warn('[PiP] 진입 실패:', err);
     stopPip();
     return;
   }
+  _pipDraw(); // PiP 창 열린 후 rAF 루프 시작
   updatePipBtn();
 }
 
@@ -4121,6 +4123,17 @@ window.addEventListener('load', () => {
       if (pip.active) { stopPip(); } else { startPip(); }
     });
   }
+});
+
+// 리더보드 호칭 안내 다이얼로그
+window.addEventListener('load', () => {
+  const infoBtn   = document.getElementById('lbInfoBtn');
+  const dialog    = document.getElementById('lbInfoDialog');
+  const closeBtn  = document.getElementById('lbInfoCloseBtn');
+  if (!infoBtn || !dialog) return;
+  infoBtn.addEventListener('click', () => dialog.showModal());
+  closeBtn?.addEventListener('click', () => dialog.close());
+  dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
 });
 
 // 플로팅 바 이벤트 (window.load 이후 등록)
@@ -4955,14 +4968,17 @@ async function renderLeaderboard() {
       : (emoji || '');
     const nickText = titleEmoji ? `${titleEmoji} ${escapeHtml(nick)}` : escapeHtml(nick);
 
-    // 보조 정보 (총 집중분 · 평균 세션 · 라벨) — total_seconds 있을 때만 표시
+    // 보조 정보 — total_seconds 있을 때만 표시 (세션 라벨 우선, 없으면 평균 수치)
     let subHtml = '';
     if (totalSecs > 0 && count > 0) {
       const totalMins = Math.floor(totalSecs / 60);
       const avgMin = totalMins > 0 ? Math.round(totalMins / count) : 0;
       const label = getSessionLabel(avgMin);
-      const labelHtml = label ? ` <span class="lb-session-label">${label}</span>` : '';
-      subHtml = `<span class="lb-sub">총 ${totalMins}분 · 평균 ${avgMin}분${labelHtml}</span>`;
+      if (label) {
+        subHtml = `<span class="lb-sub"><span class="lb-session-label">${label}</span></span>`;
+      } else if (avgMin > 0) {
+        subHtml = `<span class="lb-sub">세션 평균 ${avgMin}분</span>`;
+      }
     }
 
     return `
@@ -5940,7 +5956,7 @@ function updateCompletedDisplay() {
   if ($titleEl) {
     const title = getCurrentTitle();
     if (title) {
-      $titleEl.textContent = `${title.emoji} ${title.name}`;
+      $titleEl.innerHTML = `<span class="user-title-emoji">${title.emoji}</span><span>${escapeHtml(title.name)}</span>`;
       $titleEl.dataset.titleId = title.id;
       $titleEl.hidden = false;
     } else {

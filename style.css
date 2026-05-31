@@ -4367,6 +4367,67 @@ dialog.modal input[type="text"]:focus {
   vertical-align: middle;
 }
 
+/* ── 리더보드 호칭 안내 버튼 & 다이얼로그 ─────────────────── */
+.lb-info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--text-muted, #aaa);
+  background: transparent;
+  color: var(--text-muted, #aaa);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  vertical-align: middle;
+  margin-left: 4px;
+  padding: 0;
+  transition: border-color 0.15s, color 0.15s;
+}
+.lb-info-btn:hover {
+  border-color: var(--tomato, #f36f30);
+  color: var(--tomato, #f36f30);
+}
+.lb-info-dialog {
+  border: none;
+  border-radius: var(--radius, 14px);
+  padding: 0;
+  max-width: 320px;
+  width: 90vw;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+}
+.lb-info-dialog::backdrop {
+  background: rgba(0,0,0,0.35);
+}
+.lb-info-dialog-inner {
+  padding: 20px 20px 16px;
+}
+.lb-info-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0 0 10px;
+  color: var(--text-main);
+}
+.lb-info-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--text-main);
+  line-height: 1.5;
+}
+.lb-info-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0 0 14px;
+}
+
 /* =====================================================
    v0.1.39 — 인앱 브라우저 (카카오톡 등) 안내 배너
    ===================================================== */
@@ -4992,7 +5053,9 @@ dialog.modal input[type="text"]:focus {
 
 /* ── 칭호 배지 (v0.1.71) ────────────────────────────────── */
 .user-title {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   margin-left: 0;
   padding: 2px 10px;
   border-radius: 999px;
