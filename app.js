@@ -1323,10 +1323,11 @@ async function renderLogPartnerRecord() {
     else if (l.battleMode === 'separate') partnerMap[nick].moto++;
   });
 
-  // 2회 이상 함께한 파트너만 표시 (공개방 1회성 만남 제외)
+  // 3회 이상 함께한 파트너만, 횟수 순 상위 3명만 표시
   const sorted = Object.entries(partnerMap)
-    .filter(([, d]) => d.count >= 2)
-    .sort((a, b) => b[1].count - a[1].count);
+    .filter(([, d]) => d.count >= 3)
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 3);
 
   if (sorted.length === 0) { $el.hidden = true; return; }
 
