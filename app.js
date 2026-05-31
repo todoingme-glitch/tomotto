@@ -4098,29 +4098,28 @@ async function startDocPip() {
     *{margin:0;padding:0;box-sizing:border-box}
     body{background:#fffaf9;font-family:"Helvetica Neue",Arial,sans-serif;overflow:hidden;height:100vh;display:flex;flex-direction:column}
     .dpp-root{flex:1;display:flex;flex-direction:column;position:relative;}
-    .dpp-accent{width:3px;background:#d94e3a;position:absolute;left:0;top:0;bottom:0}
     .dpp-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 16px 0;gap:3px}
     .dpp-emoji{font-size:13px;position:absolute;top:8px;left:12px;line-height:1}
     .dpp-time{font-size:58px;font-weight:800;color:#d94e3a;letter-spacing:-0.03em;display:flex;align-items:center;line-height:1}
     .dpp-colon{padding:0 0.09em;line-height:1}
     .dpp-task{font-size:15px;font-weight:500;color:#a07060;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .dpp-pause{position:absolute;top:8px;right:10px;background:#f5ebe8;color:#c07060;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px}
-    .dpp-ctrl-bar{width:100%;height:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;letter-spacing:0.1em;transition:opacity 0.15s;user-select:none}
-    .dpp-progress{height:3px;background:#f0e0da}
-    .dpp-progress-fill{height:100%;background:#d94e3a;transition:width 0.5s linear}
+    .dpp-bottom{display:flex;align-items:center;padding:0 12px 7px;gap:8px}
+    .dpp-ctrl-bar{font-size:13px;color:#d94e3a;cursor:pointer;opacity:0.3;transition:opacity 0.15s;user-select:none;flex-shrink:0;width:16px;text-align:center}
+    .dpp-ctrl-bar:hover{opacity:1}
+    .dpp-progress{flex:1;height:3px;background:#f0e0da;border-radius:2px}
+    .dpp-progress-fill{height:100%;background:#d94e3a;transition:width 0.5s linear;border-radius:2px}
   `;
   pipWindow.document.head.appendChild(style);
 
   pipWindow.document.body.innerHTML = `
     <div class="dpp-root" id="dppRoot">
-      <div class="dpp-accent"></div>
       <div class="dpp-body">
         <span class="dpp-emoji">🍅</span>
         <div class="dpp-time"><span id="dppMins"></span><span class="dpp-colon">:</span><span id="dppSecs"></span></div>
         <div class="dpp-task" id="dppTask">${escapeHtml(currentTask || '')}</div>
       </div>
-      <div class="dpp-ctrl-bar" id="dppCtrlBar"></div>
-      <div class="dpp-progress"><div class="dpp-progress-fill" id="dppFill"></div></div>
+      <div class="dpp-bottom"><span class="dpp-ctrl-bar" id="dppCtrlBar"></span><div class="dpp-progress"><div class="dpp-progress-fill" id="dppFill"></div></div></div>
     </div>`;
 
   pip.docWindow = pipWindow;
