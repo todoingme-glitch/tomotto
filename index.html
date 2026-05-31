@@ -302,13 +302,21 @@
       <h2><span class="step">3</span> 리더보드 <button id="lbInfoBtn" class="lb-info-btn" type="button" aria-label="호칭 안내">!</button></h2>
       <dialog id="lbInfoDialog" class="lb-info-dialog">
         <div class="lb-info-dialog-inner">
-          <p class="lb-info-title">세션 호칭 안내</p>
+          <p class="lb-info-title">점수 & 호칭 안내</p>
           <ul class="lb-info-list">
+            <li><b>점수 기준 (세션당)</b></li>
+            <li>10분 미만 — 1점</li>
+            <li>10~24분 — 3점</li>
+            <li>25~44분 — 7점 <span style="color:var(--accent);font-size:0.8em">★ 기본 뽀모도로</span></li>
+            <li>45~59분 — 12점</li>
+            <li>60분+ — 18점</li>
+          </ul>
+          <ul class="lb-info-list" style="margin-top:8px">
+            <li><b>세션 호칭</b></li>
             <li>🍅 <b>방울토마토 러너</b> — 세션 평균 10분 미만</li>
             <li>🌿 <b>정석 수확러</b> — 세션 평균 20~35분</li>
             <li>⏳ <b>장기 숙성 토마토</b> — 세션 평균 60분 이상</li>
           </ul>
-          <p class="lb-info-desc">세션 평균 = 기간 내 총 집중 시간 ÷ 완료 횟수</p>
           <button id="lbInfoCloseBtn" class="btn-mini" type="button">닫기</button>
         </div>
       </dialog>
