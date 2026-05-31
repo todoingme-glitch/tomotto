@@ -4011,11 +4011,12 @@ function _pipRenderDoc() {
   const w = pip.docWindow;
   if (!w || w.closed) return;
   const d = w.document;
-  const timeEl  = d.getElementById('dppTime');
+  const minsEl  = d.getElementById('dppMins');
+  const secsEl  = d.getElementById('dppSecs');
   const taskEl  = d.getElementById('dppTask');
   const fillEl  = d.getElementById('dppFill');
   const pauseEl = d.getElementById('dppPause');
-  if (timeEl)  timeEl.textContent  = formatTime(timer.remaining).replace(':', ' : ');
+  if (minsEl && secsEl) { const p = formatTime(timer.remaining).split(':'); minsEl.textContent = p.slice(0,-1).join(':'); secsEl.textContent = p[p.length-1]; }
   if (taskEl)  taskEl.textContent  = currentTask || '';
   if (fillEl) {
     const pct = timer.duration > 0 ? (timer.duration - timer.remaining) / timer.duration * 100 : 0;
@@ -4058,7 +4059,7 @@ function _pipRenderCanvas() {
   ctx.font = 'bold 58px "Helvetica Neue", Arial, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(formatTime(timer.remaining).replace(':', ' : '), W / 2, currentTask ? 95 : 108);
+  ctx.fillText(formatTime(timer.remaining).replace(':', ' : '), W / 2, currentTask ? 95 : 108);
   // 할일 텍스트
   if (currentTask) {
     ctx.fillStyle = '#a07060';
@@ -4093,7 +4094,8 @@ async function startDocPip() {
     .dpp-accent{width:3px;background:#d94e3a;position:absolute;left:0;top:0;bottom:0}
     .dpp-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 16px;gap:8px}
     .dpp-emoji{font-size:13px;position:absolute;top:8px;left:12px;line-height:1}
-    .dpp-time{font-size:58px;font-weight:800;color:#d94e3a;letter-spacing:-0.03em;line-height:1}
+    .dpp-time{font-size:58px;font-weight:800;color:#d94e3a;letter-spacing:-0.03em;display:flex;align-items:center;line-height:1}
+    .dpp-colon{padding:0 0.09em;line-height:1}
     .dpp-task{font-size:15px;font-weight:500;color:#a07060;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .dpp-pause{position:absolute;top:8px;right:10px;background:#f5ebe8;color:#c07060;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px}
     .dpp-progress{height:3px;background:#f0e0da}
@@ -4106,7 +4108,7 @@ async function startDocPip() {
       <div class="dpp-accent"></div>
       <div class="dpp-body">
         <span class="dpp-emoji">🍅</span>
-        <div class="dpp-time" id="dppTime">${formatTime(timer.remaining).replace(':', ' : ')}</div>
+        <div class="dpp-time"><span id="dppMins"></span><span class="dpp-colon">:</span><span id="dppSecs"></span></div>
         <div class="dpp-task" id="dppTask">${escapeHtml(currentTask || '')}</div>
         <div class="dpp-pause" id="dppPause"${timer.isRunning ? ' hidden' : ''}>⏸ 일시정지</div>
       </div>
