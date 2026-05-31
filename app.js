@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.179 — 가챠 뽀모도로
+// Tomotto v0.1.180 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -4015,7 +4015,7 @@ function _pipRenderDoc() {
   const taskEl  = d.getElementById('dppTask');
   const fillEl  = d.getElementById('dppFill');
   const pauseEl = d.getElementById('dppPause');
-  if (timeEl)  timeEl.textContent  = formatTime(timer.remaining);
+  if (timeEl)  timeEl.textContent  = formatTime(timer.remaining).replace(':', ' : ');
   if (taskEl)  taskEl.textContent  = currentTask || '';
   if (fillEl) {
     const pct = timer.duration > 0 ? (timer.duration - timer.remaining) / timer.duration * 100 : 0;
@@ -4058,7 +4058,7 @@ function _pipRenderCanvas() {
   ctx.font = 'bold 58px "Helvetica Neue", Arial, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(formatTime(timer.remaining), W / 2, currentTask ? 95 : 108);
+  ctx.fillText(formatTime(timer.remaining).replace(':', ' : '), W / 2, currentTask ? 95 : 108);
   // 할일 텍스트
   if (currentTask) {
     ctx.fillStyle = '#a07060';
@@ -4106,7 +4106,7 @@ async function startDocPip() {
       <div class="dpp-accent"></div>
       <div class="dpp-body">
         <span class="dpp-emoji">🍅</span>
-        <div class="dpp-time" id="dppTime">${formatTime(timer.remaining)}</div>
+        <div class="dpp-time" id="dppTime">${formatTime(timer.remaining).replace(':', ' : ')}</div>
         <div class="dpp-task" id="dppTask">${escapeHtml(currentTask || '')}</div>
         <div class="dpp-pause" id="dppPause"${timer.isRunning ? ' hidden' : ''}>⏸ 일시정지</div>
       </div>
