@@ -4104,7 +4104,7 @@ async function startDocPip() {
     .dpp-colon{padding:0 0.09em;line-height:1}
     .dpp-task{font-size:15px;font-weight:500;color:#a07060;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .dpp-pause{position:absolute;top:8px;right:10px;background:#f5ebe8;color:#c07060;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px}
-    .dpp-bottom{display:flex;align-items:center;padding:6px 16px 10px;gap:8px}
+    .dpp-bottom{display:flex;align-items:center;padding:6px 16px 10px;gap:8px;justify-content:center}
     .dpp-ctrl-bar{font-size:13px;color:#d94e3a;cursor:pointer;opacity:0.3;transition:opacity 0.15s;user-select:none;flex-shrink:0;width:16px;text-align:center}
     .dpp-ctrl-bar:hover{opacity:1}
     .dpp-progress{flex:1;max-width:160px;height:3px;background:#f0e0da;border-radius:2px}
