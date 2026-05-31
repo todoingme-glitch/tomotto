@@ -129,15 +129,6 @@ public class MainActivity extends BridgeActivity {
             getBridge().getWebView().evaluateJavascript(js, null));
     }
 
-    /** 앱을 최근 앱 목록에서 스와이프해 종료할 때 타이머 서비스도 중단 */
-    @Override
-    public void onTaskRemoved(Intent rootIntent) {
-        Intent stop = new Intent(this, TimerForegroundService.class);
-        stop.setAction(TimerForegroundService.ACTION_STOP);
-        stopService(stop);
-        super.onTaskRemoved(rootIntent);
-    }
-
     private void extractBattleIdFromIntent(Intent intent) {
         if (intent == null) return;
         if (!Intent.ACTION_VIEW.equals(intent.getAction())) return;
