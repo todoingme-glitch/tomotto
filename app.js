@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.143 — 가챠 뽀모도로
+// Tomotto v0.1.168 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -3977,6 +3977,96 @@ function formatTime(seconds) {
 function updateTimerDisplay() {
   $timerDisplay.textContent = formatTime(timer.remaining);
   updateFloatingTimerBar();
+  updatePipBtn();
+}
+
+// ── Picture-in-Picture (Canvas) ──────────────────────────────
+const pip = { canvas: null, video: null, rafId: null, active: false };
+
+function _pipSupported() {
+  return 'pictureInPictureEnabled' in document && document.pictureInPictureEnabled;
+}
+
+function updatePipBtn() {
+  const btn = document.getElementById('pipBtn');
+  if (!btn || !_pipSupported()) return;
+  const canShow = timer.isRunning ||
+    (!timer.isRunning && timer.remaining > 0 && timer.remaining < timer.duration);
+  btn.hidden = !canShow;
+  btn.disabled = !canShow;
+  btn.title = pip.active ? '미니 창 닫기' : '미니 창으로 보기 (PiP)';
+  btn.classList.toggle('pip-active', pip.active);
+}
+
+function _pipDraw() {
+  if (!pip.canvas || !pip.active) return;
+  const ctx = pip.canvas.getContext('2d');
+  const W = pip.canvas.width;
+  const H = pip.canvas.height;
+
+  ctx.fillStyle = '#1a1a1a';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.font = `${Math.floor(H * 0.22)}px serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('🍅', W / 2, H * 0.26);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `bold ${Math.floor(H * 0.3)}px monospace`;
+  ctx.fillText(formatTime(timer.remaining), W / 2, H * 0.56);
+
+  if (currentTask) {
+    ctx.fillStyle = '#f36f30';
+    ctx.font = `${Math.floor(H * 0.1)}px sans-serif`;
+    const task = currentTask.length > 22 ? currentTask.slice(0, 22) + '…' : currentTask;
+    ctx.fillText(task, W / 2, H * 0.76);
+  }
+
+  if (!timer.isRunning && timer.remaining > 0) {
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    ctx.font = `${Math.floor(H * 0.09)}px sans-serif`;
+    ctx.fillText('⏸ 일시정지', W / 2, H * 0.91);
+  }
+
+  pip.rafId = requestAnimationFrame(_pipDraw);
+}
+
+async function startPip() {
+  if (!_pipSupported()) return;
+  pip.canvas = document.createElement('canvas');
+  pip.canvas.width = 320;
+  pip.canvas.height = 200;
+  pip.video = document.createElement('video');
+  pip.video.muted = true;
+  pip.video.srcObject = pip.canvas.captureStream(2);
+  await pip.video.play();
+  pip.video.addEventListener('leavepictureinpicture', stopPip, { once: true });
+  pip.active = true;
+  _pipDraw();
+  try {
+    await pip.video.requestPictureInPicture();
+  } catch (err) {
+    console.warn('[PiP] 진입 실패:', err);
+    stopPip();
+    return;
+  }
+  updatePipBtn();
+}
+
+function stopPip() {
+  pip.active = false;
+  if (pip.rafId) { cancelAnimationFrame(pip.rafId); pip.rafId = null; }
+  if (document.pictureInPictureElement) {
+    document.exitPictureInPicture().catch(() => {});
+  }
+  if (pip.video?.srcObject) {
+    pip.video.srcObject.getTracks().forEach(t => t.stop());
+    pip.video.srcObject = null;
+  }
+  pip.canvas = null;
+  pip.video = null;
+  updatePipBtn();
 }
 
 // ── 플로팅 타이머 바 ──────────────────────────────────────────
@@ -4021,6 +4111,17 @@ function updateFloatingTimerBar() {
   if (playShape)  playShape.hidden  = isRunning;
 }
 
+
+// PiP 버튼 이벤트
+window.addEventListener('load', () => {
+  const pipBtn = document.getElementById('pipBtn');
+  if (pipBtn) {
+    pipBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (pip.active) { stopPip(); } else { startPip(); }
+    });
+  }
+});
 
 // 플로팅 바 이벤트 (window.load 이후 등록)
 window.addEventListener('load', () => {
@@ -4231,6 +4332,7 @@ function resetTimer() {
   timer.intervalId = null;
   timer.isRunning = false;
   timer.endTime = null;
+  stopPip();
   // 리셋 시 알림 서비스 중지
   if (window.AndroidBridge?.stopTimerNotification) {
     try { window.AndroidBridge.stopTimerNotification(); } catch (_e) {}
@@ -4277,6 +4379,7 @@ function finishTimer() {
   if (timer.intervalId) clearInterval(timer.intervalId);
   timer.intervalId = null;
   timer.isRunning = false;
+  stopPip();
   // 타이머 완료 — 서비스가 자체적으로 완료 알림을 표시하고 종료하지만 안전하게 stop도 호출
   if (window.AndroidBridge?.stopTimerNotification) {
     try { window.AndroidBridge.stopTimerNotification(); } catch (_e) {}

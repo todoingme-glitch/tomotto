@@ -757,6 +757,23 @@ br.mobile-br { display: none; }
   cursor: not-allowed;
 }
 
+.btn-timer.btn-pip {
+  font-size: 1rem;
+  padding: 6px 10px;
+  background: var(--bg-card, #fff);
+  border: 1.5px solid var(--border, #e0e0e0);
+  color: var(--text-soft, #888);
+}
+.btn-timer.btn-pip:not(:disabled):hover {
+  border-color: var(--tomato, #f36f30);
+  color: var(--tomato, #f36f30);
+}
+.btn-timer.btn-pip.pip-active {
+  background: var(--tomato, #f36f30);
+  border-color: var(--tomato, #f36f30);
+  color: #fff;
+}
+
 .timer-settings {
   font-size: 13px;
   color: var(--text-soft);
