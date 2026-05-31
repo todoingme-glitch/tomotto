@@ -651,14 +651,22 @@ br.mobile-br { display: none; }
 }
 
 /* Timer section */
+.timer-section {
+  background: #fffaf9;
+  padding: 14px 20px 12px;
+}
+.timer-section h2 {
+  margin-bottom: 6px;
+}
 .timer-display {
-  font-size: 64px;
+  font-size: 78px;
   font-weight: 800;
   text-align: center;
   color: var(--accent);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
-  margin: 8px 0 20px;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin: 2px 0 10px;
   font-feature-settings: "tnum";
   transition: color 0.3s;
 }
@@ -717,7 +725,7 @@ br.mobile-br { display: none; }
 .timer-controls {
   display: flex;
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 
 .btn-timer {
@@ -835,8 +843,8 @@ br.mobile-br { display: none; }
 
 /* 완료 카운트 + 인증샷 영역 */
 .completed-log {
-  margin-top: 20px;
-  padding-top: 16px;
+  margin-top: 10px;
+  padding-top: 10px;
   border-top: 1px dashed var(--border);
 }
 
@@ -949,9 +957,9 @@ br.mobile-br { display: none; }
 }
 
 .timer-status {
-  margin-top: 12px;
+  margin-top: 6px;
   text-align: center;
-  font-size: 13px;
+  font-size: 15px;
   color: var(--text-soft);
   min-height: 18px;
 }
@@ -1835,7 +1843,7 @@ dialog.modal input[type="text"]:focus {
   }
 
   .timer-display {
-    font-size: 48px;
+    font-size: 60px;
   }
 
   .card {
