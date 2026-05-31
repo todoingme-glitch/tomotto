@@ -1,11 +1,13 @@
 package com.tomotto.app;
 
+import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -70,19 +72,26 @@ public class TimerForegroundService extends Service {
         startForeground(NOTIF_ID, buildNotification(mEndTimeMs - System.currentTimeMillis()));
         mHandler.removeCallbacks(mTickRunnable);
         mHandler.postDelayed(mTickRunnable, 1000);
+
+        // AlarmManager로 완료 알림 예약 (Doze/백그라운드에서도 확실히 발사)
+        scheduleAlarm();
+
         return START_NOT_STICKY;
     }
 
     @Override
     public void onDestroy() {
         mHandler.removeCallbacks(mTickRunnable);
-        // 앱 스와이프 종료 등으로 서비스가 중단될 때 남은 시간 저장 → 앱 재시작 시 일시정지 복원
         long remaining = mEndTimeMs - System.currentTimeMillis();
         if (remaining > 0) {
+            // 앱 스와이프 종료: 남은 시간 저장 + 알람 유지 (백그라운드 완료 알림 보장)
             getSharedPreferences("tomotto_prefs", MODE_PRIVATE)
                 .edit()
                 .putLong("interrupted_remaining_ms", remaining)
                 .apply();
+        } else {
+            // 타이머 완료/리셋으로 중단: 알람 취소
+            cancelAlarm();
         }
         super.onDestroy();
     }
@@ -137,7 +146,34 @@ public class TimerForegroundService extends Service {
         nm.notify(NOTIF_ID, buildNotification(remainingMs));
     }
 
+    // ── AlarmManager (Doze 대응) ──────────────────────────────
+
+    private PendingIntent buildAlarmIntent() {
+        Intent i = new Intent(this, TimerAlarmReceiver.class);
+        i.putExtra(TimerAlarmReceiver.EXTRA_TASK, mTaskName);
+        return PendingIntent.getBroadcast(
+            this, 0, i,
+            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+    }
+
+    private void scheduleAlarm() {
+        AlarmManager am = (AlarmManager) getSystemService(ALARM_SERVICE);
+        if (am == null) return;
+        PendingIntent pi = buildAlarmIntent();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, mEndTimeMs, pi);
+        } else {
+            am.setExact(AlarmManager.RTC_WAKEUP, mEndTimeMs, pi);
+        }
+    }
+
+    private void cancelAlarm() {
+        AlarmManager am = (AlarmManager) getSystemService(ALARM_SERVICE);
+        if (am != null) am.cancel(buildAlarmIntent());
+    }
+
     private void showDoneNotification() {
+        cancelAlarm(); // 알람 중복 방지 (Handler가 먼저 도달한 경우)
         String content = mTaskName.isEmpty()
             ? "집중 세션 완료! 수고했어요 🍅"
             : "\"" + mTaskName + "\" 완료! 수고했어요 🍅";

@@ -44,6 +44,11 @@
             android:stopWithTask="true"
             android:exported="false" />
 
+
+        <!-- 타이머 완료 알람 수신기 (Doze/백그라운드 알림 보장) -->
+        <receiver
+            android:name=".TimerAlarmReceiver"
+            android:exported="false" />
         <!-- Android 14+ specialUse 타입 필수 속성 -->
         <property
             android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
