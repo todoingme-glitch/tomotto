@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.178 — 가챠 뽀모도로
+// Tomotto v0.1.179 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -4030,42 +4030,49 @@ function _pipRenderCanvas() {
   const ctx = pip.canvas.getContext('2d');
   const W = pip.canvas.width;
   const H = pip.canvas.height;
-  ctx.fillStyle = '#0f0f11';
+  // 배경 (라이트)
+  ctx.fillStyle = '#fffaf9';
   ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = '#ef4444';
+  // 좌측 accent 바
+  ctx.fillStyle = '#d94e3a';
   ctx.fillRect(0, 0, 3, H);
+  // 🍅 brand mark
   ctx.font = '15px serif';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
   ctx.fillText('🍅', 14, 14);
+  // 일시정지 배지
   if (!timer.isRunning && timer.remaining > 0) {
-    ctx.fillStyle = '#27272a';
+    ctx.fillStyle = '#f5ebe8';
     ctx.beginPath();
     ctx.roundRect(W - 82, 10, 70, 22, 11);
     ctx.fill();
-    ctx.fillStyle = '#a1a1aa';
+    ctx.fillStyle = '#c07060';
     ctx.font = 'bold 11px Arial, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('⏸  일시정지', W - 47, 21);
   }
-  ctx.fillStyle = '#f4f4f5';
-  ctx.font = 'bold 62px "Helvetica Neue", Arial, sans-serif';
+  // 타이머 숫자
+  ctx.fillStyle = '#d94e3a';
+  ctx.font = 'bold 58px "Helvetica Neue", Arial, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(formatTime(timer.remaining), W / 2, currentTask ? 100 : 110);
+  ctx.fillText(formatTime(timer.remaining), W / 2, currentTask ? 95 : 108);
+  // 할일 텍스트
   if (currentTask) {
-    ctx.fillStyle = '#fb923c';
-    ctx.font = '500 14px "Helvetica Neue", Arial, sans-serif';
+    ctx.fillStyle = '#a07060';
+    ctx.font = '500 15px "Helvetica Neue", Arial, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     const task = currentTask.length > 30 ? currentTask.slice(0, 30) + '…' : currentTask;
-    ctx.fillText(task, W / 2, 142);
+    ctx.fillText(task, W / 2, 148);
   }
+  // 하단 progress 바
   const pct = timer.duration > 0 ? (timer.duration - timer.remaining) / timer.duration : 0;
-  ctx.fillStyle = '#27272a';
-  ctx.fillRect(3, H - 5, W - 3, 5);
-  if (pct > 0) { ctx.fillStyle = '#ef4444'; ctx.fillRect(3, H - 5, (W - 3) * pct, 5); }
+  ctx.fillStyle = '#f0e0da';
+  ctx.fillRect(3, H - 4, W - 3, 4);
+  if (pct > 0) { ctx.fillStyle = '#d94e3a'; ctx.fillRect(3, H - 4, (W - 3) * pct, 4); }
 }
 
 function _pipDraw() {
@@ -4084,7 +4091,7 @@ async function startDocPip() {
     body{background:#fffaf9;font-family:"Helvetica Neue",Arial,sans-serif;overflow:hidden;height:100vh;display:flex;flex-direction:column}
     .dpp-root{flex:1;display:flex;flex-direction:column;position:relative}
     .dpp-accent{width:3px;background:#d94e3a;position:absolute;left:0;top:0;bottom:0}
-    .dpp-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 16px;gap:2px}
+    .dpp-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 16px;gap:8px}
     .dpp-emoji{font-size:13px;position:absolute;top:8px;left:12px;line-height:1}
     .dpp-time{font-size:58px;font-weight:800;color:#d94e3a;letter-spacing:-0.03em;line-height:1}
     .dpp-task{font-size:15px;font-weight:500;color:#a07060;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
