@@ -18,7 +18,6 @@
       <button id="settingsBtn" class="header-settings-btn" type="button" aria-label="설정">
         <img src="assets/설정 아이콘.svg" width="22" height="22" alt="" aria-hidden="true">
       </button>
-      <div class="hamsal-badge" id="hamsalBadge" title="햇살 잔고">☀️ <span class="hamsal-amount">0</span></div>
       <div class="logo-wrap" id="logoWrap" title="한 번 더 하이파이브! 🍅">
         <svg class="logo-svg" id="tomottoLogo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 506.18 183.13" aria-label="Tomotto logo">
           <defs>
@@ -169,7 +168,10 @@
 
     <!-- 2. 가챠 -->
     <section class="card gacha-section">
-      <h2><span class="step">2</span> 가챠 돌리기</h2>
+      <div class="gacha-header">
+        <h2><span class="step">2</span> 가챠 돌리기</h2>
+        <div class="hamsal-badge" id="hamsalBadge" title="햇살 잔고">☀️ <span class="hamsal-amount">0</span></div>
+      </div>
       <div class="gacha-result" id="gachaResult">
         <p class="gacha-placeholder">아직 안 돌렸어요.<br class="mobile-br"> 할 일 등록 후 버튼을 눌러보세요.</p>
       </div>
@@ -179,7 +181,7 @@
         <span class="ad-hint" id="adHint" hidden>· 다음 가챠는 5분 후에 돌릴 수 있어요!</span>
       </p>
       <button id="hamsalSpinBtn" class="btn-hamsal-spin" disabled>
-        ☀️ <span class="hamsal-amount">0</span> 햇살로 추가 스핀 (50 소모)
+        ☀️ <span class="hamsal-amount">0</span> 햇살로 추가 스핀 (30 소모)
       </button>
     </section>
 

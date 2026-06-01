@@ -3358,7 +3358,7 @@ function hasBannedWord(text) {
 
 // ====== 햇살(☀️) 재화 시스템 ======
 
-const HAMSAL_SPIN_COST = 50; // 가챠 추가 스핀 비용
+const HAMSAL_SPIN_COST = 30; // 가챠 추가 스핀 비용
 
 /** 타이머 완료 시 지급할 햇살 계산 */
 function calcHamsalEarned(durationSec, options = {}) {
