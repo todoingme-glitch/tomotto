@@ -2706,17 +2706,17 @@ body:has(.container[data-tab="personal"]) .bg-hill {
   position: fixed;
   inset: 0;
   z-index: 0;
-  background: linear-gradient(180deg, #5bbde4 0%, #a8daf0 60%, #c8ecf7 100%);
+  background: linear-gradient(180deg, #1ab0e8 0%, #4ecbf5 35%, #87d8f7 65%, #c2edfb 100%);
 }
 
-/* 구름 레이어 — 컨테이너 너비 안에서만 오른쪽→왼쪽 무한 루프 */
+/* 구름 레이어 — 탭바 너비에 맞춰 오른쪽→왼쪽 무한 루프 */
 .bg-clouds {
   position: fixed;
   top: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 100%;
-  max-width: 800px;
+  width: calc(100% - 40px);
+  max-width: 680px;
   height: 100%;
   z-index: 1;
   overflow: hidden;
@@ -2738,14 +2738,14 @@ body:has(.container[data-tab="personal"]) .bg-hill {
   100% { transform: translateX(-50%); }
 }
 
-/* 언덕/슬롯머신 — 화면 하단 고정, 누끼 PNG라 클리핑 불필요 */
+/* 언덕/슬롯머신 — 화면 하단 고정, 탭바 너비에 맞춤 */
 .bg-hill {
   position: fixed;
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 100%;
-  max-width: 800px;
+  width: calc(100% - 40px);
+  max-width: 680px;
   z-index: 2;
 }
 .bg-hill img {
