@@ -4757,14 +4757,17 @@ async function upsertPartnerStats(partnerNick, durationSec = 0) {
   }
 }
 
-// 세션 점수 계산 (B 공식)
+// 세션 점수 계산 — 분당 1점(기본) + 완료 보너스
+// 5분 미만: 보너스 없음 / 5~24분: +3 / 25~44분: +8 / 45~59분: +12 / 60분+: +15
 function getSessionScore(durationSec) {
   const min = Math.floor(durationSec / 60);
-  if (min < 10) return 1;
-  if (min < 25) return 3;
-  if (min < 45) return 7;
-  if (min < 60) return 12;
-  return 18;
+  const timeScore = min;
+  let bonus = 0;
+  if (min >= 60) bonus = 15;
+  else if (min >= 45) bonus = 12;
+  else if (min >= 25) bonus = 8;
+  else if (min >= 5) bonus = 3;
+  return timeScore + bonus;
 }
 
 // 타이머 완료 시 Supabase user_stats에 카운트 업데이트
