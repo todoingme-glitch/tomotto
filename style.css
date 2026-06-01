@@ -2593,27 +2593,45 @@ dialog.modal input[type="text"]:focus {
 .card-dialog .note-wrap,
 .card-dialog .gacha-result,
 .card-dialog .timer-section,
-.card-dialog .capture-row {
+.card-dialog .capture-row,
+.card-dialog .last-capture-img-wrap,
+.card-dialog .log-day-detail,
+.card-dialog section {
   background: transparent !important;
-  border-color: rgba(100,70,20,0.25) !important;
+  border-color: rgba(100,70,20,0.3) !important;
   box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+.card-dialog .card {
   border-radius: 0 !important;
   margin: 0 !important;
   max-width: none !important;
-  backdrop-filter: none !important;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-}
-.card-dialog .card {
   padding: 0 !important;
+}
+/* 인증샷 이미지 컨테이너 */
+.card-dialog #lastCapture {
+  background: rgba(255,245,210,0.4) !important;
+  border: 1px dashed rgba(100,70,20,0.3) !important;
+  border-radius: 6px !important;
+}
+/* textarea, input */
+.card-dialog textarea,
+.card-dialog input[type="text"],
+.card-dialog select {
+  background: rgba(255,248,220,0.5) !important;
+  border: 1.5px solid rgba(120,80,20,0.4) !important;
 }
 
 /* 스크롤바 숨김 */
-.card-dialog {
+.card-dialog,
+.card-dialog-wrapper,
+.card-dialog-content {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
-.card-dialog::-webkit-scrollbar {
+.card-dialog::-webkit-scrollbar,
+.card-dialog-wrapper::-webkit-scrollbar,
+.card-dialog-content::-webkit-scrollbar {
   display: none;
 }
 .card-dialog h2 {
