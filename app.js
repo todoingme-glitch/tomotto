@@ -671,6 +671,7 @@ async function saveNickname() {
   const v = $nickInput.value.trim();
   if (!v) { alert('닉네임을 입력해주세요.'); return; }
   if (v.length > 20) { alert('20자 이내로 적어주세요.'); return; }
+  if (hasBannedWord(v)) { alert('사용할 수 없는 단어가 포함되어 있어요.'); return; }
   const oldNickname = myNickname;
   myNickname = v;
   localStorage.setItem(BATTLE_STORAGE.nickname, v);
@@ -3335,7 +3336,7 @@ const STORAGE = {
   hiddenTabCount: 'tomotto_hidden_tab',      // v0.1.70 — 타이머 중 탭 이탈 횟수 (E-1)
 };
 
-// ====== 금칙어 필터 (친구 배틀·공개방 제목에만 적용) ======
+// ====== 금칙어 필터 (닉네임·친구 배틀·공개방 제목에 적용) ======
 // 카테고리 이름(개인 탭)은 필터링 대상이 아님
 
 const BANNED_WORDS = [
