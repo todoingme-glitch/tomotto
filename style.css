@@ -45,7 +45,7 @@
 
 body {
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: transparent;
+  background: var(--bg);
   color: var(--text);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
@@ -2499,36 +2499,18 @@ dialog.modal input[type="text"]:focus {
   display: none;
 }
 
-/* ── 파노라마 배경 ───────────────────────────────────── */
-.tab-panel::before {
-  content: '';
-  position: fixed;
-  inset: 0;
+/* ── 파노라마 배경 — 컨테이너 안에만 적용 ─────────────── */
+.container {
   background-image: url('assets/bg-shire.png');
   background-repeat: no-repeat;
   background-size: 300% auto;
-  background-color: #87CEEB;
-  z-index: -1;
-  pointer-events: none;
-}
-#tab-personal::before { background-position: 0% 40%; }
-#tab-social::before   { background-position: 50% 40%; }
-#tab-log::before      { background-position: 100% 40%; }
-
-/* PC: 배경 이미지 중앙 고정, 양옆은 하늘색으로 자연스럽게 이어짐 */
-@media (min-width: 600px) {
-  .tab-panel::before {
-    background-size: auto 100%;   /* 높이 기준으로 맞춤 */
-    background-position-y: center;
-  }
-  #tab-personal::before { background-position-x: 5%; }
-  #tab-social::before   { background-position-x: 50%; }
-  #tab-log::before      { background-position-x: 82%; }
+  background-position: 0% 30%;   /* JS가 탭 전환 시 갱신 */
+  border-radius: 0;
 }
 
 /* 카드 반투명 처리 — 배경이 비치게 */
 .card {
-  background: rgba(255, 252, 250, 0.82) !important;
+  background: rgba(255, 252, 250, 0.85) !important;
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 }
