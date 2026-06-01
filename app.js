@@ -3071,7 +3071,6 @@ function dispatchNickSaved() {
 let switchTab = () => {};
 
 loadNickname(); // v0.1.65 — IIFE보다 먼저 실행해서 리더보드 첫 렌더에 닉네임 반영
-loadHamsal();   // v0.1.204 — 햇살 잔고 복원
 (function initBottomTab() {
   const tabBtns = document.querySelectorAll('.tab-btn');
   const tabPanels = document.querySelectorAll('.tab-panel');
@@ -3250,6 +3249,7 @@ if ('serviceWorker' in navigator) {
 
 window.addEventListener('load', () => {
   loadNickname(); // 이미 IIFE 전에 호출됐지만 재호출로 확실히 반영
+  loadHamsal();   // v0.1.204 — STORAGE 정의 후 호출 (load 이벤트 내)
   // v0.1.65/66 — 탭별 초기 렌더 (닉네임 로드 후)
   const _activeTab = localStorage.getItem('tomotto_active_tab');
   if (_activeTab === 'social') {
