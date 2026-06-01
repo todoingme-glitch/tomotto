@@ -2556,7 +2556,12 @@ dialog.modal input[type="text"]:focus {
   color: #3A2810;
 }
 
-/* 양피지 이미지 — 절대 위치로 꽉 채움 */
+/* 래퍼 — 이미지와 콘텐츠의 기준점 */
+.card-dialog-wrapper {
+  position: relative;
+}
+
+/* 양피지 이미지 — 래퍼 기준 절대 위치 */
 .card-dialog-bg {
   position: absolute;
   inset: 0;
@@ -2565,7 +2570,7 @@ dialog.modal input[type="text"]:focus {
   object-fit: fill;
   z-index: 0;
   pointer-events: none;
-  border-radius: 0;
+  display: block;
 }
 
 /* 콘텐츠 래퍼 — 양피지 위에 올라감 */
