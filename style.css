@@ -650,6 +650,72 @@ br.mobile-br { display: none; }
   font-weight: 500;
 }
 
+/* v0.1.204 — 햇살 재화 */
+.hamsal-badge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #b07d00;
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: 20px;
+  padding: 4px 10px;
+  line-height: 1;
+}
+
+.btn-hamsal-spin {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 9px 14px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #b07d00;
+  background: #fff8e1;
+  border: 1.5px solid #ffe082;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+.btn-hamsal-spin:hover:not(:disabled) {
+  background: #fff3c0;
+  transform: translateY(-1px);
+}
+.btn-hamsal-spin:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* 햇살 획득 토스트 */
+.hamsal-toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  background: #fff8e1;
+  border: 1.5px solid #ffe082;
+  color: #b07d00;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 8px 20px;
+  border-radius: 20px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  z-index: 9999;
+  pointer-events: none;
+}
+.hamsal-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
 /* Timer section */
 .timer-display {
   font-size: 64px;

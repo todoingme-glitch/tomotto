@@ -3071,6 +3071,7 @@ function dispatchNickSaved() {
 let switchTab = () => {};
 
 loadNickname(); // v0.1.65 — IIFE보다 먼저 실행해서 리더보드 첫 렌더에 닉네임 반영
+loadHamsal();   // v0.1.204 — 햇살 잔고 복원
 (function initBottomTab() {
   const tabBtns = document.querySelectorAll('.tab-btn');
   const tabPanels = document.querySelectorAll('.tab-panel');
@@ -3334,6 +3335,7 @@ const STORAGE = {
   noRerollTotal:  'tomotto_noreroll_total',  // v0.1.70 — 누적 리롤 없이 완료 횟수 (C-2)
   pauseFreeCount: 'tomotto_pause_free',      // v0.1.70 — 일시정지 없이 완료 횟수 (B-4/B-5)
   hiddenTabCount: 'tomotto_hidden_tab',      // v0.1.70 — 타이머 중 탭 이탈 횟수 (E-1)
+  hamsal: 'tomotto_hamsal',                  // v0.1.204 — 햇살 재화 잔고
 };
 
 // ====== 금칙어 필터 (닉네임·친구 배틀·공개방 제목에 적용) ======
@@ -3352,6 +3354,90 @@ function hasBannedWord(text) {
   if (!text) return false;
   const normalized = text.replace(/\s+/g, '').toLowerCase();
   return BANNED_WORDS.some(w => normalized.includes(w.toLowerCase()));
+}
+
+// ====== 햇살(☀️) 재화 시스템 ======
+
+const HAMSAL_SPIN_COST = 50; // 가챠 추가 스핀 비용
+
+/** 타이머 완료 시 지급할 햇살 계산 */
+function calcHamsalEarned(durationSec, options = {}) {
+  const min = Math.floor(durationSec / 60);
+  // 기본 지급
+  let base = 5;
+  if (min >= 90)      base = 30;
+  else if (min >= 60) base = 20;
+  else if (min >= 25) base = 10;
+
+  // 보너스
+  let bonus = 0;
+  if (!options.paused)   bonus += 3;  // 일시정지 없이 완료
+  if (options.noReroll)  bonus += 3;  // 리롤 없이 바로 시작
+  if (options.battle)    bonus += 5;  // 배틀 완주
+  const h = new Date().getHours();
+  if (h >= 5 && h < 8)  bonus += 5;  // 얼리버드 (새벽 5~8시)
+  if (h >= 0 && h < 2)  bonus += 5;  // 미드나잇 (자정~새벽 2시)
+
+  return base + bonus;
+}
+
+/** 햇살 획득 */
+function earnHamsal(amount) {
+  if (!amount || amount <= 0) return;
+  hamsal += amount;
+  localStorage.setItem(STORAGE.hamsal, String(hamsal));
+  renderHamsalDisplay();
+  showHamsalToast(`+${amount} ☀️ 햇살 획득!`);
+  // Supabase 동기화 (best-effort — DB 컬럼 없으면 무시)
+  if (sb && myNickname) {
+    sb.rpc('earn_hamsal', { p_nickname: myNickname, p_amount: amount })
+      .then(({ data, error }) => {
+        if (!error && data != null) {
+          hamsal = data;
+          localStorage.setItem(STORAGE.hamsal, String(hamsal));
+          renderHamsalDisplay();
+        }
+      }).catch(() => {});
+  }
+}
+
+/** 햇살 차감. 잔고 부족 시 false 반환 */
+function spendHamsal(amount) {
+  if (hamsal < amount) return false;
+  hamsal -= amount;
+  localStorage.setItem(STORAGE.hamsal, String(hamsal));
+  renderHamsalDisplay();
+  if (sb && myNickname) {
+    sb.rpc('earn_hamsal', { p_nickname: myNickname, p_amount: -amount }).catch(() => {});
+  }
+  return true;
+}
+
+/** 잔고 UI 갱신 */
+function renderHamsalDisplay() {
+  document.querySelectorAll('.hamsal-amount').forEach(el => el.textContent = hamsal);
+  const btn = document.getElementById('hamsalSpinBtn');
+  if (btn) btn.disabled = hamsal < HAMSAL_SPIN_COST;
+}
+
+/** 햇살 획득 토스트 */
+function showHamsalToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'hamsal-toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => {
+    t.classList.remove('show');
+    setTimeout(() => t.remove(), 400);
+  }, 2200);
+}
+
+/** 초기 로드 */
+function loadHamsal() {
+  const saved = parseInt(localStorage.getItem(STORAGE.hamsal) || '0', 10);
+  hamsal = Number.isFinite(saved) && saved >= 0 ? saved : 0;
+  renderHamsalDisplay();
 }
 
 // ====== 공개 배틀방 숨기기 ======
@@ -3401,6 +3487,7 @@ function migrateStorage() {
 // 상태
 let categories = [];
 let gachaCount = 0;
+let hamsal = 0;                             // v0.1.204 — 햇살 재화 잔고
 let totalGachaCount = 0;            // v0.1.69 — 전체 누적 가챠 횟수 (업적용)
 let _spinsSinceReset = 0;           // v0.1.69 — 리셋 후 가챠 횟수 (A-3 판별)
 let _notifTimeoutId = null;  // 웹 알림 예약 타임아웃 ID
@@ -3863,17 +3950,25 @@ async function spinGacha() {
   }
   if (pool.length < 1) return;
 
-  // v0.1.9 — 사이클 5 도달 시 자동 리셋. 운영 모드면 광고 confirm 후 리셋.
+  // v0.1.9 / v0.1.204 — 사이클 5 도달 시 햇살 소모 or 광고로 리셋
   if (gachaCount >= 5) {
-    if (SHOW_AD_PROMPT) {
+    if (hamsal >= HAMSAL_SPIN_COST) {
+      // 햇살로 추가 스핀 — hamsalSpinBtn 클릭으로 진입하므로 여기선 바로 차감
+      spendHamsal(HAMSAL_SPIN_COST);
+      gachaCount = 0;
+      updateGachaCounter();
+    } else if (SHOW_AD_PROMPT) {
       const confirmAd = confirm(
         '이번 사이클(5회) 다 썼어요!\n광고 보고 새 사이클 시작?\n\n(현재는 시뮬레이션 — 실제 광고는 추후 연동 예정)'
       );
       if (!confirmAd) return;
+      gachaCount = 0;
+      updateGachaCounter();
+    } else {
+      // 테스트 모드: 조용히 리셋
+      gachaCount = 0;
+      updateGachaCounter();
     }
-    // 테스트 모드: 조용히 리셋. 운영 모드: 광고 본 것으로 처리하고 리셋.
-    gachaCount = 0;
-    updateGachaCounter();
   }
 
   $gachaBtn.disabled = true;
@@ -3971,6 +4066,14 @@ async function spinGacha() {
 }
 
 $gachaBtn.addEventListener('click', spinGacha);
+
+// v0.1.204 — 햇살 추가 스핀 버튼
+document.getElementById('hamsalSpinBtn')?.addEventListener('click', () => {
+  if (hamsal < HAMSAL_SPIN_COST) return;
+  // gachaCount를 5로 올려두고 spinGacha 호출 → 내부에서 햇살 차감 + 리셋 후 스핀
+  if (gachaCount < 5) gachaCount = 5;
+  spinGacha();
+});
 
 // ====== 타이머 ======
 function formatTime(seconds) {
@@ -4611,6 +4714,14 @@ function finishTimer() {
 
   // v0.1.69 — 타이머 완료 업적 체크
   checkAchievementsOnTimerComplete();
+
+  // v0.1.204 — 햇살 재화 지급
+  const _hamsalAmount = calcHamsalEarned(timer.duration || 0, {
+    paused:   _pausedThisSession,
+    noReroll: _spinsSinceReset === 1,   // 가챠 1회 후 바로 시작
+    battle:   !!activeBattleId,
+  });
+  earnHamsal(_hamsalAmount);
 
   // v0.1.36 — 소셜 리더보드 통계 동기화
   syncUserStats();
