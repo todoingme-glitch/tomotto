@@ -2709,10 +2709,15 @@ body:has(.container[data-tab="personal"]) .bg-hill {
   background: linear-gradient(180deg, #5bbde4 0%, #a8daf0 60%, #c8ecf7 100%);
 }
 
-/* 구름 레이어 — 오른쪽→왼쪽 무한 루프 */
+/* 구름 레이어 — 컨테이너 너비 안에서만 오른쪽→왼쪽 무한 루프 */
 .bg-clouds {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 800px;
+  height: 100%;
   z-index: 1;
   overflow: hidden;
 }
@@ -2733,7 +2738,7 @@ body:has(.container[data-tab="personal"]) .bg-hill {
   100% { transform: translateX(-50%); }
 }
 
-/* 언덕/슬롯머신 — 화면 하단 고정, 아래쪽 55%만 표시해서 하늘 영역 구름에 위임 */
+/* 언덕/슬롯머신 — 화면 하단 고정, 로고와 겹치지 않게 max-height 제한 */
 .bg-hill {
   position: fixed;
   bottom: 0;
@@ -2741,16 +2746,14 @@ body:has(.container[data-tab="personal"]) .bg-hill {
   transform: translateX(-50%);
   width: 100%;
   max-width: 800px;
-  height: 55vh;
-  overflow: hidden;
   z-index: 2;
 }
 .bg-hill img {
-  position: absolute;
-  bottom: 0;
   width: 100%;
-  height: auto;
   display: block;
+  max-height: 72vh;
+  object-fit: contain;
+  object-position: bottom center;
 }
 
 /* 개인탭일 때 컨테이너 배경 제거 + z-index 올리기 */
