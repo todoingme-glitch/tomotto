@@ -2760,18 +2760,6 @@ body:has(.container[data-tab="personal"]) .container {
   z-index: 3;
 }
 
-/* 데스크탑 — 이미지 너비 줄여서 높이가 화면 안에 들어오게 */
-@media (min-width: 481px) {
-  .bg-hill {
-    display: flex;
-    justify-content: center;
-    align-items: flex-end;
-  }
-  .bg-hill img {
-    width: auto;
-    max-height: 75vh;
-  }
-}
 
 /* 모바일 — 배경 레이어 풀 너비, 구름/언덕 위치 조정 */
 @media (max-width: 480px) {
