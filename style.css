@@ -2722,9 +2722,10 @@ body:has(.container[data-tab="personal"]) .bg-hill {
   z-index: 1;
   overflow: hidden;
 }
+/* inner 280% = 이미지 한 장이 컨테이너의 140% 크기 → 구름 크게 */
 .bg-clouds-inner {
   display: flex;
-  width: 200%;
+  width: 280%;
   animation: clouds-scroll 40s linear infinite;
 }
 .bg-clouds-inner img {
@@ -2761,6 +2762,17 @@ body:has(.container[data-tab="personal"]) .container {
 }
 
 
+/* 데스크탑 — 구름 중앙, 슬롯머신 탭 위에 붙이기 */
+@media (min-width: 481px) {
+  .bg-clouds {
+    top: 22vh;
+    height: 78vh;
+  }
+  .bg-hill {
+    bottom: 65px;
+  }
+}
+
 /* 모바일 — 배경 레이어 풀 너비, 구름/언덕 위치 조정 */
 @media (max-width: 480px) {
   .bg-clouds,
@@ -2768,12 +2780,16 @@ body:has(.container[data-tab="personal"]) .container {
     width: 100%;
     max-width: none;
   }
+  /* inner 260% = 이미지 한 장이 컨테이너의 130% → 모바일도 구름 크게 */
+  .bg-clouds-inner {
+    width: 260%;
+  }
   /* 구름 화면 중앙쪽으로 */
   .bg-clouds {
     top: 18vh;
     height: 82vh;
   }
-  /* 언덕 탭바 바로 위에 붙이기 (탭바 높이 약 65px) */
+  /* 언덕 탭바 바로 위에 붙이기 */
   .bg-hill {
     bottom: 65px;
   }
