@@ -2502,6 +2502,84 @@ dialog.modal input[type="text"]:focus {
   display: none;
 }
 
+/* ── 개인탭 hotspot 레이어 ──────────────────────────── */
+#tab-personal {
+  min-height: 100svh;
+}
+.hotspot-layer {
+  position: absolute;
+  inset: 0;
+}
+.hotspot {
+  position: absolute;
+  background: rgba(255,255,255,0.15);
+  border: 2px dashed rgba(255,255,255,0.6);
+  border-radius: 14px;
+  cursor: pointer;
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  padding: 8px 14px;
+  transition: background 0.15s, transform 0.1s;
+  backdrop-filter: blur(2px);
+}
+.hotspot:hover {
+  background: rgba(255,255,255,0.28);
+  transform: scale(1.05);
+}
+/* 임시 위치 — 나중에 배경 보면서 조정 */
+#hotspot-todo  { top: 30%;  left: 8%;  }
+#hotspot-gacha { top: 48%;  left: 8%;  }
+#hotspot-timer { top: 64%;  left: 8%;  }
+
+/* ── 카드 다이얼로그 ─────────────────────────────────── */
+.card-dialog {
+  max-width: 480px;
+  width: 92vw;
+  border: none;
+  border-radius: 18px;
+  padding: 0;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.22);
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  max-height: 90svh;
+  overflow-y: auto;
+}
+.card-dialog::backdrop {
+  background: rgba(20,10,5,0.45);
+  backdrop-filter: blur(3px);
+}
+.card-dialog .card {
+  margin: 0;
+  max-width: none;
+  border-radius: 18px;
+  box-shadow: none;
+  border: none;
+}
+.card-dialog-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 10;
+  background: rgba(255,255,255,0.8);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  transition: background 0.15s;
+}
+.card-dialog-close:hover { background: white; }
+
 /* ── 파노라마 배경 — 컨테이너 안에만 적용 ─────────────── */
 .container {
   background-image: url('assets/bg-shire.png');

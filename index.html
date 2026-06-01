@@ -152,111 +152,127 @@
       <p class="tagline">뭐부터 해야 할지 모르겠다면, <strong class="tagline-brand">Tomotto</strong>&thinsp;가 골라줄게.</p>
     </header>
 
-    <!-- 탭 패널 : 개인 -->
+    <!-- 탭 패널 : 개인 — 배경 + hotspot 버튼만 -->
     <div class="tab-panel" id="tab-personal">
-
-    <!-- 1. 카테고리 설정 -->
-    <section class="card category-section">
-      <h2><span class="step">1</span> 오늘 할 일 정하기</h2>
-      <div class="add-row">
-        <input type="text" id="categoryInput" placeholder="예: 공부, 청소, 운동, 보고서 ···" maxlength="30">
-        <button id="addBtn" class="btn-add">+ 추가</button>
+      <div class="hotspot-layer">
+        <button class="hotspot" id="hotspot-todo"  onclick="document.getElementById('dialog-todo').showModal()">
+          📋 할 일
+        </button>
+        <button class="hotspot" id="hotspot-gacha" onclick="document.getElementById('dialog-gacha').showModal()">
+          🎰 가챠
+        </button>
+        <button class="hotspot" id="hotspot-timer" onclick="document.getElementById('dialog-timer').showModal()">
+          ⏱ 타이머
+        </button>
       </div>
-      <ul id="categoryList" class="category-list"></ul>
-      <p id="emptyHint" class="empty-hint">무엇이든 자유롭게 추가해 보세요!</p>
-    </section>
+    </div><!-- /tab-panel#tab-personal -->
 
-    <!-- 2. 가챠 -->
-    <section class="card gacha-section">
-      <div class="gacha-header">
-        <h2><span class="step">2</span> 가챠 돌리기</h2>
-        <div class="hamsal-badge" id="hamsalBadge" title="햇살 잔고">☀️ <span class="hamsal-amount">0</span></div>
-      </div>
-      <div class="gacha-result" id="gachaResult">
-        <p class="gacha-placeholder">아직 안 돌렸어요.<br class="mobile-br"> 할 일 등록 후 버튼을 눌러보세요.</p>
-      </div>
-      <button id="gachaBtn" class="btn-gacha" disabled>가챠 돌리기!</button>
-      <p class="gacha-counter">
-        이번 사이클 <strong id="gachaCount">0</strong>/5
-        <span class="ad-hint" id="adHint" hidden>· 다음 가챠는 5분 후에 돌릴 수 있어요!</span>
-      </p>
-      <button id="hamsalSpinBtn" class="btn-hamsal-spin" disabled>
-        30 햇살로 추가 스핀 ☀️
-      </button>
-    </section>
+    <!-- ── 개인탭 카드 다이얼로그 ────────────────────────── -->
 
-    <!-- 3. 타이머 -->
-    <section class="card timer-section">
-      <h2><span class="step">3</span> 집중하기</h2>
-      <button id="pipBtn" class="btn-pip-corner" disabled hidden title="미니 창으로 보기 (PiP)" aria-label="미니 창으로 보기">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <rect x="0.6" y="2.6" width="12.8" height="8.8" rx="1.4" stroke="currentColor" stroke-width="1.2"/>
-          <rect x="6.5" y="6.5" width="5.4" height="3.4" rx="0.8" fill="currentColor"/>
-        </svg>
-      </button>
-      <div class="timer-display" id="timerDisplay">25:00</div>
-      <!-- B안: 배틀 초대 링크로 들어왔을 때 타이머 잠금 배너 -->
-      <div class="battle-lock-banner" id="battleLockBanner" hidden>
-        <span class="battle-lock-text">⚔️ 배틀 연결됨 — 가챠 후 [배틀 열기] 버튼을 눌러주세요</span>
-        <div class="battle-lock-actions">
-          <button id="battleLockOpenBtn" class="btn-mini" type="button">배틀 열기</button>
-          <button id="battleLockDismissBtn" class="btn-mini btn-mini-ghost" type="button" title="배틀 무시하고 혼자 사용">✕</button>
+    <!-- 할 일 다이얼로그 -->
+    <dialog id="dialog-todo" class="card-dialog">
+      <button class="card-dialog-close" onclick="this.closest('dialog').close()" aria-label="닫기">✕</button>
+      <section class="card category-section">
+        <h2><span class="step">1</span> 오늘 할 일 정하기</h2>
+        <div class="add-row">
+          <input type="text" id="categoryInput" placeholder="예: 공부, 청소, 운동, 보고서 ···" maxlength="30">
+          <button id="addBtn" class="btn-add">+ 추가</button>
         </div>
-      </div>
-      <div class="timer-controls">
-        <button id="startBtn" class="btn-timer btn-start" disabled>시작</button>
-        <button id="pauseBtn" class="btn-timer btn-pause" disabled>일시정지</button>
-        <button id="resetBtn" class="btn-timer btn-reset" disabled>리셋</button>
-      </div>
-      <div class="timer-settings">
-        <label class="timer-settings-label">
-          시간 설정:
-          <select id="durationSelect">
-            <option value="10">10초 (테스트)</option>
-            <option value="600">10분</option>
-            <option value="1500" selected>25분 (기본)</option>
-            <option value="2700">45분</option>
-            <option value="3600">60분</option>
-            <option value="custom">직접 입력···</option>
-          </select>
-        </label>
-        <div class="custom-duration" id="customDurationWrap" hidden>
-          <input type="number" id="customHours" min="0" max="23" step="1" placeholder="0">
-          <span>시간</span>
-          <input type="number" id="customMinutes" min="0" max="59" step="1" placeholder="0">
-          <span>분</span>
-        </div>
-      </div>
-      <p id="timerStatus" class="timer-status"></p>
+        <ul id="categoryList" class="category-list"></ul>
+        <p id="emptyHint" class="empty-hint">무엇이든 자유롭게 추가해 보세요!</p>
+      </section>
+    </dialog>
 
-      <!-- 완료 카운트 + 인증샷 -->
-      <div class="completed-log">
-        <div class="completed-counter">
-          지금까지 <strong id="completedCount">0</strong>번 완료 🍅
+    <!-- 가챠 다이얼로그 -->
+    <dialog id="dialog-gacha" class="card-dialog">
+      <button class="card-dialog-close" onclick="this.closest('dialog').close()" aria-label="닫기">✕</button>
+      <section class="card gacha-section">
+        <div class="gacha-header">
+          <h2><span class="step">2</span> 가챠 돌리기</h2>
+          <div class="hamsal-badge" id="hamsalBadge" title="햇살 잔고">☀️ <span class="hamsal-amount">0</span></div>
         </div>
-        <!-- v0.1.17 — 배틀 결과 보기 버튼 (배틀 타이머 완료 시 표시) -->
-        <button id="battleResultBtn" class="btn-battle-result" hidden>🏆 배틀 결과 보기</button>
+        <div class="gacha-result" id="gachaResult">
+          <p class="gacha-placeholder">아직 안 돌렸어요.<br class="mobile-br"> 할 일 등록 후 버튼을 눌러보세요.</p>
+        </div>
+        <button id="gachaBtn" class="btn-gacha" disabled>가챠 돌리기!</button>
+        <p class="gacha-counter">
+          이번 사이클 <strong id="gachaCount">0</strong>/5
+          <span class="ad-hint" id="adHint" hidden>· 다음 가챠는 5분 후에 돌릴 수 있어요!</span>
+        </p>
+        <button id="hamsalSpinBtn" class="btn-hamsal-spin" disabled>
+          30 햇살로 추가 스핀 ☀️
+        </button>
+      </section>
+    </dialog>
 
-        <div class="capture-row" id="captureRow" hidden>
-          <div class="completion-box">
-            <button id="captureBtn" class="btn-capture">📷 인증샷 첨부</button>
-            <input type="file" id="captureInput" accept="image/*" hidden>
-            <div class="last-capture" id="lastCapture" hidden>
-              <span class="last-capture-label">마지막 인증샷</span>
-              <img id="lastCaptureImg" alt="마지막 인증샷">
-              <button id="removeCaptureBtn" class="btn-remove-capture" title="삭제">✕</button>
-            </div>
-            <div class="note-wrap">
-              <textarea id="completionNote" class="completion-note" placeholder="소감 한 줄 — 작업 메모, 나누고 싶은 말···" rows="2" maxlength="200"></textarea>
-              <button id="noteUploadBtn" class="btn-note-upload" hidden>저장</button>
-            </div>
-            <p class="capture-hint">인증샷과 소감은 새 타이머를 시작할 때까지 볼 수 있어요.</p>
+    <!-- 타이머 다이얼로그 -->
+    <dialog id="dialog-timer" class="card-dialog">
+      <button class="card-dialog-close" onclick="this.closest('dialog').close()" aria-label="닫기">✕</button>
+      <section class="card timer-section">
+        <h2><span class="step">3</span> 집중하기</h2>
+        <button id="pipBtn" class="btn-pip-corner" disabled hidden title="미니 창으로 보기 (PiP)" aria-label="미니 창으로 보기">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="0.6" y="2.6" width="12.8" height="8.8" rx="1.4" stroke="currentColor" stroke-width="1.2"/>
+            <rect x="6.5" y="6.5" width="5.4" height="3.4" rx="0.8" fill="currentColor"/>
+          </svg>
+        </button>
+        <div class="timer-display" id="timerDisplay">25:00</div>
+        <div class="battle-lock-banner" id="battleLockBanner" hidden>
+          <span class="battle-lock-text">⚔️ 배틀 연결됨 — 가챠 후 [배틀 열기] 버튼을 눌러주세요</span>
+          <div class="battle-lock-actions">
+            <button id="battleLockOpenBtn" class="btn-mini" type="button">배틀 열기</button>
+            <button id="battleLockDismissBtn" class="btn-mini btn-mini-ghost" type="button" title="배틀 무시하고 혼자 사용">✕</button>
           </div>
         </div>
-      </div>
-    </section>
-
-    </div><!-- /tab-panel#tab-personal -->
+        <div class="timer-controls">
+          <button id="startBtn" class="btn-timer btn-start" disabled>시작</button>
+          <button id="pauseBtn" class="btn-timer btn-pause" disabled>일시정지</button>
+          <button id="resetBtn" class="btn-timer btn-reset" disabled>리셋</button>
+        </div>
+        <div class="timer-settings">
+          <label class="timer-settings-label">
+            시간 설정:
+            <select id="durationSelect">
+              <option value="10">10초 (테스트)</option>
+              <option value="600">10분</option>
+              <option value="1500" selected>25분 (기본)</option>
+              <option value="2700">45분</option>
+              <option value="3600">60분</option>
+              <option value="custom">직접 입력···</option>
+            </select>
+          </label>
+          <div class="custom-duration" id="customDurationWrap" hidden>
+            <input type="number" id="customHours" min="0" max="23" step="1" placeholder="0">
+            <span>시간</span>
+            <input type="number" id="customMinutes" min="0" max="59" step="1" placeholder="0">
+            <span>분</span>
+          </div>
+        </div>
+        <p id="timerStatus" class="timer-status"></p>
+        <div class="completed-log">
+          <div class="completed-counter">
+            지금까지 <strong id="completedCount">0</strong>번 완료 🍅
+          </div>
+          <button id="battleResultBtn" class="btn-battle-result" hidden>🏆 배틀 결과 보기</button>
+          <div class="capture-row" id="captureRow" hidden>
+            <div class="completion-box">
+              <button id="captureBtn" class="btn-capture">📷 인증샷 첨부</button>
+              <input type="file" id="captureInput" accept="image/*" hidden>
+              <div class="last-capture" id="lastCapture" hidden>
+                <span class="last-capture-label">마지막 인증샷</span>
+                <img id="lastCaptureImg" alt="마지막 인증샷">
+                <button id="removeCaptureBtn" class="btn-remove-capture" title="삭제">✕</button>
+              </div>
+              <div class="note-wrap">
+                <textarea id="completionNote" class="completion-note" placeholder="소감 한 줄 — 작업 메모, 나누고 싶은 말···" rows="2" maxlength="200"></textarea>
+                <button id="noteUploadBtn" class="btn-note-upload" hidden>저장</button>
+              </div>
+              <p class="capture-hint">인증샷과 소감은 새 타이머를 시작할 때까지 볼 수 있어요.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </dialog>
 
     <!-- 탭 패널 : 소셜 -->
     <div class="tab-panel tab-panel-hidden" id="tab-social">
