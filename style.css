@@ -2515,15 +2515,15 @@ dialog.modal input[type="text"]:focus {
 #tab-social::before   { background-position: 50% 40%; }
 #tab-log::before      { background-position: 100% 40%; }
 
-/* PC에서 배경 크기 제한 */
+/* PC: 배경 이미지 중앙 고정, 양옆은 하늘색으로 자연스럽게 이어짐 */
 @media (min-width: 600px) {
   .tab-panel::before {
-    background-size: 1200px auto;
-    background-position-y: 40%;
+    background-size: auto 100%;   /* 높이 기준으로 맞춤 */
+    background-position-y: center;
   }
-  #tab-personal::before { background-position-x: 0px; }
-  #tab-social::before   { background-position-x: -400px; }
-  #tab-log::before      { background-position-x: -800px; }
+  #tab-personal::before { background-position-x: 5%; }
+  #tab-social::before   { background-position-x: 50%; }
+  #tab-log::before      { background-position-x: 82%; }
 }
 
 /* 카드 반투명 처리 — 배경이 비치게 */
