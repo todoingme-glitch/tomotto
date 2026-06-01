@@ -2647,11 +2647,13 @@ dialog.modal input[type="text"]:focus {
 
 /* ── 파노라마 배경 — 컨테이너 안에만 적용 ─────────────── */
 .container {
-  background-image: url('assets/bg-shire.png');
+  background-image: url('assets/bg-shire-PIXEL.png');
   background-repeat: no-repeat;
   background-size: 300% auto;
   background-position: 0% 30%;   /* JS가 탭 전환 시 갱신 */
   border-radius: 0;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 /* 카드 반투명 처리 — 배경이 비치게 */
