@@ -2551,34 +2551,34 @@ dialog.modal input[type="text"]:focus {
   border-radius: 0;
   padding: 0;
   box-shadow: none;
+  position: relative;
 
   font-family: 'Cinzel', 'Georgia', serif;
   color: #3A2810;
 }
 
-/* 래퍼 — Grid로 이미지·콘텐츠 같은 셀에 겹침 */
+/* 래퍼 — 콘텐츠 기준으로 크기 결정, 이미지가 따라옴 */
 .card-dialog-wrapper {
-  display: grid;
-}
-.card-dialog-bg,
-.card-dialog-content {
-  grid-area: 1 / 1;   /* 동일한 그리드 셀 → 자연스럽게 겹침 */
+  position: relative;
 }
 
-/* 양피지 이미지 — 콘텐츠 크기에 맞게 늘어남 */
+/* 콘텐츠 — 래퍼 크기 결정 */
+.card-dialog-content {
+  position: relative;
+  z-index: 1;
+  padding: 44px 52px 52px 52px;
+}
+
+/* 양피지 이미지 — 콘텐츠 크기에 맞게 절대 위치로 꽉 채움 */
 .card-dialog-bg {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: fill;
   display: block;
   pointer-events: none;
-}
-
-/* 콘텐츠 — 이미지 위에 표시 */
-.card-dialog-content {
-  position: relative;
-  z-index: 1;
-  padding: 44px 52px 52px 52px;
+  z-index: 0;
 }
 .card-dialog::backdrop {
   background: rgba(8,4,2,0.72);
