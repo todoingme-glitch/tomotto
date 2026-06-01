@@ -318,103 +318,45 @@
           </div>
 
           <div class="info-section">
-            <p class="info-section-label">📊 점수 기준 (세션당)</p>
-            <div class="info-score-rows">
-              <div class="info-score-row">
-                <span class="info-score-time">기본</span>
-                <span class="info-score-desc">집중한 분(分)만큼 1점씩</span>
-              </div>
-              <div class="info-score-row">
-                <span class="info-score-time muted">5분 미만</span>
-                <span class="info-score-bonus muted">보너스 없음</span>
-              </div>
-              <div class="info-score-row">
-                <span class="info-score-time">5~24분</span>
-                <span class="info-score-bonus">+3점</span>
-              </div>
-              <div class="info-score-row highlight">
-                <span class="info-score-time">25~44분</span>
-                <span class="info-score-bonus">+8점 <span class="info-tag">기본 뽀모도로</span></span>
-              </div>
-              <div class="info-score-row">
-                <span class="info-score-time">45~59분</span>
-                <span class="info-score-bonus">+12점</span>
-              </div>
-              <div class="info-score-row">
-                <span class="info-score-time">60분+</span>
-                <span class="info-score-bonus">+15점</span>
-              </div>
-            </div>
+            <p class="info-section-label">점수 기준 (세션당)</p>
+            <p class="info-base-note">기본: 집중한 분(分)만큼 1점씩 + 아래 보너스</p>
+            <table class="info-score-table">
+              <thead>
+                <tr><th>세션 시간</th><th>보너스</th></tr>
+              </thead>
+              <tbody>
+                <tr class="muted-row"><td>5분 미만</td><td>없음</td></tr>
+                <tr><td>5~24분</td><td>+3점</td></tr>
+                <tr class="highlight-row"><td>25~44분 <span class="info-tag">뽀모도로</span></td><td>+8점</td></tr>
+                <tr><td>45~59분</td><td>+12점</td></tr>
+                <tr><td>60분+</td><td>+15점</td></tr>
+              </tbody>
+            </table>
           </div>
 
           <div class="info-section">
-            <p class="info-section-label">🌱 세션 호칭</p>
-            <div class="info-title-rows">
-              <div class="info-title-row">
-                <span class="info-title-icon">🍅</span>
-                <div><b>방울토마토 러너</b><span class="info-title-cond">평균 10분 미만</span></div>
+            <p class="info-section-label">세션 호칭</p>
+            <div class="info-title-cards">
+              <div class="info-title-card">
+                <span class="info-title-card-icon">🍅</span>
+                <b>방울토마토 러너</b>
+                <span class="info-title-cond">평균 10분 미만</span>
               </div>
-              <div class="info-title-row">
-                <span class="info-title-icon">🌿</span>
-                <div><b>정석 수확러</b><span class="info-title-cond">평균 20~35분</span></div>
+              <div class="info-title-card">
+                <span class="info-title-card-icon">🌿</span>
+                <b>정석 수확러</b>
+                <span class="info-title-cond">평균 20~35분</span>
               </div>
-              <div class="info-title-row">
-                <span class="info-title-icon">⏳</span>
-                <div><b>장기 숙성 토마토</b><span class="info-title-cond">평균 60분 이상</span></div>
+              <div class="info-title-card">
+                <span class="info-title-card-icon">⏳</span>
+                <b>장기 숙성 토마토</b>
+                <span class="info-title-cond">평균 60분+</span>
               </div>
             </div>
           </div>
         </div>
       </dialog>
 
-      <!-- 햇살 안내 모달 -->
-      <dialog id="hamsalInfoDialog" class="lb-info-dialog">
-        <div class="lb-info-dialog-inner">
-          <div class="info-dialog-header">
-            <span class="info-dialog-emoji">☀️</span>
-            <div>
-              <p class="lb-info-title">햇살 재화</p>
-              <p class="info-dialog-sub">집중할수록 햇살이 쌓여요</p>
-            </div>
-            <button id="hamsalInfoCloseBtn" class="info-close-btn" type="button" aria-label="닫기">✕</button>
-          </div>
-
-          <div class="info-section">
-            <p class="info-section-label">🌟 획득 방법</p>
-            <div class="info-score-rows">
-              <div class="info-score-row"><span class="info-score-time">25분 미만</span><span class="info-score-bonus">5 ☀️</span></div>
-              <div class="info-score-row highlight"><span class="info-score-time">25~59분</span><span class="info-score-bonus">10 ☀️ <span class="info-tag">기본 뽀모도로</span></span></div>
-              <div class="info-score-row"><span class="info-score-time">60~89분</span><span class="info-score-bonus">20 ☀️</span></div>
-              <div class="info-score-row"><span class="info-score-time">90분+</span><span class="info-score-bonus">30 ☀️</span></div>
-            </div>
-            <div class="info-score-rows" style="margin-top:8px">
-              <div class="info-score-row"><span class="info-score-time muted">일시정지 없이</span><span class="info-score-bonus">+3 ☀️</span></div>
-              <div class="info-score-row"><span class="info-score-time muted">리롤 없이 바로 시작</span><span class="info-score-bonus">+3 ☀️</span></div>
-              <div class="info-score-row"><span class="info-score-time muted">배틀 완주</span><span class="info-score-bonus">+5 ☀️</span></div>
-              <div class="info-score-row"><span class="info-score-time muted">얼리버드 (새벽 5~8시)</span><span class="info-score-bonus">+5 ☀️</span></div>
-              <div class="info-score-row"><span class="info-score-time muted">미드나잇 (0~2시)</span><span class="info-score-bonus">+5 ☀️</span></div>
-            </div>
-          </div>
-
-          <div class="info-section">
-            <p class="info-section-label">🛒 사용처</p>
-            <div class="info-title-rows">
-              <div class="info-title-row">
-                <span class="info-title-icon">🎰</span>
-                <div><b>가챠 추가 스핀</b><span class="info-title-cond">30 ☀️ 소모</span></div>
-              </div>
-              <div class="info-title-row" style="opacity:0.45">
-                <span class="info-title-icon">🎨</span>
-                <div><b>닉네임 색상</b><span class="info-title-cond">준비 중</span></div>
-              </div>
-              <div class="info-title-row" style="opacity:0.45">
-                <span class="info-title-icon">🏘️</span>
-                <div><b>마을 꾸미기</b><span class="info-title-cond">준비 중</span></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </dialog>
       <div class="lb-period-tabs">
         <button class="lb-period-btn active" data-period="week" type="button">이번 주</button>
         <button class="lb-period-btn" data-period="month" type="button">이번 달</button>
@@ -852,5 +794,64 @@
   <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" crossorigin="anonymous"></script>
 
   <script src="app.js?v=166"></script>
+
+  <!-- 햇살 안내 모달 — body 직속 (탭 패널 밖) -->
+  <dialog id="hamsalInfoDialog" class="lb-info-dialog">
+    <div class="lb-info-dialog-inner">
+      <div class="info-dialog-header">
+        <span class="info-dialog-emoji">☀️</span>
+        <div>
+          <p class="lb-info-title">햇살 재화</p>
+          <p class="info-dialog-sub">집중할수록 햇살이 쌓여요</p>
+        </div>
+        <button id="hamsalInfoCloseBtn" class="info-close-btn" type="button" aria-label="닫기">✕</button>
+      </div>
+
+      <div class="info-section">
+        <p class="info-section-label">획득 방법</p>
+        <p class="info-base-note">기본 지급 + 보너스 합산</p>
+        <table class="info-score-table">
+          <thead><tr><th>세션 시간</th><th>기본</th></tr></thead>
+          <tbody>
+            <tr><td>25분 미만</td><td>5 ☀️</td></tr>
+            <tr class="highlight-row"><td>25~59분 <span class="info-tag">뽀모도로</span></td><td>10 ☀️</td></tr>
+            <tr><td>60~89분</td><td>20 ☀️</td></tr>
+            <tr><td>90분+</td><td>30 ☀️</td></tr>
+          </tbody>
+        </table>
+        <table class="info-score-table" style="margin-top:8px">
+          <thead><tr><th>보너스 조건</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>일시정지 없이 완료</td><td>+3 ☀️</td></tr>
+            <tr><td>리롤 없이 바로 시작</td><td>+3 ☀️</td></tr>
+            <tr><td>배틀 완주</td><td>+5 ☀️</td></tr>
+            <tr><td>얼리버드 (새벽 5~8시)</td><td>+5 ☀️</td></tr>
+            <tr><td>미드나잇 (0~2시)</td><td>+5 ☀️</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="info-section">
+        <p class="info-section-label">사용처</p>
+        <div class="info-title-cards">
+          <div class="info-title-card">
+            <span class="info-title-card-icon">🎰</span>
+            <b>가챠 추가 스핀</b>
+            <span class="info-title-cond">30 ☀️</span>
+          </div>
+          <div class="info-title-card" style="opacity:0.45">
+            <span class="info-title-card-icon">🎨</span>
+            <b>닉네임 색상</b>
+            <span class="info-title-cond">준비 중</span>
+          </div>
+          <div class="info-title-card" style="opacity:0.45">
+            <span class="info-title-card-icon">🏘️</span>
+            <b>마을 꾸미기</b>
+            <span class="info-title-cond">준비 중</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </dialog>
 </body>
 </html>

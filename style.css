@@ -4640,9 +4640,78 @@ dialog.modal input[type="text"]:focus {
   margin-left: 4px;
 }
 
+/* 기본 설명 한 줄 */
+.info-base-note {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0 0 10px;
+}
+
+/* 점수 기준 표 */
+.info-score-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+.info-score-table th {
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 0 10px 6px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.info-score-table th:last-child { text-align: right; }
+.info-score-table td {
+  padding: 7px 10px;
+  color: var(--text);
+  border-bottom: 1px solid var(--border-soft);
+  vertical-align: middle;
+}
+.info-score-table td:last-child {
+  text-align: right;
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.info-score-table tr:last-child td { border-bottom: none; }
+.info-score-table tr.muted-row td { color: var(--text-muted); }
+.info-score-table tr.highlight-row td {
+  background: rgba(217,78,58,0.06);
+}
+.info-score-table tr.highlight-row td:last-child { color: var(--accent); }
+
+/* 호칭 3단 카드 */
+.info-title-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.info-title-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 12px 8px;
+  background: var(--bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  text-align: center;
+  font-size: 0.78rem;
+}
+.info-title-card-icon { font-size: 1.6rem; line-height: 1; }
+.info-title-card b { font-weight: 600; color: var(--text); line-height: 1.3; }
+.info-title-card .info-title-cond {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
 /* 구 스타일 호환 유지 */
 .lb-info-list { display: none; }
 .lb-info-desc { display: none; }
+.info-title-rows { display: none; }
+.info-title-row { display: none; }
 
 /* =====================================================
    v0.1.39 — 인앱 브라우저 (카카오톡 등) 안내 배너
