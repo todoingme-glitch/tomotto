@@ -2738,7 +2738,7 @@ body:has(.container[data-tab="personal"]) .bg-hill {
   100% { transform: translateX(-50%); }
 }
 
-/* 언덕/슬롯머신 — 화면 하단 고정, 위쪽 클리핑으로 로고 겹침 방지 */
+/* 언덕/슬롯머신 — 화면 하단 고정, 누끼 PNG라 클리핑 불필요 */
 .bg-hill {
   position: fixed;
   bottom: 0;
@@ -2746,13 +2746,9 @@ body:has(.container[data-tab="personal"]) .bg-hill {
   transform: translateX(-50%);
   width: 100%;
   max-width: 800px;
-  height: 72vh;
-  overflow: hidden;
   z-index: 2;
 }
 .bg-hill img {
-  position: absolute;
-  bottom: 0;
   width: 100%;
   height: auto;
   display: block;
