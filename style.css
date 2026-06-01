@@ -2796,15 +2796,15 @@ body:has(.container[data-tab="personal"]) .container {
     max-width: none;
   }
   .bg-clouds-inner {
-    width: 420%;        /* 크기 살짝 줄임 */
-    animation-duration: 30s; /* 모바일 구름 빠르게 */
+    width: 420%;
+    animation-duration: 30s;
   }
   .bg-clouds {
-    top: 20vh;          /* 조금 더 위로 */
+    top: 20vh;
     height: 80vh;
   }
   .bg-hill {
-    bottom: 55px;
+    bottom: 75px;
   }
 }
 
