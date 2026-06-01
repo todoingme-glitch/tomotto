@@ -2403,7 +2403,8 @@ dialog.modal input[type="text"]:focus {
 }
 @media (max-width: 480px) {
   .bottom-tab {
-    width: calc(100% - 28px); /* 모바일 컨테이너 padding 14px × 2 = 28px */
+    width: 100%;
+    border-radius: 0;
   }
 }
 
@@ -2724,14 +2725,12 @@ body:has(.container[data-tab="personal"]) .bg-hill {
 .bg-clouds-inner {
   display: flex;
   width: 200%;
-  height: 100%;
   animation: clouds-scroll 40s linear infinite;
 }
 .bg-clouds-inner img {
   width: 50%;
-  height: 100%;
-  object-fit: cover;
-  object-position: top center;
+  height: auto;
+  display: block;
 }
 @keyframes clouds-scroll {
   0%   { transform: translateX(0); }
@@ -2759,6 +2758,19 @@ body:has(.container[data-tab="personal"]) .container {
   background: none;
   position: relative;
   z-index: 3;
+}
+
+/* 모바일 — 배경 레이어 풀 너비 */
+@media (max-width: 480px) {
+  .bg-clouds,
+  .bg-hill {
+    width: 100%;
+    max-width: none;
+  }
+  .bg-clouds-inner img {
+    object-fit: cover;
+    object-position: center top;
+  }
 }
 
 /* 카드 반투명 처리 — 배경이 비치게 */
