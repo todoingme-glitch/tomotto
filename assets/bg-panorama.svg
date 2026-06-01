@@ -1,0 +1,1245 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1170 844" width="1170" height="844">
+  <defs>
+    <!-- Sky gradient -->
+    <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2B9ED8"/>
+      <stop offset="100%" stop-color="#87CEEB"/>
+    </linearGradient>
+
+    <!-- Hill gradient -->
+    <linearGradient id="hillGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5CB338"/>
+      <stop offset="100%" stop-color="#3D8A1E"/>
+    </linearGradient>
+
+    <!-- Darker hill gradient for depth -->
+    <linearGradient id="hillGrad2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4CA028"/>
+      <stop offset="100%" stop-color="#2D6E10"/>
+    </linearGradient>
+
+    <!-- Hobbit hole interior glow -->
+    <radialGradient id="holeGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#F5B84A" stop-opacity="1"/>
+      <stop offset="40%" stop-color="#E8963A" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#8B5E2A" stop-opacity="1"/>
+    </radialGradient>
+
+    <!-- Warm glow outer -->
+    <radialGradient id="glowOuter" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#F5B84A" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#F5B84A" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Slot machine gradient -->
+    <linearGradient id="slotGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#C03020"/>
+      <stop offset="50%" stop-color="#E85040"/>
+      <stop offset="100%" stop-color="#C03020"/>
+    </linearGradient>
+
+    <!-- Tomato gradient -->
+    <radialGradient id="tomatoGrad" cx="35%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#FF6B5B"/>
+      <stop offset="100%" stop-color="#C03020"/>
+    </radialGradient>
+
+    <!-- Small tomato gradient -->
+    <radialGradient id="tomatoGrad2" cx="35%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#FF7060"/>
+      <stop offset="100%" stop-color="#B02010"/>
+    </radialGradient>
+
+    <!-- Stone path gradient -->
+    <linearGradient id="pathGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#C8965A"/>
+      <stop offset="50%" stop-color="#DDA870"/>
+      <stop offset="100%" stop-color="#C8965A"/>
+    </linearGradient>
+
+    <!-- Fortress stone gradient -->
+    <linearGradient id="stoneGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#7A7060"/>
+      <stop offset="50%" stop-color="#9A9080"/>
+      <stop offset="100%" stop-color="#7A7060"/>
+    </linearGradient>
+
+    <!-- Tree foliage gradient -->
+    <radialGradient id="treeGrad" cx="40%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#6DBF3A"/>
+      <stop offset="100%" stop-color="#2D7010"/>
+    </radialGradient>
+
+    <!-- Cloud gradient -->
+    <radialGradient id="cloudGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#E8F4FC"/>
+    </radialGradient>
+
+    <!-- Meadow gradient Panel 1 -->
+    <linearGradient id="meadowGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5CB338"/>
+      <stop offset="100%" stop-color="#4AA028"/>
+    </linearGradient>
+
+    <!-- Clip for Panel 1 -->
+    <clipPath id="panel1Clip">
+      <rect x="0" y="0" width="390" height="844"/>
+    </clipPath>
+
+    <!-- Clip for Panel 2 -->
+    <clipPath id="panel2Clip">
+      <rect x="390" y="0" width="390" height="844"/>
+    </clipPath>
+
+    <!-- Clip for Panel 3 -->
+    <clipPath id="panel3Clip">
+      <rect x="780" y="0" width="390" height="844"/>
+    </clipPath>
+
+    <!-- Clip for hill (full width) -->
+    <clipPath id="hillClip">
+      <path d="M0,700 C150,680 300,600 500,480 C650,380 800,280 1000,240 C1050,228 1100,215 1170,205 L1170,844 L0,844 Z"/>
+    </clipPath>
+
+    <!-- Hobbit hole door clip -->
+    <clipPath id="doorClip">
+      <ellipse cx="940" cy="580" rx="85" ry="100"/>
+    </clipPath>
+
+    <!-- Small window clip -->
+    <clipPath id="windowClip">
+      <circle cx="1080" cy="530" r="28"/>
+    </clipPath>
+
+    <!-- Grass texture overlay -->
+    <pattern id="grassPattern" x="0" y="0" width="20" height="10" patternUnits="userSpaceOnUse">
+      <path d="M0,10 Q5,0 10,10" fill="none" stroke="#4AA028" stroke-width="0.5" opacity="0.3"/>
+      <path d="M10,10 Q15,2 20,10" fill="none" stroke="#4AA028" stroke-width="0.5" opacity="0.3"/>
+    </pattern>
+
+    <!-- Bark texture -->
+    <pattern id="barkPattern" x="0" y="0" width="8" height="16" patternUnits="userSpaceOnUse">
+      <rect width="8" height="16" fill="#6B4A28"/>
+      <path d="M0,4 Q4,2 8,4" fill="none" stroke="#4A3010" stroke-width="0.5" opacity="0.5"/>
+      <path d="M0,10 Q4,8 8,10" fill="none" stroke="#4A3010" stroke-width="0.5" opacity="0.5"/>
+    </pattern>
+
+    <!-- Interior room gradient -->
+    <linearGradient id="roomGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#C07A30"/>
+      <stop offset="100%" stop-color="#8B5020"/>
+    </linearGradient>
+
+    <!-- Bookshelf wood gradient -->
+    <linearGradient id="shelfGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#A06830"/>
+      <stop offset="100%" stop-color="#7A4C18"/>
+    </linearGradient>
+
+    <!-- Sun gradient (panel 1) -->
+    <radialGradient id="sunGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFF0A0"/>
+      <stop offset="70%" stop-color="#FFD040"/>
+      <stop offset="100%" stop-color="#FFB820" stop-opacity="0.5"/>
+    </radialGradient>
+
+    <!-- Slot machine screen gradient -->
+    <linearGradient id="screenGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1A1A2E"/>
+      <stop offset="100%" stop-color="#16213E"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ============================================================ -->
+  <!-- BACKGROUND SKY (full width) -->
+  <!-- ============================================================ -->
+  <rect x="0" y="0" width="1170" height="844" fill="url(#skyGrad)"/>
+
+  <!-- Sun (Panel 1 area) -->
+  <circle cx="80" cy="120" r="45" fill="url(#sunGrad)" opacity="0.9"/>
+  <circle cx="80" cy="120" r="55" fill="#FFD040" opacity="0.15"/>
+  <circle cx="80" cy="120" r="65" fill="#FFD040" opacity="0.08"/>
+
+  <!-- ============================================================ -->
+  <!-- CLOUDS -->
+  <!-- ============================================================ -->
+  <!-- Cloud 1 (Panel 1, left) -->
+  <g opacity="0.95">
+    <ellipse cx="185" cy="130" rx="70" ry="32" fill="white"/>
+    <ellipse cx="145" cy="142" rx="45" ry="26" fill="white"/>
+    <ellipse cx="220" cy="143" rx="42" ry="24" fill="white"/>
+    <ellipse cx="175" cy="118" rx="38" ry="28" fill="white"/>
+    <ellipse cx="205" cy="120" rx="30" ry="24" fill="white"/>
+    <!-- Cloud shadow -->
+    <ellipse cx="185" cy="158" rx="65" ry="12" fill="#D0E8F8" opacity="0.4"/>
+  </g>
+
+  <!-- Cloud 2 (Panel 1, right) -->
+  <g opacity="0.9">
+    <ellipse cx="340" cy="95" rx="52" ry="24" fill="white"/>
+    <ellipse cx="310" cy="105" rx="34" ry="20" fill="white"/>
+    <ellipse cx="365" cy="106" rx="30" ry="18" fill="white"/>
+    <ellipse cx="335" cy="84" rx="28" ry="22" fill="white"/>
+  </g>
+
+  <!-- Cloud 3 (Panel 2, left area) -->
+  <g opacity="0.85">
+    <ellipse cx="520" cy="78" rx="60" ry="26" fill="white"/>
+    <ellipse cx="485" cy="90" rx="40" ry="22" fill="white"/>
+    <ellipse cx="552" cy="91" rx="38" ry="20" fill="white"/>
+    <ellipse cx="515" cy="67" rx="33" ry="26" fill="white"/>
+    <ellipse cx="545" cy="70" rx="26" ry="20" fill="white"/>
+  </g>
+
+  <!-- Cloud 4 (Panel 2/3 border) -->
+  <g opacity="0.8">
+    <ellipse cx="760" cy="60" rx="55" ry="22" fill="white"/>
+    <ellipse cx="728" cy="72" rx="37" ry="18" fill="white"/>
+    <ellipse cx="788" cy="73" rx="34" ry="17" fill="white"/>
+    <ellipse cx="758" cy="50" rx="30" ry="22" fill="white"/>
+  </g>
+
+  <!-- Cloud 5 (Panel 3, high) -->
+  <g opacity="0.75">
+    <ellipse cx="1050" cy="55" rx="62" ry="25" fill="white"/>
+    <ellipse cx="1015" cy="67" rx="42" ry="20" fill="white"/>
+    <ellipse cx="1082" cy="68" rx="38" ry="19" fill="white"/>
+    <ellipse cx="1048" cy="44" rx="35" ry="26" fill="white"/>
+  </g>
+
+  <!-- Small puff clouds -->
+  <g opacity="0.7">
+    <ellipse cx="430" cy="155" rx="28" ry="13" fill="white"/>
+    <ellipse cx="412" cy="162" rx="18" ry="11" fill="white"/>
+    <ellipse cx="446" cy="163" rx="16" ry="10" fill="white"/>
+    <ellipse cx="430" cy="148" rx="16" ry="13" fill="white"/>
+  </g>
+
+  <g opacity="0.65">
+    <ellipse cx="650" cy="110" rx="34" ry="15" fill="white"/>
+    <ellipse cx="628" cy="119" rx="22" ry="12" fill="white"/>
+    <ellipse cx="668" cy="120" rx="20" ry="11" fill="white"/>
+    <ellipse cx="648" cy="100" rx="19" ry="15" fill="white"/>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- MAIN HILL (large bezier path, covers panels 2 & 3 mostly) -->
+  <!-- ============================================================ -->
+  <!-- Background hill layer (darker, behind) -->
+  <path d="M0,750 C100,730 200,700 350,650 C480,600 580,530 720,450 C850,375 950,310 1100,260 C1130,250 1155,242 1170,238 L1170,844 L0,844 Z"
+        fill="url(#hillGrad2)" opacity="0.6"/>
+
+  <!-- Main hill -->
+  <path d="M0,700 C150,680 300,600 500,480 C650,380 800,280 1000,240 C1050,228 1100,215 1170,205 L1170,844 L0,844 Z"
+        fill="url(#hillGrad)"/>
+
+  <!-- Hill grass texture overlay -->
+  <path d="M0,700 C150,680 300,600 500,480 C650,380 800,280 1000,240 C1050,228 1100,215 1170,205 L1170,844 L0,844 Z"
+        fill="url(#grassPattern)" opacity="0.4"/>
+
+  <!-- Hill highlight (top edge lighter) -->
+  <path d="M0,700 C150,680 300,600 500,480 C650,380 800,280 1000,240 C1050,228 1100,215 1170,205"
+        fill="none" stroke="#7DD848" stroke-width="6" opacity="0.5"/>
+
+  <!-- ============================================================ -->
+  <!-- PANEL 1: MEADOW + SLOT MACHINE -->
+  <!-- ============================================================ -->
+
+  <!-- Flat green meadow (Panel 1, below hill start) -->
+  <rect x="0" y="695" width="420" height="149" fill="url(#meadowGrad)"/>
+  <!-- Meadow grass bumps -->
+  <path d="M0,705 Q20,698 40,705 Q60,712 80,705 Q100,698 120,705 Q140,712 160,705 Q180,698 200,705 Q220,712 240,705 Q260,698 280,705 Q300,712 320,705 Q340,698 360,705 Q380,712 400,705"
+        fill="none" stroke="#7DD848" stroke-width="3" opacity="0.6"/>
+
+  <!-- Panel 1 meadow detail - small flowers -->
+  <g fill="#FFD040" opacity="0.7">
+    <circle cx="50" cy="710" r="3"/>
+    <circle cx="90" cy="716" r="2.5"/>
+    <circle cx="140" cy="708" r="3"/>
+    <circle cx="200" cy="714" r="2.5"/>
+    <circle cx="250" cy="709" r="3"/>
+    <circle cx="310" cy="715" r="2.5"/>
+    <circle cx="370" cy="710" r="3"/>
+  </g>
+  <g fill="white" opacity="0.5">
+    <circle cx="70" cy="712" r="2"/>
+    <circle cx="170" cy="712" r="2"/>
+    <circle cx="230" cy="718" r="2"/>
+    <circle cx="290" cy="712" r="2"/>
+    <circle cx="350" cy="716" r="2"/>
+  </g>
+
+  <!-- === SLOT MACHINE === -->
+  <!-- Base / pedestal -->
+  <rect x="148" y="660" width="94" height="50" rx="6" fill="#A06828"/>
+  <rect x="152" y="664" width="86" height="44" rx="4" fill="#B87830"/>
+  <!-- Leg left -->
+  <rect x="155" y="700" width="18" height="44" rx="4" fill="#8B5A20"/>
+  <!-- Leg right -->
+  <rect x="217" y="700" width="18" height="44" rx="4" fill="#8B5A20"/>
+
+  <!-- Machine body (tomato red) -->
+  <rect x="138" y="500" width="114" height="170" rx="18" fill="url(#slotGrad)"/>
+  <!-- Body highlight -->
+  <rect x="142" y="504" width="50" height="162" rx="14" fill="#E85848" opacity="0.3"/>
+  <!-- Body shadow -->
+  <rect x="210" y="504" width="38" height="162" rx="8" fill="#901820" opacity="0.3"/>
+
+  <!-- Machine top (dome) -->
+  <ellipse cx="195" cy="502" rx="58" ry="28" fill="#D04030"/>
+  <ellipse cx="195" cy="497" rx="52" ry="22" fill="#E05040"/>
+  <!-- Tomato leaves on top -->
+  <g fill="#3D8A1E">
+    <path d="M195,478 Q188,460 180,462 Q185,472 182,480 Z"/>
+    <path d="M195,478 Q202,460 210,462 Q205,472 208,480 Z"/>
+    <path d="M195,478 Q195,458 200,455 Q199,467 197,478 Z"/>
+    <path d="M195,478 Q182,462 175,468 Q182,475 185,480 Z"/>
+    <path d="M195,478 Q208,462 215,468 Q208,475 205,480 Z"/>
+  </g>
+  <!-- Tomato stem -->
+  <rect x="193" y="455" width="4" height="12" rx="2" fill="#2D6E10"/>
+
+  <!-- Screen area -->
+  <rect x="152" y="530" width="86" height="60" rx="8" fill="url(#screenGrad)"/>
+  <rect x="154" y="532" width="82" height="56" rx="6" fill="#0A1628"/>
+  <!-- Screen glow effect -->
+  <rect x="154" y="532" width="82" height="56" rx="6" fill="#F5B84A" opacity="0.08"/>
+  <!-- Screen content - spinning reels -->
+  <!-- Reel dividers -->
+  <line x1="180" y1="534" x2="180" y2="586" stroke="#1A2A40" stroke-width="2"/>
+  <line x1="210" y1="534" x2="210" y2="586" stroke="#1A2A40" stroke-width="2"/>
+  <!-- Reel 1 - tomato emoji -->
+  <text x="167" y="566" font-size="18" text-anchor="middle" font-family="sans-serif">🍅</text>
+  <!-- Reel 2 - tomato -->
+  <text x="195" y="566" font-size="18" text-anchor="middle" font-family="sans-serif">🍅</text>
+  <!-- Reel 3 - tomato -->
+  <text x="223" y="566" font-size="18" text-anchor="middle" font-family="sans-serif">⭐</text>
+  <!-- Win line -->
+  <line x1="154" y1="560" x2="236" y2="560" stroke="#FFD040" stroke-width="1.5" opacity="0.6" stroke-dasharray="3,2"/>
+
+  <!-- Control panel area -->
+  <rect x="152" y="595" width="86" height="32" rx="6" fill="#901820"/>
+  <!-- Coin slot -->
+  <rect x="185" y="600" width="20" height="5" rx="2.5" fill="#2A1A08"/>
+  <!-- Button -->
+  <ellipse cx="218" cy="612" rx="10" ry="7" fill="#FFD040"/>
+  <ellipse cx="218" cy="610" rx="8" ry="5" fill="#FFE060"/>
+  <!-- SPIN label -->
+  <text x="218" y="614" font-size="5" text-anchor="middle" font-family="sans-serif" font-weight="bold" fill="#8B5A00">SPIN</text>
+
+  <!-- Lever arm -->
+  <rect x="252" y="520" width="8" height="70" rx="4" fill="#C8965A"/>
+  <ellipse cx="256" cy="515" rx="12" ry="12" fill="#D94E3A"/>
+  <ellipse cx="256" cy="511" rx="9" ry="9" fill="#E85848"/>
+
+  <!-- Coin tray -->
+  <path d="M152,665 Q195,672 238,665" fill="none" stroke="#8B5A20" stroke-width="4" stroke-linecap="round"/>
+  <ellipse cx="195" cy="666" rx="42" ry="6" fill="#6B3A10" opacity="0.5"/>
+
+  <!-- Decorative stars on machine -->
+  <g fill="#FFD040" opacity="0.8">
+    <polygon points="148,518 150,524 156,524 151,528 153,534 148,530 143,534 145,528 140,524 146,524" transform="scale(0.6) translate(95,300)"/>
+    <polygon points="230,540 232,546 238,546 233,550 235,556 230,552 225,556 227,550 222,546 228,546" transform="scale(0.6) translate(145,330)"/>
+  </g>
+
+  <!-- Small decorative lights on machine -->
+  <g opacity="0.9">
+    <circle cx="145" cy="545" r="4" fill="#FFD040"/>
+    <circle cx="245" cy="545" r="4" fill="#FF6040"/>
+    <circle cx="145" cy="570" r="4" fill="#FF6040"/>
+    <circle cx="245" cy="570" r="4" fill="#FFD040"/>
+    <circle cx="145" cy="595" r="4" fill="#FFD040"/>
+    <circle cx="245" cy="595" r="4" fill="#FF6040"/>
+  </g>
+
+  <!-- Sign above slot machine -->
+  <rect x="148" y="458" width="94" height="26" rx="5" fill="#8B5A2A"/>
+  <rect x="150" y="460" width="90" height="22" rx="4" fill="#A06830"/>
+  <text x="195" y="475" font-size="9" text-anchor="middle" font-family="sans-serif" font-weight="bold" fill="#FFE080">가챠 뽑기</text>
+
+  <!-- ============================================================ -->
+  <!-- PANEL 2: HILLSIDE + PLANTS + FORTRESS -->
+  <!-- ============================================================ -->
+
+  <!-- Stone path winding up the hill -->
+  <!-- Path: starts bottom-left of panel 2, winds up to right -->
+  <path d="M390,820 C420,780 440,740 460,700 C480,660 490,620 510,580 C530,540 550,510 570,480 C590,455 610,430 640,410"
+        fill="none" stroke="url(#pathGrad)" stroke-width="22" stroke-linecap="round"/>
+  <!-- Path edges -->
+  <path d="M390,820 C420,780 440,740 460,700 C480,660 490,620 510,580 C530,540 550,510 570,480 C590,455 610,430 640,410"
+        fill="none" stroke="#B07840" stroke-width="26" stroke-linecap="round" opacity="0.4"/>
+  <!-- Path stones texture -->
+  <path d="M390,820 C420,780 440,740 460,700 C480,660 490,620 510,580 C530,540 550,510 570,480 C590,455 610,430 640,410"
+        fill="none" stroke="#E0B880" stroke-width="2" stroke-linecap="round" stroke-dasharray="12,10" opacity="0.6"/>
+
+  <!-- Individual stepping stones -->
+  <g fill="#C8965A" stroke="#B07840" stroke-width="1">
+    <ellipse cx="405" cy="808" rx="12" ry="7" transform="rotate(-10,405,808)"/>
+    <ellipse cx="425" cy="790" rx="11" ry="6" transform="rotate(-15,425,790)"/>
+    <ellipse cx="442" cy="768" rx="12" ry="6" transform="rotate(-20,442,768)"/>
+    <ellipse cx="456" cy="745" rx="10" ry="6" transform="rotate(-25,456,745)"/>
+    <ellipse cx="468" cy="720" rx="11" ry="6" transform="rotate(-30,468,720)"/>
+    <ellipse cx="480" cy="694" rx="10" ry="5" transform="rotate(-32,480,694)"/>
+    <ellipse cx="494" cy="666" rx="11" ry="6" transform="rotate(-35,494,666)"/>
+    <ellipse cx="508" cy="640" rx="10" ry="5" transform="rotate(-38,508,640)"/>
+    <ellipse cx="520" cy="614" rx="11" ry="6" transform="rotate(-38,520,614)"/>
+    <ellipse cx="534" cy="586" rx="10" ry="5" transform="rotate(-40,534,586)"/>
+    <ellipse cx="548" cy="558" rx="11" ry="6" transform="rotate(-40,548,558)"/>
+    <ellipse cx="560" cy="532" rx="10" ry="5" transform="rotate(-42,560,532)"/>
+    <ellipse cx="572" cy="506" rx="11" ry="6" transform="rotate(-42,572,506)"/>
+    <ellipse cx="584" cy="480" rx="10" ry="5" transform="rotate(-44,584,480)"/>
+    <ellipse cx="597" cy="458" rx="10" ry="5" transform="rotate(-44,597,458)"/>
+    <ellipse cx="612" cy="438" rx="11" ry="5" transform="rotate(-45,612,438)"/>
+    <ellipse cx="628" cy="420" rx="10" ry="5" transform="rotate(-45,628,420)"/>
+  </g>
+
+  <!-- === TOMATO VINE PLANTS (1:1 배틀) === -->
+  <!-- Plant 1 (left of pair) -->
+  <!-- Main stem -->
+  <path d="M470,720 C468,690 465,660 468,630 C470,610 472,590 470,570 C469,555 468,540 470,525"
+        fill="none" stroke="#2D6E10" stroke-width="5" stroke-linecap="round"/>
+  <!-- Side branches left -->
+  <path d="M470,660 C455,650 440,645 430,640" fill="none" stroke="#2D6E10" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M470,610 C455,600 442,595 433,588" fill="none" stroke="#2D6E10" stroke-width="3" stroke-linecap="round"/>
+  <path d="M470,560 C457,550 446,545 437,540" fill="none" stroke="#2D6E10" stroke-width="3" stroke-linecap="round"/>
+  <!-- Side branches right -->
+  <path d="M470,640 C482,630 494,625 502,620" fill="none" stroke="#2D6E10" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M470,590 C482,580 494,575 503,568" fill="none" stroke="#2D6E10" stroke-width="3" stroke-linecap="round"/>
+  <path d="M470,545 C481,535 492,530 500,524" fill="none" stroke="#2D6E10" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Tomatoes on Plant 1 -->
+  <!-- Tomato leaves (calyx) and fruit -->
+  <g>
+    <!-- Bottom left branch tomato -->
+    <circle cx="428" cy="636" r="14" fill="url(#tomatoGrad2)"/>
+    <path d="M428,624 Q424,616 420,618 Q424,624 422,628 Z" fill="#3D8A1E"/>
+    <path d="M428,624 Q432,616 436,618 Q432,624 434,628 Z" fill="#3D8A1E"/>
+    <path d="M428,624 Q428,615 430,613 Q429,620 428,624 Z" fill="#3D8A1E"/>
+    <!-- Highlight -->
+    <ellipse cx="422" cy="630" rx="4" ry="5" fill="white" opacity="0.25"/>
+  </g>
+  <g>
+    <!-- Mid left branch tomato -->
+    <circle cx="431" cy="583" r="12" fill="url(#tomatoGrad2)"/>
+    <path d="M431,572 Q427,564 424,566 Q428,572 426,576 Z" fill="#3D8A1E"/>
+    <path d="M431,572 Q435,564 438,566 Q434,572 436,576 Z" fill="#3D8A1E"/>
+    <ellipse cx="426" cy="576" rx="3.5" ry="4.5" fill="white" opacity="0.25"/>
+  </g>
+  <g>
+    <!-- Top left branch tomato -->
+    <circle cx="435" cy="535" r="11" fill="url(#tomatoGrad2)"/>
+    <path d="M435,525 Q431,517 428,519 Q432,525 430,529 Z" fill="#3D8A1E"/>
+    <path d="M435,525 Q439,517 442,519 Q438,525 440,529 Z" fill="#3D8A1E"/>
+    <ellipse cx="430" cy="529" rx="3" ry="4" fill="white" opacity="0.25"/>
+  </g>
+  <g>
+    <!-- Right branch tomatoes -->
+    <circle cx="504" cy="616" r="13" fill="url(#tomatoGrad2)"/>
+    <path d="M504,604 Q500,596 497,598 Q501,604 499,608 Z" fill="#3D8A1E"/>
+    <path d="M504,604 Q508,596 511,598 Q507,604 509,608 Z" fill="#3D8A1E"/>
+    <ellipse cx="499" cy="609" rx="3.5" ry="4.5" fill="white" opacity="0.25"/>
+  </g>
+  <g>
+    <circle cx="505" cy="563" r="12" fill="url(#tomatoGrad2)"/>
+    <path d="M505,552 Q501,544 498,546 Q502,552 500,556 Z" fill="#3D8A1E"/>
+    <path d="M505,552 Q509,544 512,546 Q508,552 510,556 Z" fill="#3D8A1E"/>
+    <ellipse cx="500" cy="556" rx="3" ry="4" fill="white" opacity="0.25"/>
+  </g>
+  <g>
+    <circle cx="502" cy="519" r="11" fill="url(#tomatoGrad2)"/>
+    <path d="M502,509 Q498,501 495,503 Q499,509 497,513 Z" fill="#3D8A1E"/>
+    <path d="M502,509 Q506,501 509,503 Q505,509 507,513 Z" fill="#3D8A1E"/>
+    <ellipse cx="497" cy="513" rx="3" ry="4" fill="white" opacity="0.25"/>
+  </g>
+  <!-- Top tomato on Plant 1 -->
+  <g>
+    <circle cx="470" cy="520" r="15" fill="url(#tomatoGrad)"/>
+    <path d="M470,506 Q465,497 460,499 Q465,507 462,513 Z" fill="#3D8A1E"/>
+    <path d="M470,506 Q475,497 480,499 Q475,507 478,513 Z" fill="#3D8A1E"/>
+    <path d="M470,506 Q470,496 473,493 Q471,502 470,506 Z" fill="#3D8A1E"/>
+    <ellipse cx="464" cy="513" rx="4.5" ry="5.5" fill="white" opacity="0.3"/>
+  </g>
+
+  <!-- Plant 1 leaves -->
+  <g fill="#4AA028" opacity="0.9">
+    <ellipse cx="458" cy="645" rx="14" ry="8" transform="rotate(-30,458,645)"/>
+    <ellipse cx="482" cy="638" rx="12" ry="7" transform="rotate(25,482,638)"/>
+    <ellipse cx="456" cy="598" rx="12" ry="7" transform="rotate(-35,456,598)"/>
+    <ellipse cx="484" cy="592" rx="11" ry="6" transform="rotate(28,484,592)"/>
+    <ellipse cx="458" cy="550" rx="11" ry="6" transform="rotate(-32,458,550)"/>
+    <ellipse cx="482" cy="545" rx="10" ry="6" transform="rotate(25,482,545)"/>
+  </g>
+
+  <!-- Plant 2 (right of pair) - slightly taller -->
+  <path d="M535,720 C533,688 530,655 532,622 C534,600 536,578 534,555 C532,538 530,520 532,502 C533,488 534,474 535,462"
+        fill="none" stroke="#2D6E10" stroke-width="5" stroke-linecap="round"/>
+  <!-- Side branches -->
+  <path d="M534,655 C520,644 507,638 498,632" fill="none" stroke="#2D6E10" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M534,605 C520,594 508,588 499,581" fill="none" stroke="#2D6E10" stroke-width="3" stroke-linecap="round"/>
+  <path d="M534,555 C521,544 510,538 501,531" fill="none" stroke="#2D6E10" stroke-width="3" stroke-linecap="round"/>
+  <path d="M534,635 C548,624 560,618 568,612" fill="none" stroke="#2D6E10" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M534,585 C548,574 560,568 569,562" fill="none" stroke="#2D6E10" stroke-width="3" stroke-linecap="round"/>
+  <path d="M534,538 C547,527 558,520 567,514" fill="none" stroke="#2D6E10" stroke-width="3" stroke-linecap="round"/>
+  <path d="M534,492 C547,481 558,475 567,469" fill="none" stroke="#2D6E10" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Tomatoes on Plant 2 -->
+  <g>
+    <circle cx="495" cy="628" r="13" fill="url(#tomatoGrad2)"/>
+    <path d="M495,616 Q491,608 488,610 Q492,616 490,620 Z" fill="#3D8A1E"/>
+    <path d="M495,616 Q499,608 502,610 Q498,616 500,620 Z" fill="#3D8A1E"/>
+    <ellipse cx="490" cy="621" rx="3.5" ry="4.5" fill="white" opacity="0.25"/>
+  </g>
+  <g>
+    <circle cx="497" cy="576" r="12" fill="url(#tomatoGrad2)"/>
+    <path d="M497,565 Q493,557 490,559 Q494,565 492,569 Z" fill="#3D8A1E"/>
+    <path d="M497,565 Q501,557 504,559 Q500,565 502,569 Z" fill="#3D8A1E"/>
+    <ellipse cx="492" cy="569" rx="3" ry="4" fill="white" opacity="0.25"/>
+  </g>
+  <g>
+    <circle cx="499" cy="526" r="11" fill="url(#tomatoGrad2)"/>
+    <path d="M499,516 Q495,508 492,510 Q496,516 494,520 Z" fill="#3D8A1E"/>
+    <path d="M499,516 Q503,508 506,510 Q502,516 504,520 Z" fill="#3D8A1E"/>
+    <ellipse cx="494" cy="520" rx="3" ry="4" fill="white" opacity="0.25"/>
+  </g>
+  <g>
+    <circle cx="570" cy="608" r="14" fill="url(#tomatoGrad2)"/>
+    <path d="M570,596 Q566,588 563,590 Q567,596 565,600 Z" fill="#3D8A1E"/>
+    <path d="M570,596 Q574,588 577,590 Q573,596 575,600 Z" fill="#3D8A1E"/>
+    <ellipse cx="565" cy="601" rx="3.5" ry="4.5" fill="white" opacity="0.25"/>
+  </g>
+  <g>
+    <circle cx="571" cy="557" r="12" fill="url(#tomatoGrad2)"/>
+    <path d="M571,546 Q567,538 564,540 Q568,546 566,550 Z" fill="#3D8A1E"/>
+    <path d="M571,546 Q575,538 578,540 Q574,546 576,550 Z" fill="#3D8A1E"/>
+    <ellipse cx="566" cy="550" rx="3" ry="4" fill="white" opacity="0.25"/>
+  </g>
+  <g>
+    <circle cx="569" cy="509" r="11" fill="url(#tomatoGrad2)"/>
+    <path d="M569,499 Q565,491 562,493 Q566,499 564,503 Z" fill="#3D8A1E"/>
+    <path d="M569,499 Q573,491 576,493 Q572,499 574,503 Z" fill="#3D8A1E"/>
+    <ellipse cx="564" cy="503" rx="3" ry="4" fill="white" opacity="0.25"/>
+  </g>
+  <g>
+    <circle cx="568" cy="464" r="10" fill="url(#tomatoGrad2)"/>
+    <path d="M568,455 Q564,447 561,449 Q565,455 563,459 Z" fill="#3D8A1E"/>
+    <path d="M568,455 Q572,447 575,449 Q571,455 573,459 Z" fill="#3D8A1E"/>
+    <ellipse cx="563" cy="459" rx="2.5" ry="3.5" fill="white" opacity="0.25"/>
+  </g>
+  <!-- Top tomato on Plant 2 -->
+  <g>
+    <circle cx="535" cy="456" r="16" fill="url(#tomatoGrad)"/>
+    <path d="M535,441 Q530,432 524,434 Q530,442 527,448 Z" fill="#3D8A1E"/>
+    <path d="M535,441 Q540,432 546,434 Q540,442 543,448 Z" fill="#3D8A1E"/>
+    <path d="M535,441 Q535,430 538,427 Q536,438 535,441 Z" fill="#3D8A1E"/>
+    <ellipse cx="529" cy="449" rx="5" ry="6" fill="white" opacity="0.3"/>
+  </g>
+
+  <!-- Leaves on Plant 2 -->
+  <g fill="#4AA028" opacity="0.9">
+    <ellipse cx="522" cy="645" rx="14" ry="8" transform="rotate(-28,522,645)"/>
+    <ellipse cx="547" cy="638" rx="12" ry="7" transform="rotate(22,547,638)"/>
+    <ellipse cx="520" cy="596" rx="12" ry="7" transform="rotate(-33,520,596)"/>
+    <ellipse cx="548" cy="590" rx="11" ry="6" transform="rotate(26,548,590)"/>
+    <ellipse cx="521" cy="546" rx="11" ry="6" transform="rotate(-30,521,546)"/>
+    <ellipse cx="548" cy="540" rx="10" ry="6" transform="rotate(23,548,540)"/>
+    <ellipse cx="522" cy="498" rx="10" ry="6" transform="rotate(-28,522,498)"/>
+    <ellipse cx="547" cy="492" rx="9" ry="5" transform="rotate(20,547,492)"/>
+  </g>
+
+  <!-- 1:1 배틀 Sign (between plants) -->
+  <!-- Sign post -->
+  <rect x="499" y="558" width="5" height="80" fill="#8B5A2A"/>
+  <!-- Sign board -->
+  <rect x="476" y="528" width="56" height="32" rx="5" fill="#F5DEB3"/>
+  <rect x="478" y="530" width="52" height="28" rx="4" fill="#FAEBD7"/>
+  <!-- Sign border -->
+  <rect x="476" y="528" width="56" height="32" rx="5" fill="none" stroke="#8B5A2A" stroke-width="2"/>
+  <!-- Sign text -->
+  <text x="503" y="543" font-size="8" text-anchor="middle" font-family="sans-serif" font-weight="bold" fill="#C03020">⚔ 1:1</text>
+  <text x="503" y="554" font-size="7.5" text-anchor="middle" font-family="sans-serif" font-weight="bold" fill="#C03020">배틀</text>
+
+  <!-- === TALL CHERRY TOMATO PLANT (공개 배틀방) === -->
+  <!-- Main tall stem -->
+  <path d="M625,720 C622,685 620,645 618,610 C616,578 614,545 616,515 C618,490 620,465 618,438 C616,415 614,395 616,372 C617,355 618,340 620,325"
+        fill="none" stroke="#2D6E10" stroke-width="6" stroke-linecap="round"/>
+  <!-- Branch structure -->
+  <path d="M617,610 C600,598 585,592 572,586" fill="none" stroke="#2D6E10" stroke-width="4" stroke-linecap="round"/>
+  <path d="M617,560 C600,548 585,542 572,536" fill="none" stroke="#2D6E10" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M617,510 C600,498 584,492 571,486" fill="none" stroke="#2D6E10" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M617,460 C600,448 584,442 570,436" fill="none" stroke="#2D6E10" stroke-width="3" stroke-linecap="round"/>
+  <path d="M617,410 C600,398 584,392 570,386" fill="none" stroke="#2D6E10" stroke-width="3" stroke-linecap="round"/>
+  <path d="M617,365 C600,353 584,347 570,341" fill="none" stroke="#2D6E10" stroke-width="2.5" stroke-linecap="round"/>
+
+  <path d="M617,590 C634,578 648,572 660,566" fill="none" stroke="#2D6E10" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M617,538 C634,526 648,520 660,514" fill="none" stroke="#2D6E10" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M617,488 C634,476 648,470 660,464" fill="none" stroke="#2D6E10" stroke-width="3" stroke-linecap="round"/>
+  <path d="M617,440 C634,428 648,422 660,416" fill="none" stroke="#2D6E10" stroke-width="3" stroke-linecap="round"/>
+  <path d="M617,392 C634,380 648,374 660,368" fill="none" stroke="#2D6E10" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M617,348 C634,336 648,330 660,324" fill="none" stroke="#2D6E10" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Cherry tomato clusters (small tomatoes) -->
+  <!-- Each cluster has 3-4 small tomatoes -->
+  <!-- Left branch clusters -->
+  <g>
+    <circle cx="570" cy="582" r="9" fill="url(#tomatoGrad2)"/>
+    <circle cx="558" cy="576" r="8" fill="url(#tomatoGrad2)"/>
+    <circle cx="562" cy="590" r="8" fill="url(#tomatoGrad2)"/>
+    <path d="M570,574 Q568,568 565,570 Q568,574 567,578 Z" fill="#3D8A1E"/>
+    <path d="M558,568 Q556,562 553,564 Q556,568 555,572 Z" fill="#3D8A1E"/>
+  </g>
+  <g>
+    <circle cx="570" cy="532" r="9" fill="url(#tomatoGrad2)"/>
+    <circle cx="558" cy="526" r="8" fill="url(#tomatoGrad2)"/>
+    <circle cx="563" cy="540" r="7" fill="url(#tomatoGrad2)"/>
+    <path d="M570,524 Q568,518 565,520 Q568,524 567,528 Z" fill="#3D8A1E"/>
+    <path d="M558,518 Q556,512 553,514 Q556,518 555,522 Z" fill="#3D8A1E"/>
+  </g>
+  <g>
+    <circle cx="569" cy="482" r="9" fill="url(#tomatoGrad2)"/>
+    <circle cx="557" cy="476" r="8" fill="url(#tomatoGrad2)"/>
+    <circle cx="561" cy="490" r="7" fill="url(#tomatoGrad2)"/>
+    <path d="M569,474 Q567,468 564,470 Q567,474 566,478 Z" fill="#3D8A1E"/>
+  </g>
+  <g>
+    <circle cx="568" cy="432" r="8" fill="url(#tomatoGrad2)"/>
+    <circle cx="556" cy="426" r="7" fill="url(#tomatoGrad2)"/>
+    <circle cx="560" cy="440" r="7" fill="url(#tomatoGrad2)"/>
+  </g>
+  <g>
+    <circle cx="568" cy="382" r="8" fill="url(#tomatoGrad2)"/>
+    <circle cx="556" cy="376" r="7" fill="url(#tomatoGrad2)"/>
+    <circle cx="561" cy="390" r="6" fill="url(#tomatoGrad2)"/>
+  </g>
+  <g>
+    <circle cx="568" cy="337" r="8" fill="url(#tomatoGrad2)"/>
+    <circle cx="556" cy="331" r="7" fill="url(#tomatoGrad2)"/>
+  </g>
+
+  <!-- Right branch clusters -->
+  <g>
+    <circle cx="662" cy="562" r="9" fill="url(#tomatoGrad2)"/>
+    <circle cx="674" cy="556" r="8" fill="url(#tomatoGrad2)"/>
+    <circle cx="668" cy="570" r="8" fill="url(#tomatoGrad2)"/>
+    <path d="M662,554 Q660,548 657,550 Q660,554 659,558 Z" fill="#3D8A1E"/>
+  </g>
+  <g>
+    <circle cx="662" cy="510" r="9" fill="url(#tomatoGrad2)"/>
+    <circle cx="674" cy="504" r="8" fill="url(#tomatoGrad2)"/>
+    <circle cx="668" cy="518" r="7" fill="url(#tomatoGrad2)"/>
+  </g>
+  <g>
+    <circle cx="661" cy="460" r="8" fill="url(#tomatoGrad2)"/>
+    <circle cx="673" cy="454" r="8" fill="url(#tomatoGrad2)"/>
+    <circle cx="667" cy="468" r="7" fill="url(#tomatoGrad2)"/>
+  </g>
+  <g>
+    <circle cx="661" cy="412" r="8" fill="url(#tomatoGrad2)"/>
+    <circle cx="673" cy="406" r="7" fill="url(#tomatoGrad2)"/>
+    <circle cx="666" cy="420" r="7" fill="url(#tomatoGrad2)"/>
+  </g>
+  <g>
+    <circle cx="661" cy="364" r="8" fill="url(#tomatoGrad2)"/>
+    <circle cx="673" cy="358" r="7" fill="url(#tomatoGrad2)"/>
+    <circle cx="666" cy="372" r="6" fill="url(#tomatoGrad2)"/>
+  </g>
+  <g>
+    <circle cx="661" cy="320" r="7" fill="url(#tomatoGrad2)"/>
+    <circle cx="672" cy="315" r="6" fill="url(#tomatoGrad2)"/>
+  </g>
+
+  <!-- Top cluster of cherry tomatoes -->
+  <g>
+    <circle cx="620" cy="320" r="11" fill="url(#tomatoGrad)"/>
+    <circle cx="608" cy="312" r="9" fill="url(#tomatoGrad)"/>
+    <circle cx="632" cy="312" r="9" fill="url(#tomatoGrad)"/>
+    <circle cx="614" cy="327" r="8" fill="url(#tomatoGrad2)"/>
+    <circle cx="626" cy="327" r="8" fill="url(#tomatoGrad2)"/>
+    <path d="M620,310 Q617,302 614,304 Q617,310 616,314 Z" fill="#3D8A1E"/>
+    <path d="M620,310 Q623,302 626,304 Q623,310 624,314 Z" fill="#3D8A1E"/>
+    <path d="M620,310 Q620,300 622,298 Q621,306 620,310 Z" fill="#2D6E10"/>
+  </g>
+
+  <!-- Leaves on cherry tomato plant -->
+  <g fill="#4AA028" opacity="0.9">
+    <ellipse cx="604" cy="598" rx="16" ry="9" transform="rotate(-35,604,598)"/>
+    <ellipse cx="635" cy="590" rx="14" ry="8" transform="rotate(30,635,590)"/>
+    <ellipse cx="603" cy="546" rx="14" ry="8" transform="rotate(-32,603,546)"/>
+    <ellipse cx="635" cy="540" rx="13" ry="7" transform="rotate(27,635,540)"/>
+    <ellipse cx="603" cy="496" rx="13" ry="7" transform="rotate(-30,603,496)"/>
+    <ellipse cx="634" cy="490" rx="12" ry="7" transform="rotate(25,634,490)"/>
+    <ellipse cx="602" cy="446" rx="12" ry="7" transform="rotate(-28,602,446)"/>
+    <ellipse cx="633" cy="440" rx="11" ry="6" transform="rotate(22,633,440)"/>
+    <ellipse cx="601" cy="398" rx="11" ry="6" transform="rotate(-26,601,398)"/>
+    <ellipse cx="633" cy="392" rx="11" ry="6" transform="rotate(20,633,392)"/>
+    <ellipse cx="601" cy="352" rx="10" ry="6" transform="rotate(-24,601,352)"/>
+    <ellipse cx="632" cy="346" rx="10" ry="5" transform="rotate(18,632,346)"/>
+  </g>
+
+  <!-- 공개 배틀방 Sign -->
+  <!-- Sign post -->
+  <rect x="616" y="490" width="5" height="60" fill="#8B5A2A"/>
+  <!-- Sign board -->
+  <rect x="590" y="452" width="68" height="40" rx="5" fill="#F5DEB3"/>
+  <rect x="592" y="454" width="64" height="36" rx="4" fill="#FAEBD7"/>
+  <rect x="590" y="452" width="68" height="40" rx="5" fill="none" stroke="#8B5A2A" stroke-width="2"/>
+  <!-- Sign text -->
+  <text x="624" y="468" font-size="8" text-anchor="middle" font-family="sans-serif" font-weight="bold" fill="#2B6ED8">🏟 공개</text>
+  <text x="624" y="480" font-size="7.5" text-anchor="middle" font-family="sans-serif" font-weight="bold" fill="#2B6ED8">배틀방</text>
+
+  <!-- === STONE FORTRESS (공성전) === -->
+  <!-- Fortress base / ground -->
+  <ellipse cx="720" cy="530" rx="65" ry="15" fill="#4A6A20" opacity="0.5"/>
+
+  <!-- Main tower body -->
+  <rect x="682" y="415" width="76" height="120" rx="4" fill="url(#stoneGrad)"/>
+  <!-- Stone texture lines (horizontal courses) -->
+  <g stroke="#6A6050" stroke-width="1" opacity="0.5">
+    <line x1="682" y1="430" x2="758" y2="430"/>
+    <line x1="682" y1="445" x2="758" y2="445"/>
+    <line x1="682" y1="460" x2="758" y2="460"/>
+    <line x1="682" y1="475" x2="758" y2="475"/>
+    <line x1="682" y1="490" x2="758" y2="490"/>
+    <line x1="682" y1="505" x2="758" y2="505"/>
+    <line x1="682" y1="520" x2="758" y2="520"/>
+  </g>
+  <!-- Vertical stone lines (alternating) -->
+  <g stroke="#6A6050" stroke-width="1" opacity="0.4">
+    <line x1="700" y1="415" x2="700" y2="430"/>
+    <line x1="718" y1="415" x2="718" y2="430"/>
+    <line x1="736" y1="415" x2="736" y2="430"/>
+    <line x1="709" y1="430" x2="709" y2="445"/>
+    <line x1="727" y1="430" x2="727" y2="445"/>
+    <line x1="745" y1="430" x2="745" y2="445"/>
+    <line x1="700" y1="445" x2="700" y2="460"/>
+    <line x1="718" y1="445" x2="718" y2="460"/>
+    <line x1="736" y1="445" x2="736" y2="460"/>
+  </g>
+
+  <!-- Fortress battlements (merlons) -->
+  <rect x="682" y="400" width="14" height="18" rx="2" fill="url(#stoneGrad)"/>
+  <rect x="700" y="400" width="14" height="18" rx="2" fill="url(#stoneGrad)"/>
+  <rect x="718" y="400" width="14" height="18" rx="2" fill="url(#stoneGrad)"/>
+  <rect x="736" y="400" width="14" height="18" rx="2" fill="url(#stoneGrad)"/>
+  <rect x="754" y="400" width="14" height="18" rx="2" fill="url(#stoneGrad)"/>
+  <!-- Merlon highlights -->
+  <g fill="#AAAAAA" opacity="0.2">
+    <rect x="683" y="401" width="5" height="16" rx="1"/>
+    <rect x="701" y="401" width="5" height="16" rx="1"/>
+    <rect x="719" y="401" width="5" height="16" rx="1"/>
+    <rect x="737" y="401" width="5" height="16" rx="1"/>
+    <rect x="755" y="401" width="5" height="16" rx="1"/>
+  </g>
+
+  <!-- Gate arch -->
+  <path d="M705,535 L705,480 Q720,462 735,480 L735,535 Z" fill="#2A2018"/>
+  <path d="M707,535 L707,481 Q720,465 733,481 L733,535 Z" fill="#1A1008"/>
+  <!-- Gate hinges -->
+  <rect x="707" y="490" width="6" height="3" rx="1" fill="#5A4A30"/>
+  <rect x="707" y="510" width="6" height="3" rx="1" fill="#5A4A30"/>
+  <rect x="727" y="490" width="6" height="3" rx="1" fill="#5A4A30"/>
+  <rect x="727" y="510" width="6" height="3" rx="1" fill="#5A4A30"/>
+
+  <!-- Small windows on fortress -->
+  <rect x="688" y="440" width="10" height="14" rx="2" fill="#1A1008"/>
+  <rect x="744" y="440" width="10" height="14" rx="2" fill="#1A1008"/>
+  <rect x="688" y="468" width="10" height="14" rx="2" fill="#1A1008"/>
+  <rect x="744" y="468" width="10" height="14" rx="2" fill="#1A1008"/>
+
+  <!-- Fortress platform/top base for tomato -->
+  <rect x="700" y="395" width="60" height="8" rx="2" fill="#8A8070"/>
+
+  <!-- Large tomato on top of fortress -->
+  <circle cx="730" cy="365" r="28" fill="url(#tomatoGrad)"/>
+  <!-- Tomato leaves -->
+  <g fill="#3D8A1E">
+    <path d="M730,340 Q724,325 716,328 Q722,337 719,344 Z"/>
+    <path d="M730,340 Q736,325 744,328 Q738,337 741,344 Z"/>
+    <path d="M730,340 Q730,323 734,320 Q732,332 730,340 Z"/>
+    <path d="M730,340 Q718,328 712,334 Q720,340 722,346 Z"/>
+    <path d="M730,340 Q742,328 748,334 Q740,340 738,346 Z"/>
+  </g>
+  <!-- Tomato stem -->
+  <rect x="728" y="318" width="4" height="12" rx="2" fill="#2D6E10"/>
+  <!-- Tomato highlight -->
+  <ellipse cx="720" cy="355" rx="8" ry="10" fill="white" opacity="0.25"/>
+
+  <!-- Red flag on fortress -->
+  <rect x="755" y="345" width="3" height="55" fill="#8B5A2A"/>
+  <path d="M758,345 L780,355 L758,368 Z" fill="#D94E3A"/>
+  <!-- Flag detail -->
+  <path d="M760,350 L775,357 L760,364 Z" fill="#E85848" opacity="0.5"/>
+
+  <!-- 공성전 Sign on fortress gate -->
+  <rect x="696" y="378" width="48" height="20" rx="4" fill="#F5DEB3"/>
+  <rect x="697" y="379" width="46" height="18" rx="3" fill="#FAEBD7"/>
+  <rect x="696" y="378" width="48" height="20" rx="4" fill="none" stroke="#8B5A2A" stroke-width="1.5"/>
+  <text x="720" y="392" font-size="8" text-anchor="middle" font-family="sans-serif" font-weight="bold" fill="#8B1A00">🏰 공성전</text>
+
+  <!-- ============================================================ -->
+  <!-- PANEL 3: LARGE HILL + HOBBIT HOLE + OAK TREE -->
+  <!-- ============================================================ -->
+
+  <!-- Extra hill mass for panel 3 (large green hill upper portion) -->
+  <path d="M780,380 C820,340 870,300 930,270 C980,245 1040,225 1100,210 C1130,203 1155,198 1170,196 L1170,844 L780,844 Z"
+        fill="url(#hillGrad)"/>
+  <!-- Hill grass texture -->
+  <path d="M780,380 C820,340 870,300 930,270 C980,245 1040,225 1100,210 C1130,203 1155,198 1170,196 L1170,844 L780,844 Z"
+        fill="url(#grassPattern)" opacity="0.3"/>
+  <!-- Hill highlight -->
+  <path d="M780,380 C820,340 870,300 930,270 C980,245 1040,225 1100,210 C1130,203 1155,198 1170,196"
+        fill="none" stroke="#7DD848" stroke-width="5" opacity="0.4"/>
+
+  <!-- Ambient glow around hobbit hole (warm light spilling out) -->
+  <ellipse cx="940" cy="590" rx="140" ry="100" fill="url(#glowOuter)" opacity="0.5"/>
+
+  <!-- Hobbit hole - outer earth frame (rounded arch) -->
+  <!-- Outer arch earth surround -->
+  <ellipse cx="940" cy="580" rx="105" ry="120" fill="#5CB338"/>
+  <!-- Arch stone frame -->
+  <path d="M835,580 C835,518 884,468 940,468 C996,468 1045,518 1045,580 L1045,640 L835,640 Z"
+        fill="#8B5A2A"/>
+  <!-- Frame stones texture -->
+  <g fill="#7A4A1A" opacity="0.5">
+    <ellipse cx="850" cy="550" rx="8" ry="5" transform="rotate(-60,850,550)"/>
+    <ellipse cx="848" cy="510" rx="8" ry="5" transform="rotate(-70,848,510)"/>
+    <ellipse cx="858" cy="476" rx="8" ry="5" transform="rotate(-80,858,476)"/>
+    <ellipse cx="880" cy="452" rx="8" ry="5" transform="rotate(-85,880,452)"/>
+    <ellipse cx="906" cy="440" rx="8" ry="5" transform="rotate(-88,906,440)"/>
+    <ellipse cx="934" cy="436" rx="8" ry="5" transform="rotate(90,934,436)"/>
+    <ellipse cx="960" cy="438" rx="8" ry="5" transform="rotate(88,960,438)"/>
+    <ellipse cx="984" cy="448" rx="8" ry="5" transform="rotate(85,984,448)"/>
+    <ellipse cx="1006" cy="465" rx="8" ry="5" transform="rotate(80,1006,465)"/>
+    <ellipse cx="1022" cy="488" rx="8" ry="5" transform="rotate(72,1022,488)"/>
+    <ellipse cx="1032" cy="514" rx="8" ry="5" transform="rotate(65,1032,514)"/>
+    <ellipse cx="1034" cy="544" rx="8" ry="5" transform="rotate(60,1034,544)"/>
+  </g>
+  <!-- Frame highlight -->
+  <path d="M835,580 C835,518 884,468 940,468 C996,468 1045,518 1045,580"
+        fill="none" stroke="#A07040" stroke-width="2.5" opacity="0.6"/>
+
+  <!-- Interior of hobbit hole - main room -->
+  <ellipse cx="940" cy="580" rx="88" ry="105" fill="url(#holeGlow)"/>
+
+  <!-- Room back wall -->
+  <ellipse cx="940" cy="590" rx="80" ry="95" fill="url(#roomGrad)"/>
+
+  <!-- Floor line -->
+  <path d="M860,636 Q940,648 1020,636" fill="#6B3A10" opacity="0.6" stroke="#5A2A08" stroke-width="2"/>
+  <rect x="860" y="636" width="160" height="8" rx="2" fill="#7A4A18" opacity="0.5"/>
+
+  <!-- Back wall texture -->
+  <ellipse cx="940" cy="590" rx="75" ry="88" fill="none" stroke="#A06020" stroke-width="1.5" opacity="0.3"/>
+  <ellipse cx="940" cy="590" rx="65" ry="75" fill="none" stroke="#A06020" stroke-width="1" opacity="0.2"/>
+
+  <!-- === BOOKSHELF (left inside wall) === -->
+  <!-- Shelf backing -->
+  <rect x="866" y="500" width="52" height="100" rx="4" fill="#6B3808"/>
+  <!-- Shelf boards -->
+  <rect x="864" y="522" width="56" height="8" rx="2" fill="url(#shelfGrad)"/>
+  <rect x="864" y="560" width="56" height="8" rx="2" fill="url(#shelfGrad)"/>
+  <rect x="864" y="598" width="56" height="8" rx="2" fill="url(#shelfGrad)"/>
+
+  <!-- Books on bottom shelf -->
+  <rect x="866" y="568" width="7" height="28" rx="1" fill="#D04030"/>
+  <rect x="874" y="570" width="6" height="26" rx="1" fill="#3050A0"/>
+  <rect x="881" y="566" width="8" height="30" rx="1" fill="#30A040"/>
+  <rect x="890" y="568" width="6" height="28" rx="1" fill="#B06010"/>
+  <rect x="897" y="570" width="7" height="26" rx="1" fill="#8030A0"/>
+  <rect x="905" y="567" width="6" height="29" rx="1" fill="#A02020"/>
+  <rect x="912" y="569" width="5" height="27" rx="1" fill="#2080A0"/>
+
+  <!-- Books on middle shelf -->
+  <rect x="866" y="530" width="6" height="28" rx="1" fill="#C08020"/>
+  <rect x="873" y="528" width="8" height="30" rx="1" fill="#4080C0"/>
+  <rect x="882" y="530" width="6" height="28" rx="1" fill="#A04040"/>
+  <rect x="889" y="529" width="7" height="29" rx="1" fill="#208060"/>
+  <rect x="897" y="531" width="6" height="27" rx="1" fill="#804020"/>
+  <rect x="904" y="529" width="8" height="29" rx="1" fill="#6040A0"/>
+  <rect x="913" y="531" width="5" height="27" rx="1" fill="#C06020"/>
+
+  <!-- Books on top shelf -->
+  <rect x="866" y="495" width="7" height="24" rx="1" fill="#308040"/>
+  <rect x="874" y="496" width="6" height="23" rx="1" fill="#A03040"/>
+  <rect x="881" y="494" width="8" height="25" rx="1" fill="#4060B0"/>
+  <rect x="890" y="496" width="6" height="23" rx="1" fill="#906020"/>
+  <rect x="897" y="495" width="7" height="24" rx="1" fill="#2090A0"/>
+  <rect x="905" y="497" width="6" height="22" rx="1" fill="#8050A0"/>
+  <!-- Book highlights -->
+  <g fill="white" opacity="0.2">
+    <rect x="866" y="568" width="2" height="28" rx="0.5"/>
+    <rect x="874" y="570" width="2" height="26" rx="0.5"/>
+    <rect x="881" y="566" width="2" height="30" rx="0.5"/>
+  </g>
+
+  <!-- === HANGING LAMP === -->
+  <!-- Lamp cord -->
+  <line x1="940" y1="486" x2="940" y2="510" stroke="#4A3010" stroke-width="2"/>
+  <!-- Lamp shade -->
+  <path d="M922,510 L958,510 L952,540 L928,540 Z" fill="#E8963A"/>
+  <path d="M924,512 L956,512 L950,538 L930,538 Z" fill="#F5A840"/>
+  <!-- Lamp top ring -->
+  <rect x="920" y="508" width="40" height="5" rx="2" fill="#C07820"/>
+  <!-- Lamp bottom ring -->
+  <rect x="926" y="538" width="28" height="4" rx="2" fill="#C07820"/>
+  <!-- Lamp glow on ceiling -->
+  <ellipse cx="940" cy="510" rx="50" ry="15" fill="#F5B84A" opacity="0.3"/>
+  <!-- Lamp bulb glow -->
+  <ellipse cx="940" cy="525" rx="12" ry="14" fill="#FFEE80" opacity="0.8"/>
+  <ellipse cx="940" cy="525" rx="6" ry="7" fill="white" opacity="0.9"/>
+
+  <!-- === TOMATO CHARACTERS INSIDE === -->
+  <!-- Character 1: at laptop (left of center) -->
+  <!-- Body -->
+  <circle cx="910" cy="620" r="18" fill="url(#tomatoGrad)"/>
+  <!-- Tomato leaves (head) -->
+  <path d="M910,604 Q906,595 902,597 Q906,603 904,607 Z" fill="#3D8A1E"/>
+  <path d="M910,604 Q914,595 918,597 Q914,603 916,607 Z" fill="#3D8A1E"/>
+  <path d="M910,604 Q910,594 912,591 Q911,599 910,604 Z" fill="#2D6E10"/>
+  <!-- Eyes -->
+  <circle cx="905" cy="617" r="3" fill="#1A0A00"/>
+  <circle cx="915" cy="617" r="3" fill="#1A0A00"/>
+  <circle cx="906" cy="616" r="1" fill="white"/>
+  <circle cx="916" cy="616" r="1" fill="white"/>
+  <!-- Smile -->
+  <path d="M906,623 Q910,627 914,623" fill="none" stroke="#1A0A00" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Arms -->
+  <path d="M893,620 Q885,625 882,630" fill="none" stroke="#C03020" stroke-width="4" stroke-linecap="round"/>
+  <path d="M927,620 Q935,625 932,630" fill="none" stroke="#C03020" stroke-width="4" stroke-linecap="round"/>
+  <!-- Little hands on laptop -->
+  <circle cx="880" cy="631" r="4" fill="#D04030"/>
+  <circle cx="934" cy="631" r="4" fill="#D04030"/>
+
+  <!-- Laptop -->
+  <rect x="878" y="634" width="62" height="38" rx="3" fill="#2A2A3A"/>
+  <rect x="880" y="636" width="58" height="34" rx="2" fill="#1A1A2A"/>
+  <!-- Laptop screen content -->
+  <rect x="882" y="638" width="54" height="30" rx="1" fill="#0A1628" opacity="0.9"/>
+  <!-- Tomatto timer on screen -->
+  <circle cx="909" cy="648" r="6" fill="#D94E3A" opacity="0.8"/>
+  <text x="909" y="651" font-size="5" text-anchor="middle" font-family="sans-serif" fill="white" font-weight="bold">25</text>
+  <text x="909" y="660" font-size="4" text-anchor="middle" font-family="sans-serif" fill="#87CEEB">집중</text>
+  <!-- Laptop keyboard -->
+  <rect x="878" y="672" width="62" height="10" rx="2" fill="#383848"/>
+  <rect x="880" y="674" width="58" height="6" rx="1" fill="#2A2A38"/>
+  <!-- Keyboard keys -->
+  <g fill="#4A4A58" opacity="0.8">
+    <rect x="882" y="675" width="4" height="4" rx="0.5"/>
+    <rect x="888" y="675" width="4" height="4" rx="0.5"/>
+    <rect x="894" y="675" width="4" height="4" rx="0.5"/>
+    <rect x="900" y="675" width="4" height="4" rx="0.5"/>
+    <rect x="906" y="675" width="8" height="4" rx="0.5"/>
+    <rect x="916" y="675" width="4" height="4" rx="0.5"/>
+    <rect x="922" y="675" width="4" height="4" rx="0.5"/>
+    <rect x="928" y="675" width="4" height="4" rx="0.5"/>
+  </g>
+
+  <!-- Character 2: drinking tea (right side) -->
+  <!-- Sit position - small stool/cushion -->
+  <ellipse cx="983" cy="648" rx="22" ry="8" fill="#8B5A2A"/>
+  <ellipse cx="983" cy="644" rx="22" ry="8" fill="#A06830"/>
+  <!-- Cushion pattern -->
+  <ellipse cx="983" cy="643" rx="18" ry="6" fill="#C07840" opacity="0.5"/>
+
+  <!-- Body -->
+  <circle cx="983" cy="620" r="18" fill="url(#tomatoGrad)"/>
+  <!-- Tomato leaves (head) -->
+  <path d="M983,604 Q979,595 975,597 Q979,603 977,607 Z" fill="#3D8A1E"/>
+  <path d="M983,604 Q987,595 991,597 Q987,603 989,607 Z" fill="#3D8A1E"/>
+  <path d="M983,604 Q983,594 985,591 Q984,599 983,604 Z" fill="#2D6E10"/>
+  <!-- Eyes (squinting - relaxed) -->
+  <path d="M977,617 Q979,615 981,617" fill="none" stroke="#1A0A00" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M985,617 Q987,615 989,617" fill="none" stroke="#1A0A00" stroke-width="1.8" stroke-linecap="round"/>
+  <!-- Happy smile -->
+  <path d="M978,623 Q983,628 988,623" fill="none" stroke="#1A0A00" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Arms -->
+  <path d="M966,620 Q958,630 958,638" fill="none" stroke="#C03020" stroke-width="4" stroke-linecap="round"/>
+  <path d="M1000,620 Q1008,628 1010,636" fill="none" stroke="#C03020" stroke-width="4" stroke-linecap="round"/>
+  <!-- Left hand holds teacup -->
+  <circle cx="957" cy="640" r="4" fill="#D04030"/>
+
+  <!-- Tea cup -->
+  <path d="M948,640 L950,660 Q957,668 964,660 L966,640 Z" fill="#F5DEB3"/>
+  <path d="M950,642 L952,660 Q957,665 962,660 L964,642 Z" fill="white"/>
+  <!-- Tea liquid -->
+  <ellipse cx="957" cy="648" rx="6" ry="3" fill="#C07830" opacity="0.8"/>
+  <!-- Cup handle -->
+  <path d="M964,648 Q972,648 972,655 Q972,662 964,658" fill="none" stroke="#E0C090" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Steam from tea -->
+  <path d="M952,638 Q950,630 953,625" fill="none" stroke="#CCCCCC" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+  <path d="M957,636 Q957,628 957,622" fill="none" stroke="#CCCCCC" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+  <path d="M962,638 Q964,630 961,625" fill="none" stroke="#CCCCCC" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+
+  <!-- Small side table -->
+  <rect x="1000" y="645" width="30" height="4" rx="2" fill="#7A4A18"/>
+  <rect x="1003" y="649" width="3" height="18" rx="1" fill="#7A4A18"/>
+  <rect x="1024" y="649" width="3" height="18" rx="1" fill="#7A4A18"/>
+  <!-- Teapot on table -->
+  <ellipse cx="1015" cy="640" rx="11" ry="8" fill="#4070B0"/>
+  <ellipse cx="1015" cy="636" rx="8" ry="5" fill="#5080C0"/>
+  <!-- Teapot spout -->
+  <path d="M1004,638 Q996,634 994,637" fill="none" stroke="#3060A0" stroke-width="3" stroke-linecap="round"/>
+  <!-- Teapot handle -->
+  <path d="M1026,638 Q1032,636 1032,642 Q1032,648 1026,646" fill="none" stroke="#3060A0" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Teapot lid -->
+  <ellipse cx="1015" cy="632" rx="5" ry="3" fill="#3060A0"/>
+  <circle cx="1015" cy="630" r="2" fill="#4070B0"/>
+
+  <!-- Door of hobbit hole -->
+  <!-- Door frame -->
+  <path d="M880,640 L880,565 Q940,540 1000,565 L1000,640" fill="none" stroke="#6B3808" stroke-width="8"/>
+  <!-- Door panels -->
+  <path d="M884,640 L884,567 Q940,544 996,567 L996,640 Z" fill="#8B5A2A"/>
+  <!-- Door wood grain -->
+  <g stroke="#6B3808" stroke-width="1.2" opacity="0.5">
+    <line x1="884" y1="580" x2="996" y2="580"/>
+    <line x1="884" y1="600" x2="996" y2="600"/>
+    <line x1="884" y1="620" x2="996" y2="620"/>
+  </g>
+  <!-- Door center divider -->
+  <line x1="940" y1="545" x2="940" y2="640" stroke="#6B3808" stroke-width="4" opacity="0.8"/>
+  <!-- Door knob -->
+  <circle cx="926" cy="595" r="6" fill="#C8965A"/>
+  <circle cx="926" cy="594" r="4" fill="#E0A860"/>
+  <circle cx="924" cy="592" r="1.5" fill="white" opacity="0.4"/>
+  <!-- Door knocker -->
+  <circle cx="954" cy="585" r="7" fill="none" stroke="#C8965A" stroke-width="2.5"/>
+  <circle cx="954" cy="585" r="2" fill="#C8965A"/>
+
+  <!-- Doorstep stone -->
+  <ellipse cx="940" cy="643" rx="70" ry="10" fill="#8A7A60"/>
+  <ellipse cx="940" cy="640" rx="66" ry="8" fill="#9A8A70"/>
+
+  <!-- Round window on hill (right side) -->
+  <!-- Window glow -->
+  <circle cx="1082" cy="530" r="38" fill="#F5B84A" opacity="0.2"/>
+  <!-- Window frame -->
+  <circle cx="1082" cy="530" r="32" fill="#8B5A2A"/>
+  <circle cx="1082" cy="530" r="28" fill="#F5B84A" opacity="0.9"/>
+  <!-- Window interior -->
+  <circle cx="1082" cy="530" r="25" fill="url(#holeGlow)"/>
+  <!-- Window frame detail -->
+  <circle cx="1082" cy="530" r="32" fill="none" stroke="#6B3808" stroke-width="3"/>
+  <!-- Window cross bars -->
+  <line x1="1082" y1="502" x2="1082" y2="558" stroke="#8B5A2A" stroke-width="3"/>
+  <line x1="1054" y1="530" x2="1110" y2="530" stroke="#8B5A2A" stroke-width="3"/>
+  <!-- Warm window glow reflection -->
+  <ellipse cx="1075" cy="520" rx="8" ry="10" fill="white" opacity="0.25"/>
+
+  <!-- Ivy/vines growing on the hill around hobbit hole -->
+  <!-- Left vine -->
+  <path d="M840,560 C830,530 828,500 835,470 C840,450 850,430 860,415"
+        fill="none" stroke="#2D6E10" stroke-width="3" stroke-linecap="round"/>
+  <!-- Ivy leaves left -->
+  <g fill="#4AA028" opacity="0.85">
+    <ellipse cx="832" cy="540" rx="12" ry="7" transform="rotate(-40,832,540)"/>
+    <ellipse cx="828" cy="510" rx="11" ry="7" transform="rotate(-50,828,510)"/>
+    <ellipse cx="832" cy="480" rx="11" ry="6" transform="rotate(-45,832,480)"/>
+    <ellipse cx="840" cy="455" rx="10" ry="6" transform="rotate(-35,840,455)"/>
+  </g>
+  <!-- Left vine extra leaves -->
+  <g fill="#5CB338" opacity="0.7">
+    <ellipse cx="848" cy="548" rx="9" ry="6" transform="rotate(20,848,548)"/>
+    <ellipse cx="836" cy="522" rx="9" ry="5" transform="rotate(15,836,522)"/>
+    <ellipse cx="838" cy="494" rx="8" ry="5" transform="rotate(20,838,494)"/>
+    <ellipse cx="843" cy="466" rx="8" ry="5" transform="rotate(15,843,466)"/>
+  </g>
+
+  <!-- Right vine -->
+  <path d="M1040,560 C1050,530 1052,500 1044,470 C1038,450 1028,432 1018,416"
+        fill="none" stroke="#2D6E10" stroke-width="3" stroke-linecap="round"/>
+  <!-- Ivy leaves right -->
+  <g fill="#4AA028" opacity="0.85">
+    <ellipse cx="1048" cy="542" rx="12" ry="7" transform="rotate(40,1048,542)"/>
+    <ellipse cx="1052" cy="512" rx="11" ry="7" transform="rotate(50,1052,512)"/>
+    <ellipse cx="1047" cy="482" rx="11" ry="6" transform="rotate(45,1047,482)"/>
+    <ellipse cx="1040" cy="456" rx="10" ry="6" transform="rotate(35,1040,456)"/>
+  </g>
+  <g fill="#5CB338" opacity="0.7">
+    <ellipse cx="1032" cy="550" rx="9" ry="6" transform="rotate(-20,1032,550)"/>
+    <ellipse cx="1043" cy="524" rx="9" ry="5" transform="rotate(-15,1043,524)"/>
+    <ellipse cx="1043" cy="496" rx="8" ry="5" transform="rotate(-20,1043,496)"/>
+    <ellipse cx="1036" cy="468" rx="8" ry="5" transform="rotate(-15,1036,468)"/>
+  </g>
+
+  <!-- Flowers around hobbit hole entrance -->
+  <g>
+    <!-- Left flowers -->
+    <circle cx="848" cy="600" r="6" fill="#FFD040"/>
+    <circle cx="848" cy="600" r="3" fill="#FF8020"/>
+    <circle cx="842" cy="608" r="5" fill="white"/>
+    <circle cx="842" cy="608" r="2.5" fill="#FFD040"/>
+    <circle cx="856" cy="612" r="5" fill="#FF6080"/>
+    <circle cx="856" cy="612" r="2.5" fill="#FFD040"/>
+    <!-- Right flowers -->
+    <circle cx="1030" cy="602" r="6" fill="#FFD040"/>
+    <circle cx="1030" cy="602" r="3" fill="#FF8020"/>
+    <circle cx="1036" cy="610" r="5" fill="white"/>
+    <circle cx="1036" cy="610" r="2.5" fill="#FFD040"/>
+    <circle cx="1022" cy="614" r="5" fill="#FF6080"/>
+    <circle cx="1022" cy="614" r="2.5" fill="#FFD040"/>
+    <!-- More flowers scattered -->
+    <circle cx="866" cy="618" r="4" fill="#FF9060"/>
+    <circle cx="866" cy="618" r="2" fill="#FFD040"/>
+    <circle cx="1014" cy="620" r="4" fill="#9060FF"/>
+    <circle cx="1014" cy="620" r="2" fill="#FFD040"/>
+  </g>
+
+  <!-- Grass tufts around door -->
+  <g fill="#5CB338">
+    <path d="M840,640 Q843,628 846,640" stroke="#4AA028" stroke-width="1" fill="none"/>
+    <path d="M844,640 Q848,625 852,640" stroke="#4AA028" stroke-width="1" fill="none"/>
+    <path d="M1028,640 Q1031,628 1034,640" stroke="#4AA028" stroke-width="1" fill="none"/>
+    <path d="M1032,640 Q1036,625 1040,640" stroke="#4AA028" stroke-width="1" fill="none"/>
+  </g>
+
+  <!-- === OAK TREE (top right) === -->
+  <!-- Tree trunk -->
+  <rect x="1110" y="200" width="36" height="200" rx="10" fill="url(#barkPattern)"/>
+  <!-- Trunk highlight -->
+  <rect x="1113" y="200" width="10" height="200" rx="5" fill="#8B6A38" opacity="0.3"/>
+  <!-- Trunk shadow -->
+  <rect x="1134" y="200" width="10" height="200" rx="5" fill="#3A2A08" opacity="0.3"/>
+
+  <!-- Main branches -->
+  <path d="M1128,260 C1110,240 1085,220 1065,205" fill="none" stroke="#6B4A28" stroke-width="14" stroke-linecap="round"/>
+  <path d="M1128,280 C1148,255 1165,230 1170,210" fill="none" stroke="#6B4A28" stroke-width="12" stroke-linecap="round"/>
+  <path d="M1128,300 C1105,285 1090,268 1080,250" fill="none" stroke="#5A3A18" stroke-width="10" stroke-linecap="round"/>
+  <path d="M1128,310 C1148,295 1160,278 1165,260" fill="none" stroke="#5A3A18" stroke-width="8" stroke-linecap="round"/>
+  <!-- Smaller branches -->
+  <path d="M1065,205 C1050,195 1040,188 1030,185" fill="none" stroke="#5A3A18" stroke-width="7" stroke-linecap="round"/>
+  <path d="M1065,205 C1060,190 1058,180 1058,170" fill="none" stroke="#5A3A18" stroke-width="6" stroke-linecap="round"/>
+  <path d="M1080,250 C1062,238 1050,230 1042,225" fill="none" stroke="#5A3A18" stroke-width="7" stroke-linecap="round"/>
+  <path d="M1080,250 C1072,234 1068,222 1067,212" fill="none" stroke="#5A3A18" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Foliage clusters (multiple overlapping ellipses for oak canopy) -->
+  <!-- Main central canopy -->
+  <ellipse cx="1100" cy="185" rx="80" ry="60" fill="url(#treeGrad)"/>
+  <!-- Upper left mass -->
+  <ellipse cx="1058" cy="178" rx="58" ry="48" fill="#5CB338"/>
+  <!-- Upper right mass -->
+  <ellipse cx="1148" cy="175" rx="52" ry="44" fill="#5CB338"/>
+  <!-- Far left mass -->
+  <ellipse cx="1022" cy="196" rx="48" ry="40" fill="#4AA028"/>
+  <!-- Top mass -->
+  <ellipse cx="1100" cy="155" rx="60" ry="45" fill="#6DBF3A"/>
+  <!-- Additional detail masses -->
+  <ellipse cx="1070" cy="152" rx="42" ry="35" fill="#5CB338"/>
+  <ellipse cx="1130" cy="150" rx="40" ry="33" fill="#5CB338"/>
+  <ellipse cx="1044" cy="175" rx="38" ry="32" fill="#4AA028"/>
+  <ellipse cx="1155" cy="192" rx="38" ry="35" fill="#4AA028"/>
+  <ellipse cx="1100" cy="210" rx="55" ry="38" fill="#5CB338"/>
+  <!-- Highlight/lighter top of canopy -->
+  <ellipse cx="1092" cy="148" rx="38" ry="28" fill="#7DD848" opacity="0.6"/>
+  <ellipse cx="1055" cy="165" rx="28" ry="22" fill="#7DD848" opacity="0.4"/>
+  <!-- Darkening at bottom of canopy -->
+  <ellipse cx="1100" cy="215" rx="52" ry="24" fill="#3D8A1E" opacity="0.5"/>
+  <ellipse cx="1048" cy="200" rx="36" ry="20" fill="#3D8A1E" opacity="0.4"/>
+
+  <!-- Acorns hanging -->
+  <g>
+    <circle cx="1070" cy="225" r="5" fill="#C07820"/>
+    <rect x="1068" y="218" width="4" height="5" rx="1" fill="#6B4A10"/>
+    <line x1="1070" y1="213" x2="1070" y2="218" stroke="#5A3A18" stroke-width="1.5"/>
+  </g>
+  <g>
+    <circle cx="1090" cy="228" r="5" fill="#C07820"/>
+    <rect x="1088" y="221" width="4" height="5" rx="1" fill="#6B4A10"/>
+    <line x1="1090" y1="216" x2="1090" y2="221" stroke="#5A3A18" stroke-width="1.5"/>
+  </g>
+  <g>
+    <circle cx="1040" cy="215" r="4.5" fill="#B07010"/>
+    <rect x="1038" y="208" width="4" height="5" rx="1" fill="#6B4A10"/>
+    <line x1="1040" y1="203" x2="1040" y2="208" stroke="#5A3A18" stroke-width="1.5"/>
+  </g>
+
+  <!-- Tree roots -->
+  <path d="M1110,398 C1098,402 1085,408 1080,420" fill="none" stroke="#6B4A28" stroke-width="6" stroke-linecap="round"/>
+  <path d="M1146,398 C1155,402 1162,410 1165,422" fill="none" stroke="#6B4A28" stroke-width="6" stroke-linecap="round"/>
+  <path d="M1128,400 C1128,408 1126,418 1122,425" fill="none" stroke="#5A3A18" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- ============================================================ -->
+  <!-- AMBIENT / ATMOSPHERIC DETAILS -->
+  <!-- ============================================================ -->
+
+  <!-- Birds in sky (small V shapes) -->
+  <g fill="none" stroke="#2B9ED8" stroke-width="1.5" stroke-linecap="round" opacity="0.6">
+    <!-- Panel 1 birds -->
+    <path d="M290,180 Q294,176 298,180"/>
+    <path d="M305,170 Q308,167 311,170"/>
+    <path d="M275,165 Q278,162 281,165"/>
+    <!-- Panel 2 birds -->
+    <path d="M650,140 Q654,136 658,140"/>
+    <path d="M665,130 Q668,127 671,130"/>
+    <!-- Panel 3 birds -->
+    <path d="M800,135 Q804,131 808,135"/>
+    <path d="M818,125 Q821,122 824,125"/>
+  </g>
+
+  <!-- Butterflies (small) -->
+  <g opacity="0.7">
+    <!-- Butterfly 1 near plants -->
+    <path d="M540,460 Q545,455 548,460 Q545,462 540,460 Z" fill="#FF80C0"/>
+    <path d="M540,460 Q535,455 532,460 Q535,462 540,460 Z" fill="#FF80C0"/>
+    <path d="M540,460 Q545,465 548,460" fill="none" stroke="#FF80C0" stroke-width="0.5"/>
+    <path d="M540,460 Q535,465 532,460" fill="none" stroke="#FF80C0" stroke-width="0.5"/>
+  </g>
+  <g opacity="0.65">
+    <!-- Butterfly 2 -->
+    <path d="M470,420 Q475,415 478,420 Q475,422 470,420 Z" fill="#80C0FF"/>
+    <path d="M470,420 Q465,415 462,420 Q465,422 470,420 Z" fill="#80C0FF"/>
+  </g>
+
+  <!-- Firefly dots near hobbit hole (atmospheric) -->
+  <g opacity="0.5">
+    <circle cx="875" cy="510" r="2" fill="#FFE060"/>
+    <circle cx="875" cy="510" r="5" fill="#FFE060" opacity="0.3"/>
+    <circle cx="862" cy="538" r="1.5" fill="#FFE060"/>
+    <circle cx="862" cy="538" r="4" fill="#FFE060" opacity="0.3"/>
+    <circle cx="1020" cy="505" r="2" fill="#FFE060"/>
+    <circle cx="1020" cy="505" r="5" fill="#FFE060" opacity="0.3"/>
+    <circle cx="1032" cy="530" r="1.5" fill="#FFE060"/>
+    <circle cx="1032" cy="530" r="4" fill="#FFE060" opacity="0.3"/>
+  </g>
+
+  <!-- Distant hills in sky (atmospheric depth, panel 2/3) -->
+  <path d="M390,420 C440,400 490,390 540,385 C590,380 640,378 690,375 C740,372 780,370 830,368"
+        fill="#87CEEB" opacity="0.3"/>
+  <path d="M600,365 C650,350 720,340 780,335 C850,328 920,325 990,320"
+        fill="#87CEEB" opacity="0.2"/>
+
+  <!-- Panel separator subtle markers (for development reference, invisible in prod) -->
+  <!-- No separators - seamless panorama -->
+
+  <!-- Bottom ground edge details -->
+  <!-- Panel 1 meadow edge rocks -->
+  <g fill="#8A7860" opacity="0.6">
+    <ellipse cx="30" cy="700" rx="20" ry="10" transform="rotate(-5,30,700)"/>
+    <ellipse cx="320" cy="698" rx="18" ry="9" transform="rotate(3,320,698)"/>
+    <ellipse cx="175" cy="702" rx="22" ry="11" transform="rotate(-2,175,702)"/>
+  </g>
+
+  <!-- Additional meadow texture (panel 1) -->
+  <g fill="#4AA028" opacity="0.5">
+    <path d="M20,705 Q23,695 26,705"/>
+    <path d="M45,708 Q48,698 51,708"/>
+    <path d="M100,704 Q103,694 106,704"/>
+    <path d="M155,707 Q158,697 161,707"/>
+    <path d="M210,705 Q213,695 216,705"/>
+    <path d="M265,706 Q268,696 271,706"/>
+    <path d="M320,704 Q323,694 326,704"/>
+    <path d="M370,707 Q373,697 376,707"/>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- FOREGROUND GRASS EDGE (bottom) -->
+  <!-- ============================================================ -->
+  <!-- Full width bottom grass fringe -->
+  <path d="M0,834 Q15,820 30,834 Q45,820 60,834 Q75,820 90,834 Q105,820 120,834 Q135,820 150,834 Q165,820 180,834 Q195,820 210,834 Q225,820 240,834 Q255,820 270,834 Q285,820 300,834 Q315,820 330,834 Q345,820 360,834 Q375,820 390,834 Q405,820 420,834 Q435,820 450,834 Q465,820 480,834 Q495,820 510,834 Q525,820 540,834 Q555,820 570,834 Q585,820 600,834 Q615,820 630,834 Q645,820 660,834 Q675,820 690,834 Q705,820 720,834 Q735,820 750,834 Q765,820 780,834 Q795,820 810,834 Q825,820 840,834 Q855,820 870,834 Q885,820 900,834 Q915,820 930,834 Q945,820 960,834 Q975,820 990,834 Q1005,820 1020,834 Q1035,820 1050,834 Q1065,820 1080,834 Q1095,820 1110,834 Q1125,820 1140,834 Q1155,820 1170,834 L1170,844 L0,844 Z"
+        fill="#3D8A1E"/>
+
+  <!-- Lighter grass on top of fringe -->
+  <path d="M0,830 Q15,818 30,830 Q45,818 60,830 Q75,818 90,830 Q105,818 120,830 Q135,818 150,830 Q165,818 180,830 Q195,818 210,830 Q225,818 240,830 Q255,818 270,830 Q285,818 300,830 Q315,818 330,830 Q345,818 360,830 Q375,818 390,830 Q405,818 420,830 Q435,818 450,830 Q465,818 480,830 Q495,818 510,830 Q525,818 540,830 Q555,818 570,830 Q585,818 600,830 Q615,818 630,830 Q645,818 660,830 Q675,818 690,830 Q705,818 720,830 Q735,818 750,830 Q765,818 780,830 Q795,818 810,830 Q825,818 840,830 Q855,818 870,830 Q885,818 900,830 Q915,818 930,830 Q945,818 960,830 Q975,818 990,830 Q1005,818 1020,830 Q1035,818 1050,830 Q1065,818 1080,830 Q1095,818 1110,830 Q1125,818 1140,830 Q1155,818 1170,830"
+        fill="none" stroke="#5CB338" stroke-width="3" opacity="0.8"/>
+
+</svg>

@@ -45,7 +45,7 @@
 
 body {
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: var(--bg);
+  background: transparent;
   color: var(--text);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
@@ -2493,11 +2493,32 @@ dialog.modal input[type="text"]:focus {
 
 /* 탭 패널 */
 .tab-panel {
-  /* 기본적으로 보임 (개인 탭) */
+  position: relative;
 }
-
 .tab-panel-hidden {
   display: none;
+}
+
+/* ── 파노라마 배경 ───────────────────────────────────── */
+.tab-panel::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url('assets/bg-panorama.svg');
+  background-repeat: no-repeat;
+  background-size: 300% 100%;
+  z-index: -1;
+  pointer-events: none;
+}
+#tab-personal::before  { background-position: 0% 0%; }
+#tab-social::before    { background-position: 50% 0%; }
+#tab-record::before    { background-position: 100% 0%; }
+
+/* 카드 반투명 처리 — 배경이 비치게 */
+.card {
+  background: rgba(255, 252, 250, 0.82) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 /* "준비 중" 화면 */
