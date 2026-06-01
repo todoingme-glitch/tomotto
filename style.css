@@ -2504,15 +2504,16 @@ dialog.modal input[type="text"]:focus {
   content: '';
   position: fixed;
   inset: 0;
-  background-image: url('assets/bg-panorama.svg');
+  background-image: url('assets/bg-shire.png');
   background-repeat: no-repeat;
-  background-size: 300% 100%;
+  background-size: 300% auto;
+  background-color: #87CEEB;
   z-index: -1;
   pointer-events: none;
 }
-#tab-personal::before  { background-position: 0% 0%; }
-#tab-social::before    { background-position: 50% 0%; }
-#tab-record::before    { background-position: 100% 0%; }
+#tab-personal::before  { background-position: 0% 40%; }
+#tab-social::before    { background-position: 50% 40%; }
+#tab-record::before    { background-position: 100% 40%; }
 
 /* 카드 반투명 처리 — 배경이 비치게 */
 .card {
