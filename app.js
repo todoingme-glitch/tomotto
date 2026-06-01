@@ -3972,25 +3972,16 @@ async function spinGacha() {
   }
   if (pool.length < 1) return;
 
-  // v0.1.9 / v0.1.204 — 사이클 5 도달 시 햇살 소모 or 광고로 리셋
+  // v0.1.9 — 사이클 5 도달 시 리셋 (햇살 소모는 hamsalSpinBtn에서 별도 처리)
   if (gachaCount >= 5) {
-    if (hamsal >= HAMSAL_SPIN_COST) {
-      // 햇살로 추가 스핀 — hamsalSpinBtn 클릭으로 진입하므로 여기선 바로 차감
-      spendHamsal(HAMSAL_SPIN_COST);
-      gachaCount = 0;
-      updateGachaCounter();
-    } else if (SHOW_AD_PROMPT) {
+    if (SHOW_AD_PROMPT) {
       const confirmAd = confirm(
         '이번 사이클(5회) 다 썼어요!\n광고 보고 새 사이클 시작?\n\n(현재는 시뮬레이션 — 실제 광고는 추후 연동 예정)'
       );
       if (!confirmAd) return;
-      gachaCount = 0;
-      updateGachaCounter();
-    } else {
-      // 테스트 모드: 조용히 리셋
-      gachaCount = 0;
-      updateGachaCounter();
     }
+    gachaCount = 0;
+    updateGachaCounter();
   }
 
   $gachaBtn.disabled = true;
@@ -4092,9 +4083,10 @@ $gachaBtn.addEventListener('click', spinGacha);
 // v0.1.204 — 햇살 추가 스핀 버튼
 document.getElementById('hamsalSpinBtn')?.addEventListener('click', () => {
   if (hamsal < HAMSAL_SPIN_COST) return;
-  // gachaCount를 5로 올려두고 spinGacha 호출 → 내부에서 햇살 차감 + 리셋 후 스핀
-  if (gachaCount < 5) gachaCount = 5;
-  spinGacha();
+  if (!spendHamsal(HAMSAL_SPIN_COST)) return; // 차감 먼저
+  gachaCount = 0;        // 사이클 리셋
+  updateGachaCounter();
+  spinGacha();           // gachaCount = 0이므로 내부 >= 5 분기 안 탐
 });
 
 // ====== 타이머 ======
