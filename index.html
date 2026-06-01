@@ -173,7 +173,9 @@
 
     <!-- 할 일 다이얼로그 -->
     <dialog id="dialog-todo" class="card-dialog">
+      <img src="assets/양피지.png" class="card-dialog-bg" alt="">
       <button class="card-dialog-close" onclick="this.closest('dialog').close()" aria-label="닫기">✕</button>
+      <div class="card-dialog-content">
       <section class="card category-section">
         <h2><span class="step">1</span> 오늘 할 일 정하기</h2>
         <div class="add-row">
@@ -183,11 +185,14 @@
         <ul id="categoryList" class="category-list"></ul>
         <p id="emptyHint" class="empty-hint">무엇이든 자유롭게 추가해 보세요!</p>
       </section>
+      </div>
     </dialog>
 
     <!-- 가챠 다이얼로그 -->
     <dialog id="dialog-gacha" class="card-dialog">
+      <img src="assets/양피지.png" class="card-dialog-bg" alt="">
       <button class="card-dialog-close" onclick="this.closest('dialog').close()" aria-label="닫기">✕</button>
+      <div class="card-dialog-content">
       <section class="card gacha-section">
         <div class="gacha-header">
           <h2><span class="step">2</span> 가챠 돌리기</h2>
@@ -205,11 +210,14 @@
           30 햇살로 추가 스핀 ☀️
         </button>
       </section>
+      </div>
     </dialog>
 
     <!-- 타이머 다이얼로그 -->
     <dialog id="dialog-timer" class="card-dialog">
+      <img src="assets/양피지.png" class="card-dialog-bg" alt="">
       <button class="card-dialog-close" onclick="this.closest('dialog').close()" aria-label="닫기">✕</button>
+      <div class="card-dialog-content">
       <section class="card timer-section">
         <h2><span class="step">3</span> 집중하기</h2>
         <button id="pipBtn" class="btn-pip-corner" disabled hidden title="미니 창으로 보기 (PiP)" aria-label="미니 창으로 보기">
@@ -274,6 +282,7 @@
           </div>
         </div>
       </section>
+      </div>
     </dialog>
 
     <!-- 탭 패널 : 소셜 -->
