@@ -3493,6 +3493,7 @@ let _spinsSinceReset = 0;           // v0.1.69 — 리셋 후 가챠 횟수 (A-3
 let _notifTimeoutId = null;  // 웹 알림 예약 타임아웃 ID
 
 let _pausedThisSession = false;     // v0.1.70 — 이번 세션 일시정지 여부 (B-4/B-5)
+let _noRerollThisSession = false;   // v0.1.204 — 이번 세션 리롤 없이 시작 여부 (햇살 보너스용)
 let currentTask = null;
 let completedCount = 0;             // v0.1.8 — 누적 완료
 let editingCategoryIndex = -1;      // v0.1.8 — 카테고리 인라인 편집 진행 중인 인덱스
@@ -4570,10 +4571,11 @@ function startTimer() {
 
   // v0.1.70 — B-4/B-5: 새 세션(풀 타이머) 시작 시에만 _pausedThisSession 리셋
   // 일시정지 후 Resume은 remaining < duration이므로 리셋 안 함
-  if (timer.remaining === timer.duration) _pausedThisSession = false;
+  if (timer.remaining === timer.duration) { _pausedThisSession = false; _noRerollThisSession = false; }
 
   // v0.1.69 — A-3 고민 끝! : 가챠 1회 후 바로 시작 (리롤 없음)
   if (_spinsSinceReset === 1) unlockAchievement('A-3');
+  _noRerollThisSession = (_spinsSinceReset === 1); // v0.1.204 — 햇살 보너스용 플래그 캡처
   _spinsSinceReset = 0; // 체크 직후 초기화 (spinGacha 내부 resetTimer 호출과 분리)
 
   // 알림 영역 타이머 서비스 시작 (Android APK 전용)
@@ -4718,7 +4720,7 @@ function finishTimer() {
   // v0.1.204 — 햇살 재화 지급
   const _hamsalAmount = calcHamsalEarned(timer.duration || 0, {
     paused:   _pausedThisSession,
-    noReroll: _spinsSinceReset === 1,   // 가챠 1회 후 바로 시작
+    noReroll: _noRerollThisSession,  // 가챠 1회 후 바로 시작 (startTimer에서 캡처)
     battle:   !!activeBattleId,
   });
   earnHamsal(_hamsalAmount);
