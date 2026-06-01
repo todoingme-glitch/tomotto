@@ -2760,17 +2760,16 @@ body:has(.container[data-tab="personal"]) .container {
   z-index: 3;
 }
 
-/* 데스크탑 — 언덕 이미지 너무 커지지 않게 클리핑 */
+/* 데스크탑 — 이미지 너비 줄여서 높이가 화면 안에 들어오게 */
 @media (min-width: 481px) {
   .bg-hill {
-    height: 65vh;
-    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
   }
   .bg-hill img {
-    position: absolute;
-    bottom: 0;
-    width: 100%;
-    height: auto;
+    width: auto;
+    max-height: 75vh;
   }
 }
 
