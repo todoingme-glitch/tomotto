@@ -2683,15 +2683,77 @@ dialog.modal input[type="text"]:focus {
 }
 .card-dialog-close:hover { background: rgba(90,50,10,0.3); }
 
-/* ── 탭별 배경 이미지 ─────────────────────────────────── */
-.container {
-  background-repeat: no-repeat;
-  background-size: cover;
-  background-position: center top;
+/* ── 탭별 배경 ────────────────────────────────────────── */
+.container[data-tab="social"]   { background: url('assets/2.png') center top / cover no-repeat; }
+.container[data-tab="log"]      { background: url('assets/3.png') center top / cover no-repeat; }
+
+/* 개인탭 — 레이어 분리 배경 */
+.bg-sky,
+.bg-clouds,
+.bg-hill {
+  display: none;
+  pointer-events: none;
 }
-.container[data-tab="personal"] { background-image: url('assets/1.png'); }
-.container[data-tab="social"]   { background-image: url('assets/2.png'); }
-.container[data-tab="log"]      { background-image: url('assets/3.png'); }
+
+body:has(.container[data-tab="personal"]) .bg-sky,
+body:has(.container[data-tab="personal"]) .bg-clouds,
+body:has(.container[data-tab="personal"]) .bg-hill {
+  display: block;
+}
+
+/* 하늘 그라데이션 */
+.bg-sky {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(180deg, #5bbde4 0%, #a8daf0 60%, #c8ecf7 100%);
+}
+
+/* 구름 레이어 — 오른쪽→왼쪽 무한 루프 */
+.bg-clouds {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+}
+.bg-clouds-inner {
+  display: flex;
+  width: 200%;
+  height: 100%;
+  animation: clouds-scroll 40s linear infinite;
+}
+.bg-clouds-inner img {
+  width: 50%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+@keyframes clouds-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* 언덕/슬롯머신 — 화면 하단 고정 */
+.bg-hill {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 800px;
+  z-index: 2;
+}
+.bg-hill img {
+  width: 100%;
+  display: block;
+}
+
+/* 개인탭일 때 컨테이너 배경 제거 + z-index 올리기 */
+body:has(.container[data-tab="personal"]) .container {
+  background: none;
+  position: relative;
+  z-index: 3;
+}
 
 /* 카드 반투명 처리 — 배경이 비치게 */
 .card {
