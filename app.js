@@ -3586,6 +3586,9 @@ function restoreTimerState() {
       if (window.AndroidBridge?.stopTimerNotification) {
         try { window.AndroidBridge.stopTimerNotification(); } catch (_e) {}
       }
+      if (window.AndroidBridge?.cancelCompletionNotification) {
+        try { window.AndroidBridge.cancelCompletionNotification(); } catch (_e) {}
+      }
       cancelNotification();
       $timerStatus.textContent = `✓ "${currentTask}" 완료! 수고하셨어요`;
       $timerStatus.classList.add('success');

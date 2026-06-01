@@ -56,6 +56,14 @@ public class MainActivity extends BridgeActivity {
             stopService(intent);
         }
 
+        /** 완료 알림(ID 1002) 취소 — 앱 재진입 시 JS에서 호출 */
+        @JavascriptInterface
+        public void cancelCompletionNotification() {
+            NotificationManager nm =
+                (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            nm.cancel(TimerAlarmReceiver.NOTIF_ID);
+        }
+
         /**
          * 앱 종료로 인해 중단된 타이머의 남은 시간(ms)을 반환하고 플래그를 지운다.
          * 중단 이력 없으면 0 반환.
