@@ -2585,16 +2585,36 @@ dialog.modal input[type="text"]:focus {
   backdrop-filter: blur(4px);
 }
 
-/* 카드 내부 스타일 초기화 */
-.card-dialog .card {
+/* 카드 내부 스타일 전체 투명 처리 */
+.card-dialog .card,
+.card-dialog .completion-box,
+.card-dialog .completed-log,
+.card-dialog .last-capture,
+.card-dialog .note-wrap,
+.card-dialog .gacha-result,
+.card-dialog .timer-section,
+.card-dialog .capture-row {
   background: transparent !important;
-  border: none !important;
+  border-color: rgba(100,70,20,0.25) !important;
   box-shadow: none !important;
   border-radius: 0 !important;
   margin: 0 !important;
   max-width: none !important;
   backdrop-filter: none !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+.card-dialog .card {
   padding: 0 !important;
+}
+
+/* 스크롤바 숨김 */
+.card-dialog {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.card-dialog::-webkit-scrollbar {
+  display: none;
 }
 .card-dialog h2 {
   font-family: 'Cinzel', serif;
