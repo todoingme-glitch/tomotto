@@ -2762,21 +2762,22 @@ body:has(.container[data-tab="personal"]) .container {
 }
 
 
-/* 데스크탑 — 구름 슬롯머신 뒤로, 슬롯머신 탭 윗면에 딱 맞춤 */
+/* 데스크탑 */
 @media (min-width: 481px) {
   .bg-clouds-inner {
-    width: 800%; /* 웹 구름 크게 */
+    width: 800%;
+    animation-duration: 60s; /* 웹 구름 느리게 */
   }
   .bg-clouds {
     top: 30vh;
     height: 70vh;
   }
   .bg-hill {
-    bottom: calc(62px + env(safe-area-inset-bottom, 0px));
+    bottom: 55px;
   }
 }
 
-/* 모바일 — 배경 레이어 풀 너비, 구름/언덕 위치 조정 */
+/* 모바일 */
 @media (max-width: 480px) {
   .bg-clouds,
   .bg-hill {
@@ -2784,14 +2785,15 @@ body:has(.container[data-tab="personal"]) .container {
     max-width: none;
   }
   .bg-clouds-inner {
-    width: 520%;
+    width: 420%;        /* 크기 살짝 줄임 */
+    animation-duration: 30s; /* 모바일 구름 빠르게 */
   }
   .bg-clouds {
-    top: 25vh;
-    height: 75vh;
+    top: 20vh;          /* 조금 더 위로 */
+    height: 80vh;
   }
   .bg-hill {
-    bottom: calc(62px + env(safe-area-inset-bottom, 0px));
+    bottom: 55px;
   }
 }
 
