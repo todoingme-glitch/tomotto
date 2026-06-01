@@ -702,7 +702,7 @@ br.mobile-br { display: none; }
 /* 햇살 획득 토스트 */
 .hamsal-toast {
   position: fixed;
-  bottom: 80px;
+  bottom: calc(70px + env(safe-area-inset-bottom, 0px)); /* 탭바 + 여유 */
   left: 50%;
   transform: translateX(-50%) translateY(12px);
   background: #fff8e1;
