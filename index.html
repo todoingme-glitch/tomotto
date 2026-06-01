@@ -327,7 +327,7 @@
               <tbody>
                 <tr class="muted-row"><td>5분 미만</td><td>없음</td></tr>
                 <tr><td>5~24분</td><td>+3점</td></tr>
-                <tr class="highlight-row"><td>25~44분 <span class="info-tag">뽀모도로</span></td><td>+8점</td></tr>
+                <tr class="highlight-row"><td><span class="info-row-flex">25~44분<span class="info-tag">★ 뽀모도로</span></span></td><td>+8점</td></tr>
                 <tr><td>45~59분</td><td>+12점</td></tr>
                 <tr><td>60분+</td><td>+15점</td></tr>
               </tbody>
@@ -349,7 +349,7 @@
               </div>
               <div class="info-title-card">
                 <span class="info-title-card-icon">⏳</span>
-                <b>장기 숙성 토마토</b>
+                <b class="info-nowrap">장기 숙성 토마토</b>
                 <span class="info-title-cond">평균 60분+</span>
               </div>
             </div>
@@ -801,7 +801,7 @@
       <div class="info-dialog-header">
         <span class="info-dialog-emoji">☀️</span>
         <div>
-          <p class="lb-info-title">햇살 재화</p>
+          <p class="lb-info-title">햇살 토큰</p>
           <p class="info-dialog-sub">집중할수록 햇살이 쌓여요</p>
         </div>
         <button id="hamsalInfoCloseBtn" class="info-close-btn" type="button" aria-label="닫기">✕</button>
@@ -809,24 +809,21 @@
 
       <div class="info-section">
         <p class="info-section-label">획득 방법</p>
-        <p class="info-base-note">기본 지급 + 보너스 합산</p>
         <table class="info-score-table">
-          <thead><tr><th>세션 시간</th><th>기본</th></tr></thead>
+          <thead><tr><th colspan="2">세션 시간별 기본 지급</th><th>햇살</th></tr></thead>
           <tbody>
-            <tr><td>25분 미만</td><td>5 ☀️</td></tr>
-            <tr class="highlight-row"><td>25~59분 <span class="info-tag">뽀모도로</span></td><td>10 ☀️</td></tr>
-            <tr><td>60~89분</td><td>20 ☀️</td></tr>
-            <tr><td>90분+</td><td>30 ☀️</td></tr>
+            <tr><td colspan="2">25분 미만</td><td>5 ☀️</td></tr>
+            <tr class="highlight-row"><td colspan="2"><span class="info-row-flex">25~59분<span class="info-tag">★ 뽀모도로</span></span></td><td>10 ☀️</td></tr>
+            <tr><td colspan="2">60~89분</td><td>20 ☀️</td></tr>
+            <tr><td colspan="2">90분+</td><td>30 ☀️</td></tr>
           </tbody>
-        </table>
-        <table class="info-score-table" style="margin-top:8px">
-          <thead><tr><th>보너스 조건</th><th></th></tr></thead>
+          <thead><tr><th colspan="2" style="padding-top:12px">보너스 조건</th><th style="padding-top:12px">추가</th></tr></thead>
           <tbody>
-            <tr><td>일시정지 없이 완료</td><td>+3 ☀️</td></tr>
-            <tr><td>리롤 없이 바로 시작</td><td>+3 ☀️</td></tr>
-            <tr><td>배틀 완주</td><td>+5 ☀️</td></tr>
-            <tr><td>얼리버드 (새벽 5~8시)</td><td>+5 ☀️</td></tr>
-            <tr><td>미드나잇 (0~2시)</td><td>+5 ☀️</td></tr>
+            <tr><td colspan="2">일시정지 없이 완료</td><td>+3 ☀️</td></tr>
+            <tr><td colspan="2">리롤 없이 바로 시작</td><td>+3 ☀️</td></tr>
+            <tr><td colspan="2">배틀 완주</td><td>+5 ☀️</td></tr>
+            <tr><td colspan="2">얼리버드 (새벽 5~8시)</td><td>+5 ☀️</td></tr>
+            <tr><td colspan="2">미드나잇 (0~2시)</td><td>+5 ☀️</td></tr>
           </tbody>
         </table>
       </div>

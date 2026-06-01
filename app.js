@@ -3580,9 +3580,13 @@ function restoreTimerState() {
     currentTask = state.task || currentTask;
 
     if (now >= state.endTime) {
-      // 이미 끝났음
+      // 이미 끝났음 — 알림 제거 후 완료 UI
       timer.remaining = 0;
       timer.endTime = null;
+      if (window.AndroidBridge?.stopTimerNotification) {
+        try { window.AndroidBridge.stopTimerNotification(); } catch (_e) {}
+      }
+      cancelNotification();
       $timerStatus.textContent = `✓ "${currentTask}" 완료! 수고하셨어요`;
       $timerStatus.classList.add('success');
       $timerDisplay.classList.add('finished');
