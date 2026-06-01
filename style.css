@@ -2762,14 +2762,17 @@ body:has(.container[data-tab="personal"]) .container {
 }
 
 
-/* 데스크탑 — 구름 슬롯머신 뒤로, 슬롯머신 탭과 딱 붙이기 */
+/* 데스크탑 — 구름 슬롯머신 뒤로, 슬롯머신 탭 윗면에 딱 맞춤 */
 @media (min-width: 481px) {
+  .bg-clouds-inner {
+    width: 800%; /* 웹 구름 크게 */
+  }
   .bg-clouds {
-    top: 35vh;
-    height: 65vh;
+    top: 30vh;
+    height: 70vh;
   }
   .bg-hill {
-    bottom: 0;  /* 탭바가 z-index 200으로 위에 올라타서 딱 붙어 보임 */
+    bottom: calc(62px + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -2780,18 +2783,15 @@ body:has(.container[data-tab="personal"]) .container {
     width: 100%;
     max-width: none;
   }
-  /* inner 520% = 이미지 한 장이 컨테이너의 260% (2배) */
   .bg-clouds-inner {
     width: 520%;
   }
-  /* 구름 슬롯머신 뒤로 내리기 */
   .bg-clouds {
-    top: 30vh;
-    height: 70vh;
+    top: 25vh;
+    height: 75vh;
   }
-  /* 언덕 탭바 바로 위에 붙이기 */
   .bg-hill {
-    bottom: 0;
+    bottom: calc(62px + env(safe-area-inset-bottom, 0px));
   }
 }
 
