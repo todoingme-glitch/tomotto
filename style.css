@@ -2683,16 +2683,15 @@ dialog.modal input[type="text"]:focus {
 }
 .card-dialog-close:hover { background: rgba(90,50,10,0.3); }
 
-/* ── 파노라마 배경 — 컨테이너 안에만 적용 ─────────────── */
+/* ── 탭별 배경 이미지 ─────────────────────────────────── */
 .container {
-  background-image: url('assets/bg-shire-PIXEL.png');
   background-repeat: no-repeat;
-  background-size: 300% auto;
-  background-position: 0% 30%;   /* JS가 탭 전환 시 갱신 */
-  border-radius: 0;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
+  background-size: cover;
+  background-position: center top;
 }
+.container[data-tab="personal"] { background-image: url('assets/1.png'); }
+.container[data-tab="social"]   { background-image: url('assets/2.png'); }
+.container[data-tab="log"]      { background-image: url('assets/3.png'); }
 
 /* 카드 반투명 처리 — 배경이 비치게 */
 .card {
