@@ -3613,12 +3613,29 @@ function restoreTimerState() {
         $resetBtn.disabled = false;
         saveTimerState({ status: 'paused', remaining: timer.remaining, duration: timer.duration, task: currentTask });
       } else {
-        // 남은 시간으로 계속 진행
-        timer.remaining = Math.ceil((state.endTime - now) / 1000);
+        // endTime 기반으로 남은 시간 계산
+        const calcRemaining = Math.ceil((state.endTime - now) / 1000);
+        timer.remaining = Math.max(1, calcRemaining);
         timer.endTime = state.endTime;
-        $timerStatus.textContent = `⟳ "${currentTask}" 자리 비운 사이도 계속 돌아가는 중···`;
-        $timerStatus.classList.add('resumed');
-        startTimerInternal();  // 자동 재개
+
+        // 웹/Capacitor 모두: 강제종료 후 재시작이면 일시정지로 복원
+        // (auto-resume은 백그라운드 유지 중 돌아올 때만 적절)
+        const isCapacitor = !!(window.Capacitor?.isNativePlatform?.());
+        if (isCapacitor) {
+          // 앱 강제종료 → 재시작: 일시정지 상태로 복원
+          timer.endTime = null;
+          $timerStatus.textContent = '⏸ 앱이 종료되어 일시정지됨 — 시작 누르면 이어서';
+          $timerStatus.classList.remove('success', 'resumed');
+          $startBtn.disabled = false;
+          $pauseBtn.disabled = true;
+          $resetBtn.disabled = false;
+          saveTimerState({ status: 'paused', remaining: timer.remaining, duration: timer.duration, task: currentTask });
+        } else {
+          // 웹: 탭 새로고침 등 → 계속 진행
+          $timerStatus.textContent = `⟳ "${currentTask}" 자리 비운 사이도 계속 돌아가는 중···`;
+          $timerStatus.classList.add('resumed');
+          startTimerInternal();
+        }
       }
     }
   }
@@ -4364,6 +4381,17 @@ window.addEventListener('load', () => {
   infoBtn.addEventListener('click', () => dialog.showModal());
   closeBtn?.addEventListener('click', () => dialog.close());
   dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+
+  // v0.1.204 — 햇살 안내 다이얼로그
+  const hamsalBadge   = document.getElementById('hamsalBadge');
+  const hamsalDialog  = document.getElementById('hamsalInfoDialog');
+  const hamsalClose   = document.getElementById('hamsalInfoCloseBtn');
+  if (hamsalBadge && hamsalDialog) {
+    hamsalBadge.style.cursor = 'pointer';
+    hamsalBadge.addEventListener('click', () => hamsalDialog.showModal());
+    hamsalClose?.addEventListener('click', () => hamsalDialog.close());
+    hamsalDialog.addEventListener('click', (e) => { if (e.target === hamsalDialog) hamsalDialog.close(); });
+  }
 });
 
 // 플로팅 바 이벤트 (window.load 이후 등록)

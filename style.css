@@ -4492,45 +4492,157 @@ dialog.modal input[type="text"]:focus {
 }
 .lb-info-dialog {
   border: none;
-  border-radius: var(--radius, 14px);
+  border-radius: 18px;
   padding: 0;
-  max-width: 320px;
-  width: 90vw;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  max-width: 340px;
+  width: 92vw;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.18);
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   margin: 0;
+  overflow: hidden;
 }
 .lb-info-dialog::backdrop {
-  background: rgba(0,0,0,0.35);
+  background: rgba(0,0,0,0.4);
 }
 .lb-info-dialog-inner {
-  padding: 20px 20px 16px;
+  padding: 0;
+}
+
+/* 모달 헤더 */
+.info-dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 16px 14px;
+  background: linear-gradient(135deg, #fff5f3, #fff8f0);
+  border-bottom: 1px solid #f0e8e8;
+}
+.info-dialog-emoji {
+  font-size: 2rem;
+  line-height: 1;
+  flex-shrink: 0;
 }
 .lb-info-title {
   font-size: 0.95rem;
   font-weight: 700;
-  margin: 0 0 10px;
-  color: var(--text-main);
+  margin: 0 0 2px;
+  color: var(--text);
 }
-.lb-info-list {
-  list-style: none;
-  padding: 0;
+.info-dialog-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+.info-close-btn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.info-close-btn:hover { background: var(--border-soft); }
+
+/* 모달 섹션 */
+.info-section {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.info-section:last-child { border-bottom: none; padding-bottom: 18px; }
+.info-section-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   margin: 0 0 10px;
+}
+
+/* 점수 행 */
+.info-score-rows {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 0.85rem;
-  color: var(--text-main);
-  line-height: 1.5;
 }
-.lb-info-desc {
+.info-score-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.83rem;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: var(--bg);
+}
+.info-score-row.highlight {
+  background: rgba(217,78,58,0.07);
+}
+.info-score-time {
+  color: var(--text);
+  font-weight: 500;
+}
+.info-score-time.muted, .info-score-bonus.muted {
+  color: var(--text-muted);
+}
+.info-score-bonus {
+  font-weight: 700;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.info-score-desc {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+.info-tag {
+  font-size: 0.68rem;
+  font-weight: 600;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+/* 호칭 행 */
+.info-title-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.info-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.83rem;
+}
+.info-title-icon {
+  font-size: 1.3rem;
+  width: 28px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.info-title-row b {
+  display: block;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.2;
+}
+.info-title-cond {
   font-size: 0.75rem;
   color: var(--text-muted);
-  margin: 0 0 14px;
+  margin-left: 4px;
 }
+
+/* 구 스타일 호환 유지 */
+.lb-info-list { display: none; }
+.lb-info-desc { display: none; }
 
 /* =====================================================
    v0.1.39 — 인앱 브라우저 (카카오톡 등) 안내 배너

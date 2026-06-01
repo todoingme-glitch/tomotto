@@ -308,23 +308,111 @@
       <h2><span class="step">3</span> 리더보드 <button id="lbInfoBtn" class="lb-info-btn" type="button" aria-label="호칭 안내">!</button></h2>
       <dialog id="lbInfoDialog" class="lb-info-dialog">
         <div class="lb-info-dialog-inner">
-          <p class="lb-info-title">점수 & 호칭 안내</p>
-          <ul class="lb-info-list">
-            <li><b>점수 기준 (세션당)</b></li>
-            <li>기본: 집중한 분(分)만큼 1점씩</li>
-            <li>5분 미만 — 보너스 없음</li>
-            <li>5~24분 — +3점 보너스</li>
-            <li>25~44분 — +8점 보너스 <span style="color:var(--accent);font-size:0.8em">★ 기본 뽀모도로</span></li>
-            <li>45~59분 — +12점 보너스</li>
-            <li>60분+ — +15점 보너스</li>
-          </ul>
-          <ul class="lb-info-list" style="margin-top:8px">
-            <li><b>세션 호칭</b></li>
-            <li>🍅 <b>방울토마토 러너</b> — 세션 평균 10분 미만</li>
-            <li>🌿 <b>정석 수확러</b> — 세션 평균 20~35분</li>
-            <li>⏳ <b>장기 숙성 토마토</b> — 세션 평균 60분 이상</li>
-          </ul>
-          <button id="lbInfoCloseBtn" class="btn-mini" type="button">닫기</button>
+          <div class="info-dialog-header">
+            <span class="info-dialog-emoji">🏆</span>
+            <div>
+              <p class="lb-info-title">점수 & 호칭 안내</p>
+              <p class="info-dialog-sub">집중한 만큼 점수가 쌓여요</p>
+            </div>
+            <button id="lbInfoCloseBtn" class="info-close-btn" type="button" aria-label="닫기">✕</button>
+          </div>
+
+          <div class="info-section">
+            <p class="info-section-label">📊 점수 기준 (세션당)</p>
+            <div class="info-score-rows">
+              <div class="info-score-row">
+                <span class="info-score-time">기본</span>
+                <span class="info-score-desc">집중한 분(分)만큼 1점씩</span>
+              </div>
+              <div class="info-score-row">
+                <span class="info-score-time muted">5분 미만</span>
+                <span class="info-score-bonus muted">보너스 없음</span>
+              </div>
+              <div class="info-score-row">
+                <span class="info-score-time">5~24분</span>
+                <span class="info-score-bonus">+3점</span>
+              </div>
+              <div class="info-score-row highlight">
+                <span class="info-score-time">25~44분</span>
+                <span class="info-score-bonus">+8점 <span class="info-tag">기본 뽀모도로</span></span>
+              </div>
+              <div class="info-score-row">
+                <span class="info-score-time">45~59분</span>
+                <span class="info-score-bonus">+12점</span>
+              </div>
+              <div class="info-score-row">
+                <span class="info-score-time">60분+</span>
+                <span class="info-score-bonus">+15점</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-section">
+            <p class="info-section-label">🌱 세션 호칭</p>
+            <div class="info-title-rows">
+              <div class="info-title-row">
+                <span class="info-title-icon">🍅</span>
+                <div><b>방울토마토 러너</b><span class="info-title-cond">평균 10분 미만</span></div>
+              </div>
+              <div class="info-title-row">
+                <span class="info-title-icon">🌿</span>
+                <div><b>정석 수확러</b><span class="info-title-cond">평균 20~35분</span></div>
+              </div>
+              <div class="info-title-row">
+                <span class="info-title-icon">⏳</span>
+                <div><b>장기 숙성 토마토</b><span class="info-title-cond">평균 60분 이상</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </dialog>
+
+      <!-- 햇살 안내 모달 -->
+      <dialog id="hamsalInfoDialog" class="lb-info-dialog">
+        <div class="lb-info-dialog-inner">
+          <div class="info-dialog-header">
+            <span class="info-dialog-emoji">☀️</span>
+            <div>
+              <p class="lb-info-title">햇살 재화</p>
+              <p class="info-dialog-sub">집중할수록 햇살이 쌓여요</p>
+            </div>
+            <button id="hamsalInfoCloseBtn" class="info-close-btn" type="button" aria-label="닫기">✕</button>
+          </div>
+
+          <div class="info-section">
+            <p class="info-section-label">🌟 획득 방법</p>
+            <div class="info-score-rows">
+              <div class="info-score-row"><span class="info-score-time">25분 미만</span><span class="info-score-bonus">5 ☀️</span></div>
+              <div class="info-score-row highlight"><span class="info-score-time">25~59분</span><span class="info-score-bonus">10 ☀️ <span class="info-tag">기본 뽀모도로</span></span></div>
+              <div class="info-score-row"><span class="info-score-time">60~89분</span><span class="info-score-bonus">20 ☀️</span></div>
+              <div class="info-score-row"><span class="info-score-time">90분+</span><span class="info-score-bonus">30 ☀️</span></div>
+            </div>
+            <div class="info-score-rows" style="margin-top:8px">
+              <div class="info-score-row"><span class="info-score-time muted">일시정지 없이</span><span class="info-score-bonus">+3 ☀️</span></div>
+              <div class="info-score-row"><span class="info-score-time muted">리롤 없이 바로 시작</span><span class="info-score-bonus">+3 ☀️</span></div>
+              <div class="info-score-row"><span class="info-score-time muted">배틀 완주</span><span class="info-score-bonus">+5 ☀️</span></div>
+              <div class="info-score-row"><span class="info-score-time muted">얼리버드 (새벽 5~8시)</span><span class="info-score-bonus">+5 ☀️</span></div>
+              <div class="info-score-row"><span class="info-score-time muted">미드나잇 (0~2시)</span><span class="info-score-bonus">+5 ☀️</span></div>
+            </div>
+          </div>
+
+          <div class="info-section">
+            <p class="info-section-label">🛒 사용처</p>
+            <div class="info-title-rows">
+              <div class="info-title-row">
+                <span class="info-title-icon">🎰</span>
+                <div><b>가챠 추가 스핀</b><span class="info-title-cond">30 ☀️ 소모</span></div>
+              </div>
+              <div class="info-title-row" style="opacity:0.45">
+                <span class="info-title-icon">🎨</span>
+                <div><b>닉네임 색상</b><span class="info-title-cond">준비 중</span></div>
+              </div>
+              <div class="info-title-row" style="opacity:0.45">
+                <span class="info-title-icon">🏘️</span>
+                <div><b>마을 꾸미기</b><span class="info-title-cond">준비 중</span></div>
+              </div>
+            </div>
+          </div>
         </div>
       </dialog>
       <div class="lb-period-tabs">
