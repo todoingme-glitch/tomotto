@@ -2733,7 +2733,7 @@ body:has(.container[data-tab="personal"]) .bg-hill {
   100% { transform: translateX(-50%); }
 }
 
-/* 언덕/슬롯머신 — 화면 하단 고정 */
+/* 언덕/슬롯머신 — 화면 하단 고정, 아래쪽 55%만 표시해서 하늘 영역 구름에 위임 */
 .bg-hill {
   position: fixed;
   bottom: 0;
@@ -2741,10 +2741,15 @@ body:has(.container[data-tab="personal"]) .bg-hill {
   transform: translateX(-50%);
   width: 100%;
   max-width: 800px;
+  height: 55vh;
+  overflow: hidden;
   z-index: 2;
 }
 .bg-hill img {
+  position: absolute;
+  bottom: 0;
   width: 100%;
+  height: auto;
   display: block;
 }
 
