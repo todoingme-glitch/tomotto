@@ -2722,10 +2722,10 @@ body:has(.container[data-tab="personal"]) .bg-hill {
   z-index: 1;
   overflow: hidden;
 }
-/* inner 280% = 이미지 한 장이 컨테이너의 140% 크기 → 구름 크게 */
+/* inner 560% = 이미지 한 장이 컨테이너의 280% (데스크탑 기본) */
 .bg-clouds-inner {
   display: flex;
-  width: 280%;
+  width: 560%;
   animation: clouds-scroll 40s linear infinite;
 }
 .bg-clouds-inner img {
@@ -2762,14 +2762,14 @@ body:has(.container[data-tab="personal"]) .container {
 }
 
 
-/* 데스크탑 — 구름 중앙, 슬롯머신 탭 위에 붙이기 */
+/* 데스크탑 — 구름 슬롯머신 뒤로, 슬롯머신 탭과 딱 붙이기 */
 @media (min-width: 481px) {
   .bg-clouds {
-    top: 22vh;
-    height: 78vh;
+    top: 35vh;
+    height: 65vh;
   }
   .bg-hill {
-    bottom: 65px;
+    bottom: 0;  /* 탭바가 z-index 200으로 위에 올라타서 딱 붙어 보임 */
   }
 }
 
@@ -2780,18 +2780,18 @@ body:has(.container[data-tab="personal"]) .container {
     width: 100%;
     max-width: none;
   }
-  /* inner 260% = 이미지 한 장이 컨테이너의 130% → 모바일도 구름 크게 */
+  /* inner 520% = 이미지 한 장이 컨테이너의 260% (2배) */
   .bg-clouds-inner {
-    width: 260%;
+    width: 520%;
   }
-  /* 구름 화면 중앙쪽으로 */
+  /* 구름 슬롯머신 뒤로 내리기 */
   .bg-clouds {
-    top: 18vh;
-    height: 82vh;
+    top: 30vh;
+    height: 70vh;
   }
   /* 언덕 탭바 바로 위에 붙이기 */
   .bg-hill {
-    bottom: 65px;
+    bottom: 0;
   }
 }
 
