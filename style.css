@@ -2760,16 +2760,35 @@ body:has(.container[data-tab="personal"]) .container {
   z-index: 3;
 }
 
-/* 모바일 — 배경 레이어 풀 너비 */
+/* 데스크탑 — 언덕 이미지 너무 커지지 않게 클리핑 */
+@media (min-width: 481px) {
+  .bg-hill {
+    height: 65vh;
+    overflow: hidden;
+  }
+  .bg-hill img {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: auto;
+  }
+}
+
+/* 모바일 — 배경 레이어 풀 너비, 구름/언덕 위치 조정 */
 @media (max-width: 480px) {
   .bg-clouds,
   .bg-hill {
     width: 100%;
     max-width: none;
   }
-  .bg-clouds-inner img {
-    object-fit: cover;
-    object-position: center top;
+  /* 구름 화면 중앙쪽으로 */
+  .bg-clouds {
+    top: 18vh;
+    height: 82vh;
+  }
+  /* 언덕 탭바 바로 위에 붙이기 (탭바 높이 약 65px) */
+  .bg-hill {
+    bottom: 65px;
   }
 }
 
