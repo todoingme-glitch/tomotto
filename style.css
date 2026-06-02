@@ -2559,7 +2559,7 @@ dialog.modal input[type="text"]:focus {
   border-radius: 0;
   padding: 0;
   box-shadow: none;
-  position: relative;
+  /* position: relative 제거 — 위의 position: fixed가 덮어씌워지는 버그 수정 */
 
   font-family: 'Cinzel', 'Georgia', serif;
   color: #3A2810;

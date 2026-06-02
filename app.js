@@ -6155,12 +6155,15 @@ function subscribePublicLobby(battleId) {
     // 비방장: 방장이 라운드 결과 집계 완료 → 휴식 시작 신호
     .on('broadcast', { event: 'siege-break-start' }, ({ payload }) => {
       if (!payload) return;
-      // HP 로컬 반영
       if (publicLobbyBattle) {
         publicLobbyBattle.team_a_hp = payload.hpA;
         publicLobbyBattle.team_b_hp = payload.hpB;
       }
-      _startSiegeBreakCountdown(payload.breakSec ?? 300, false);
+      // 절대 종료 시각 기준으로 남은 초 계산 → 네트워크 지연 보정
+      const remainSec = payload.breakEndAt
+        ? Math.max(0, Math.round((payload.breakEndAt - Date.now()) / 1000))
+        : (payload.breakSec ?? 300);
+      _startSiegeBreakCountdown(remainSec, false, payload.breakEndAt);
     })
     // 비방장: 공성전 종료 신호
     .on('broadcast', { event: 'siege-game-over' }, async ({ payload }) => {
@@ -6352,18 +6355,18 @@ async function _processSiegeRoundResult(battleId, battle, players) {
     let newHpB = battle.team_b_hp ?? 100;
 
     if (Math.abs(tomTotal - motoTotal) < 30) {
-      // 타이 (30초 이내): 양 팀 각각 평균 집중 시간(분)만큼 HP 차감
-      const tomDmg  = Math.round(tomAvg / 60);
-      const motoDmg = Math.round(motoAvg / 60);
+      // 타이 (30초 이내): 양 팀 각각 평균 집중 시간(분)만큼 HP 차감 (최소 1)
+      const tomDmg  = Math.max(1, Math.round(tomAvg / 60));
+      const motoDmg = Math.max(1, Math.round(motoAvg / 60));
       newHpA = Math.max(0, newHpA - tomDmg);
       newHpB = Math.max(0, newHpB - motoDmg);
     } else if (tomTotal > motoTotal) {
-      // 팀 톰 승: 모토 HP -= (시간 차 분 × 1.5)
-      const dmg = Math.round((tomTotal - motoTotal) / 60 * 1.5);
+      // 팀 톰 승: 모토 HP -= (시간 차 분 × 1.5, 최소 1)
+      const dmg = Math.max(1, Math.round((tomTotal - motoTotal) / 60 * 1.5));
       newHpB = Math.max(0, newHpB - dmg);
     } else {
-      // 팀 모토 승: 톰 HP -= (시간 차 분 × 1.5)
-      const dmg = Math.round((motoTotal - tomTotal) / 60 * 1.5);
+      // 팀 모토 승: 톰 HP -= (시간 차 분 × 1.5, 최소 1)
+      const dmg = Math.max(1, Math.round((motoTotal - tomTotal) / 60 * 1.5));
       newHpA = Math.max(0, newHpA - dmg);
     }
 
@@ -6415,14 +6418,15 @@ async function _processSiegeRoundResult(battleId, battle, players) {
       return;
     }
 
-    // 다음 라운드 준비: 비방장에게 휴식 시작 broadcast (HP 결과 포함)
+    // 다음 라운드 준비: 절대 종료 시각 기준으로 broadcast (지연 무관하게 동기화)
+    const breakEndAt = Date.now() + 300_000;
     publicLobbyChannel?.send({
       type: 'broadcast', event: 'siege-break-start',
-      payload: { hpA: newHpA, hpB: newHpB, breakSec: 300 },
+      payload: { hpA: newHpA, hpB: newHpB, breakEndAt },
     });
 
-    // 방장: 5분 휴식 카운트다운 시작
-    _startSiegeBreakCountdown(300, true);
+    // 방장: 휴식 카운트다운 시작
+    _startSiegeBreakCountdown(300, true, breakEndAt);
 
   } finally {
     _siegeProcessing = false;
