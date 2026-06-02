@@ -1,5 +1,5 @@
 // ============================================================
-// Tomotto v0.1.180 — 가챠 뽀모도로
+// Tomotto v0.1.210 — 가챠 뽀모도로
 // 토마토 톤 + 슬롯머신 reel + persistent timer
 // ============================================================
 
@@ -1000,13 +1000,15 @@ async function saveBattle(battle) {
       alert('배틀 저장 실패: ' + e1.message);
       throw e1;
     }
-    // battle_players에 생성자 등록 (MOTO MODE면 가챠 task도 함께)
-    const { error: e2 } = await sb.from('battle_players').insert({
+    // battle_players에 생성자 등록 (팀 공성전이면 tom 팀 배정)
+    const creatorInsert = {
       battle_id: battle.id,
       nickname: battle.creator_nickname,
       is_creator: true,
-      task: battle.mode === 'separate' ? (currentTask || null) : null, // v0.1.22
-    });
+      task: battle.mode === 'separate' ? (currentTask || null) : null,
+    };
+    if (battle.team_mode) creatorInsert.team = 'tom';
+    const { error: e2 } = await sb.from('battle_players').insert(creatorInsert);
     if (e2) {
       console.error('플레이어 등록 실패:', e2);
       // 배틀은 만들어졌으니 치명적이진 않음 — 알림만
@@ -4814,24 +4816,43 @@ function finishTimer() {
 
   // v0.1.17 — 배틀 중이었으면 결과 보기 버튼 표시
   if (activeBattleId) {
-    markBattleCompletedLocally(activeBattleId); // v0.1.65 — 로컬 완료 Set+localStorage에 추가 (리셋/새로고침 후에도 숨김 유지)
-    $battleResultBtn.hidden = false;
-    $battleResultBtn.dataset.battleId = activeBattleId;
-    // v0.1.29 — 배틀 완료 시 status 'done' 업데이트 (여러 카드 '진행 중' 버그 수정)
-    // v0.1.65 — updated_at 함께 기록 (24시간 후 자동 삭제 기준으로 사용)
-    if (sb) {
-      sb.from('battles')
-        .update({ status: 'done', updated_at: new Date().toISOString() })
-        .eq('id', activeBattleId)
-        .then(({ error }) => {
-          if (error) console.warn('[Supabase] battles done 업데이트 실패:', error.message);
-          else {
-            console.log('[Supabase] battles status → done:', activeBattleId);
-            renderMyBattles(); // v0.1.65 — 완료 후 카드 상태 즉시 갱신
-          }
-        });
+    const isSiegeBattle = currentBattleData?.battle?.team_mode;
+    if (isSiegeBattle) {
+      // 팀 공성전 라운드 완료 기록 (battles status는 done으로 바꾸지 않음)
+      if (sb && myNickname) {
+        const elapsedSec = timer.duration ?? 0;
+        sb.from('battle_players')
+          .update({ round_done: true, round_elapsed_sec: elapsedSec })
+          .eq('battle_id', activeBattleId)
+          .eq('nickname', myNickname)
+          .then(({ error }) => {
+            if (!error) console.log('[Siege] round_done 기록:', elapsedSec, '초');
+            else console.warn('[Siege] round_done 기록 실패:', error.message);
+          });
+        const $lobbyModal = document.getElementById('publicLobbyModal');
+        if (!$lobbyModal?.open) {
+          _showNotifToast('achievement-toast--siege', '⚔️', '라운드 완료', '로비를 열어 진행 상황을 확인하세요', 4000);
+        }
+      }
     } else {
-      renderMyBattles(); // v0.1.65 — 오프라인 모드도 갱신
+      markBattleCompletedLocally(activeBattleId); // v0.1.65
+      $battleResultBtn.hidden = false;
+      $battleResultBtn.dataset.battleId = activeBattleId;
+      // v0.1.29 — 배틀 완료 시 status 'done' 업데이트
+      if (sb) {
+        sb.from('battles')
+          .update({ status: 'done', updated_at: new Date().toISOString() })
+          .eq('id', activeBattleId)
+          .then(({ error }) => {
+            if (error) console.warn('[Supabase] battles done 업데이트 실패:', error.message);
+            else {
+              console.log('[Supabase] battles status → done:', activeBattleId);
+              renderMyBattles();
+            }
+          });
+      } else {
+        renderMyBattles();
+      }
     }
   }
 
@@ -5480,9 +5501,9 @@ async function renderPublicBattles() {
   try {
     const { data, error } = await sb
       .from('battles')
-      .select('id, creator_nickname, mode, task_common, duration_sec, max_players, created_at, battle_players(nickname, is_ready)')
+      .select('id, creator_nickname, mode, task_common, duration_sec, max_players, created_at, team_mode, team_a_hp, team_b_hp, current_round, max_rounds, battle_players(nickname, is_ready, team)')
       .eq('is_public', true)
-      .eq('status', 'waiting')
+      .or('status.eq.waiting,and(status.eq.active,team_mode.eq.true)')
       .order('created_at', { ascending: false })
       .limit(20);
     if (error) {
@@ -5550,9 +5571,14 @@ async function renderPublicBattles() {
       ? `<button class="btn-mini btn-delete-public" data-battle-id="${b.id}" type="button" title="방 삭제">🗑</button>`
       : '';
 
+    const modeChip = b.team_mode
+      ? `<span class="pb-mode pb-mode--siege">⚔️ 공성전</span>`
+      : `<span class="pb-mode">🍅 ${mins}분</span>`;
+    const taskDisplay = b.team_mode ? '팀 vs 팀 · 개인 가챠' : task;
+
     return `<div class="public-battle-row${isMe ? ' lb-row-me' : ''}${isHidden ? ' pb-row-hidden' : ''}">
-      <span class="pb-mode">🍅 ${mins}분</span>
-      <span class="pb-nick"><span class="pb-nick-text">${nick}${isMe ? ' <span class="lb-me-badge">나</span>' : ''}</span><span class="pb-task">${task}</span></span>
+      ${modeChip}
+      <span class="pb-nick"><span class="pb-nick-text">${nick}${isMe ? ' <span class="lb-me-badge">나</span>' : ''}</span><span class="pb-task">${taskDisplay}</span></span>
       <span class="pb-count">${currentPlayers}/${maxPlayers}명</span>
       ${actionHtml}
       ${deleteBtn}
@@ -5648,12 +5674,22 @@ async function openPublicLobby(battleId) {
   // 아직 내가 battle_players에 없으면 참여 등록
   const alreadyIn = players.some(p => p.nickname === myNickname);
   if (!alreadyIn) {
-    const { error } = await sb.from('battle_players').insert({
+    // 팀 공성전: 입장 순서 기준 tom/moto 교차 배정
+    let assignedTeam = null;
+    if (publicLobbyBattle.team_mode) {
+      const tomCount  = players.filter(p => p.team === 'tom').length;
+      const motoCount = players.filter(p => p.team === 'moto').length;
+      assignedTeam = tomCount <= motoCount ? 'tom' : 'moto';
+    }
+    const insertPayload = {
       battle_id: battleId,
       nickname: myNickname,
       is_creator: false,
       is_ready: false,
-    });
+    };
+    if (assignedTeam) insertPayload.team = assignedTeam;
+
+    const { error } = await sb.from('battle_players').insert(insertPayload);
     if (error) { alert('참여 실패: ' + error.message); return; }
     unlockAchievement('F-2');   // 공개방 첫 참여
     const r = await sb.from('battle_players').select('*').eq('battle_id', battleId).order('created_at', { ascending: true });
@@ -5845,65 +5881,134 @@ async function enrichLobbyWithPartnerBadges(players) {
 
 /** 로비 모달 UI 렌더링 */
 function renderPublicLobby(battle, players) {
-  const modeLabel = battle.mode === 'common' ? '🍅 TOM MODE' : '🎲 MOTO MODE';
+  const isSiege   = !!battle.team_mode;
+  const modeLabel = isSiege ? '⚔️ 팀 공성전' : (battle.mode === 'common' ? '🍅 TOM MODE' : '🎲 MOTO MODE');
   const mins      = Math.round(battle.duration_sec / 60);
-  const readyCount = players.filter(p => p.is_ready).length;
 
-  const $title = document.getElementById('pubLobbyTitle');
-  const $info  = document.getElementById('pubLobbyInfo');
-  const $list  = document.getElementById('pubLobbyPlayers');
-  const $status = document.getElementById('pubLobbyStatus');
+  const $title    = document.getElementById('pubLobbyTitle');
+  const $info     = document.getElementById('pubLobbyInfo');
+  const $list     = document.getElementById('pubLobbyPlayers');
+  const $status   = document.getElementById('pubLobbyStatus');
   const $readyBtn = document.getElementById('pubLobbyReadyBtn');
+  const $hpPanel  = document.getElementById('siegeHpPanel');
   if (!$list) return;
 
-  if ($title) $title.textContent = `${modeLabel} · ${mins}분`;
-  // 준비 정보 제거 — 접속 인원만 표시
-  if ($info)  $info.textContent  = `접속 ${players.length} / ${battle.max_players}명`;
+  // HP 패널 표시/숨김
+  if ($hpPanel) {
+    $hpPanel.style.display = isSiege ? '' : 'none';
+    if (isSiege) _renderSiegeHp(battle);
+  }
 
-  $list.innerHTML = players.map(p => {
-    const isMe = p.nickname === myNickname;
-    const nickDisplay = escapeHtml(truncEnd(p.nickname ?? '', 16)); // 16자 초과 시 말줄임표
-    return `<div class="pub-lobby-player${isMe ? ' is-me' : ''}${p.is_ready ? ' is-ready' : ''}" data-nick="${escapeHtml(p.nickname ?? '')}">
-      <span class="pub-lobby-icon">${p.is_ready ? '✅' : '⏳'}</span>
-      <span class="pub-lobby-nick">${nickDisplay}${isMe ? ' <span class="lb-me-badge">나</span>' : ''}</span>
-      ${p.is_creator ? '<span class="pub-lobby-badge">방장</span>' : ''}
-    </div>`;
-  }).join('');
+  if ($title) $title.textContent = isSiege
+    ? `⚔️ 팀 공성전 · ${battle.max_rounds ?? 5}라운드`
+    : `${modeLabel} · ${mins}분`;
 
-  const myPlayer  = players.find(p => p.nickname === myNickname);
-  const allReady  = players.length >= 2 && players.every(p => p.is_ready);
-  const waiting   = players.length < 2;
+  if ($info) $info.textContent = `접속 ${players.length} / ${battle.max_players}명`;
 
-  // "닫기": 항상 창만 닫기 (방·채널 유지)
-  // "방 나가기": 비방장만 표시 — 실제로 방에서 제거
+  if (isSiege) {
+    // 팀별 두 컬럼 렌더링
+    const tomPlayers  = players.filter(p => p.team === 'tom');
+    const motoPlayers = players.filter(p => p.team === 'moto');
+    const perTeam     = Math.max(tomPlayers.length, motoPlayers.length, 1);
+
+    function playerRow(p) {
+      if (!p) return '<div class="pub-lobby-player pub-lobby-player--empty">—</div>';
+      const isMe = p.nickname === myNickname;
+      const nick = escapeHtml(truncEnd(p.nickname ?? '', 12));
+      const doneIcon = p.round_done ? '✅' : (p.is_ready ? '▶' : '⏳');
+      return `<div class="pub-lobby-player${isMe ? ' is-me' : ''}${p.round_done ? ' is-ready' : ''}" data-nick="${escapeHtml(p.nickname ?? '')}">
+        <span class="pub-lobby-icon">${doneIcon}</span>
+        <span class="pub-lobby-nick">${nick}${isMe ? ' <span class="lb-me-badge">나</span>' : ''}</span>
+        ${p.round_elapsed_sec ? `<span class="siege-elapsed">${Math.round(p.round_elapsed_sec / 60)}분</span>` : ''}
+      </div>`;
+    }
+
+    $list.innerHTML = `
+      <div class="siege-teams-row">
+        <div class="siege-col siege-col--tom">
+          <div class="siege-col-label">🍅 팀 톰</div>
+          ${tomPlayers.map(p => playerRow(p)).join('')}
+        </div>
+        <div class="siege-col siege-col--moto">
+          <div class="siege-col-label">🎲 팀 모토</div>
+          ${motoPlayers.map(p => playerRow(p)).join('')}
+        </div>
+      </div>`;
+  } else {
+    $list.innerHTML = players.map(p => {
+      const isMe = p.nickname === myNickname;
+      const nickDisplay = escapeHtml(truncEnd(p.nickname ?? '', 16));
+      return `<div class="pub-lobby-player${isMe ? ' is-me' : ''}${p.is_ready ? ' is-ready' : ''}" data-nick="${escapeHtml(p.nickname ?? '')}">
+        <span class="pub-lobby-icon">${p.is_ready ? '✅' : '⏳'}</span>
+        <span class="pub-lobby-nick">${nickDisplay}${isMe ? ' <span class="lb-me-badge">나</span>' : ''}</span>
+        ${p.is_creator ? '<span class="pub-lobby-badge">방장</span>' : ''}
+      </div>`;
+    }).join('');
+  }
+
+  const myPlayer = players.find(p => p.nickname === myNickname);
+  const isFull   = players.length >= battle.max_players;
+  const allReady = isSiege
+    ? (isFull && players.every(p => p.is_ready))
+    : (players.length >= 2 && players.every(p => p.is_ready));
+
   const $leaveBtn = document.getElementById('pubLobbyLeaveBtn');
   const $quitBtn  = document.getElementById('pubLobbyQuitBtn');
   if ($leaveBtn) $leaveBtn.textContent = '창 닫기';
   if ($quitBtn)  $quitBtn.style.display = myPlayer?.is_creator ? 'none' : '';
 
+  // 공성전 라운드 진행 중이면 준비 버튼 숨김
+  const inRound = isSiege && (battle.current_round ?? 0) > 0 && battle.status === 'active';
   if ($readyBtn) {
-    if (myPlayer?.is_ready) {
-      $readyBtn.textContent  = '준비 취소';
-      $readyBtn.className    = 'btn-modal btn-modal-secondary';
-    } else {
-      $readyBtn.textContent  = '준비 완료';
-      $readyBtn.className    = 'btn-modal btn-modal-basil'; // 초록
+    $readyBtn.style.display = inRound ? 'none' : '';
+    if (!inRound) {
+      if (myPlayer?.is_ready) {
+        $readyBtn.textContent = '준비 취소';
+        $readyBtn.className   = 'btn-modal btn-modal-secondary';
+      } else {
+        $readyBtn.textContent = isSiege ? (isFull ? '준비 완료' : '팀 구성 대기 중···') : '준비 완료';
+        $readyBtn.className   = 'btn-modal btn-modal-basil';
+        $readyBtn.disabled    = isSiege && !isFull;
+      }
     }
-    $readyBtn.disabled = false;
   }
 
   if ($status) {
-    if (allReady) {
+    if (inRound) {
+      const roundDoneCount = players.filter(p => p.round_done).length;
+      $status.textContent = roundDoneCount === players.length
+        ? '모두 완료! 결과 집계 중···'
+        : `라운드 ${battle.current_round} 진행 중 · ${roundDoneCount}/${players.length}명 완료`;
+      $status.className = 'pub-lobby-status pub-lobby-status--go';
+    } else if (allReady) {
       $status.textContent = '모두 준비됐어요! 곧 시작돼요···';
       $status.className   = 'pub-lobby-status pub-lobby-status--go';
-    } else if (waiting) {
-      $status.textContent = '다른 플레이어를 기다리는 중···';
+    } else if (!isFull) {
+      $status.textContent = isSiege ? '팀 인원이 부족해요. 친구를 초대해주세요!' : '다른 플레이어를 기다리는 중···';
       $status.className   = 'pub-lobby-status';
     } else {
       $status.textContent = `${players.filter(p => !p.is_ready).length}명이 아직 준비 중이에요.`;
       $status.className   = 'pub-lobby-status';
     }
   }
+}
+
+/** 팀 공성전 HP 바 업데이트 */
+function _renderSiegeHp(battle) {
+  const hpA = Math.max(0, battle.team_a_hp ?? 100);
+  const hpB = Math.max(0, battle.team_b_hp ?? 100);
+  const round = battle.current_round ?? 0;
+  const maxR  = battle.max_rounds ?? 5;
+  const $label   = document.getElementById('siegeRoundLabel');
+  const $barTom  = document.getElementById('siegeHpBarTom');
+  const $barMoto = document.getElementById('siegeHpBarMoto');
+  const $numTom  = document.getElementById('siegeHpNumTom');
+  const $numMoto = document.getElementById('siegeHpNumMoto');
+  if ($label)   $label.textContent = round === 0 ? '대기 중' : `라운드 ${round} / ${maxR}`;
+  if ($barTom)  $barTom.style.width  = `${hpA}%`;
+  if ($barMoto) $barMoto.style.width = `${hpB}%`;
+  if ($numTom)  $numTom.textContent  = hpA;
+  if ($numMoto) $numMoto.textContent = hpB;
 }
 
 /** 로비 Realtime 구독 */
@@ -5928,17 +6033,36 @@ function subscribePublicLobby(battleId) {
       return;
     }
 
+    // battles 최신 정보도 함께 갱신 (HP, round 정보 반영)
+    const { data: battleData } = await sb.from('battles').select('*').eq('id', battleId).single();
+    if (battleData) publicLobbyBattle = battleData;
+
     currentBattleData = { battle: publicLobbyBattle, players: players ?? [] };
     renderPublicLobby(publicLobbyBattle, players ?? []);
     enrichLobbyWithPartnerBadges(players ?? []);
-    // 공개 배틀 목록의 방장 버튼도 ready 상태 반영
     renderPublicBattles();
 
-    // 전원 레디 → 방장만 카운트다운 트리거
-    const allReady = (players?.length >= 2) && players.every(p => p.is_ready);
     const isCreator = players?.find(p => p.nickname === myNickname)?.is_creator;
-    if (allReady && isCreator && !isStartingPublicLobby) {
-      startPublicLobbyCountdown(false);
+
+    if (publicLobbyBattle.team_mode) {
+      // ── 팀 공성전 로직 ──
+      const isFull = (players?.length ?? 0) >= publicLobbyBattle.max_players;
+      const allReady = isFull && players.every(p => p.is_ready);
+      // 대기 중(라운드 0) + 전원 레디 → 방장이 라운드 1 시작
+      if (allReady && isCreator && !isStartingPublicLobby && (publicLobbyBattle.current_round ?? 0) === 0) {
+        startPublicLobbyCountdown(false);
+      }
+      // 라운드 진행 중 → 전원 round_done → 방장이 HP 계산
+      if ((publicLobbyBattle.current_round ?? 0) > 0 && isCreator) {
+        const allDone = players.length > 0 && players.every(p => p.round_done);
+        if (allDone) _processSiegeRoundResult(battleId, publicLobbyBattle, players);
+      }
+    } else {
+      // ── 일반 공개 배틀 로직 ──
+      const allReady = (players?.length >= 2) && players.every(p => p.is_ready);
+      if (allReady && isCreator && !isStartingPublicLobby) {
+        startPublicLobbyCountdown(false);
+      }
     }
   }
 
@@ -5976,11 +6100,11 @@ function subscribePublicLobby(battleId) {
       }
     })
     // 수신자: 방장의 카운트다운 시작 신호 수신
-    .on('broadcast', { event: 'pub-lobby-start' }, async () => {
+    .on('broadcast', { event: 'pub-lobby-start' }, async ({ payload }) => {
       if (isStartingPublicLobby || timer.isRunning) return;
       const result = await fetchBattle(battleId);
-      if (result?.battle) currentBattleData = result;
-      startPublicLobbyCountdown(true);
+      if (result?.battle) { publicLobbyBattle = result.battle; currentBattleData = result; }
+      startPublicLobbyCountdown(true, payload?.team_mode ? payload : null);
     })
     // 수신자: 파트너가 인사 버튼을 누름
     .on('broadcast', { event: 'emoji_rain' }, ({ payload }) => {
@@ -6010,8 +6134,21 @@ async function togglePublicReady() {
   // renderPublicLobby는 subscribePublicLobby 콜백에서 자동 호출됨
 }
 
+/** 팀 공성전 라운드 시간 계산 (럭키라운드 여부 판단) */
+function _calcSiegeRoundDuration(battle, nextRound) {
+  const maxRounds = battle.max_rounds ?? 5;
+  const luckyProb = battle.lucky_round_prob ?? 0.2;
+  const isLastRound = nextRound >= maxRounds;
+  const isLucky = isLastRound || Math.random() < luckyProb;
+  // 럭키라운드: 25~40분, 일반: 15~25분
+  const minSec = isLucky ? 1500 : 900;
+  const maxSec = isLucky ? 2400 : 1500;
+  const duration = minSec + Math.floor(Math.random() * (maxSec - minSec + 1));
+  return { duration, isLucky };
+}
+
 /** 로비 카운트다운 + 타이머 시작 */
-async function startPublicLobbyCountdown(isReceiver = false) {
+async function startPublicLobbyCountdown(isReceiver = false, siegePayload = null) {
   if (isStartingPublicLobby || timer.isRunning) return;
   isStartingPublicLobby = true;
 
@@ -6021,14 +6158,38 @@ async function startPublicLobbyCountdown(isReceiver = false) {
   // 모달이 닫혀 있으면(창 닫고 대기 중이던 방장) 다시 열어줌
   if ($modal && !$modal.open) $modal.showModal();
 
+  const isSiege = !!(publicLobbyBattle?.team_mode ?? siegePayload?.team_mode);
+
   if (!isReceiver) {
-    // 방장: 시작 신호 Broadcast + DB 업데이트
-    publicLobbyChannel?.send({ type: 'broadcast', event: 'pub-lobby-start', payload: {} });
+    let dbUpdate = { status: 'active', countdown_started_at: new Date().toISOString() };
+    let broadcastPayload = {};
+
+    if (isSiege) {
+      const currentRound = (publicLobbyBattle?.current_round ?? 0);
+      const nextRound = currentRound + 1;
+      const { duration, isLucky } = _calcSiegeRoundDuration(publicLobbyBattle, nextRound);
+      dbUpdate.current_round = nextRound;
+      dbUpdate.duration_sec  = duration;
+      broadcastPayload = { team_mode: true, round: nextRound, duration, isLucky };
+
+      // 로컬 반영
+      if (publicLobbyBattle) {
+        publicLobbyBattle.current_round = nextRound;
+        publicLobbyBattle.duration_sec  = duration;
+        if (currentRound === 0) publicLobbyBattle.status = 'active';
+      }
+    }
+
+    publicLobbyChannel?.send({ type: 'broadcast', event: 'pub-lobby-start', payload: broadcastPayload });
     if (sb && currentBattleId) {
-      sb.from('battles')
-        .update({ status: 'active', countdown_started_at: new Date().toISOString() })
-        .eq('id', currentBattleId)
-        .then();
+      sb.from('battles').update(dbUpdate).eq('id', currentBattleId).then();
+    }
+  } else if (siegePayload) {
+    // 수신자: 로컬 publicLobbyBattle 갱신
+    if (publicLobbyBattle) {
+      publicLobbyBattle.current_round = siegePayload.round ?? publicLobbyBattle.current_round;
+      publicLobbyBattle.duration_sec  = siegePayload.duration ?? publicLobbyBattle.duration_sec;
+      publicLobbyBattle.status = 'active';
     }
   }
 
@@ -6038,6 +6199,17 @@ async function startPublicLobbyCountdown(isReceiver = false) {
   countEl.className = 'battle-countdown pub-lobby-countdown';
   $modal?.appendChild(countEl);
 
+  const roundLabel = isSiege
+    ? `라운드 ${publicLobbyBattle?.current_round ?? (siegePayload?.round ?? 1)}`
+    : '';
+  if (roundLabel) {
+    const labelEl = document.createElement('div');
+    labelEl.className = 'siege-round-announce';
+    labelEl.textContent = roundLabel;
+    countEl.before(labelEl);
+    countEl._labelEl = labelEl;
+  }
+
   for (let n = 3; n >= 1; n--) {
     countEl.innerHTML = `<div class="battle-countdown-num">${n}</div>`;
     await new Promise(r => setTimeout(r, 900));
@@ -6046,18 +6218,142 @@ async function startPublicLobbyCountdown(isReceiver = false) {
   playHifive();
   await new Promise(r => setTimeout(r, 750));
 
-  // 카운트다운 요소 제거 + 버튼 복원 (다음 오픈 시 잔재 방지)
+  countEl._labelEl?.remove();
   countEl.remove();
   if ($actions) $actions.style.display = '';
 
-  // 정리 후 타이머 시작
-  if (publicLobbyChannel && sb) { sb.removeChannel(publicLobbyChannel); publicLobbyChannel = null; }
-  publicLobbyBattleId   = null;
-  publicLobbyBattle     = null;
   isStartingPublicLobby = false;
-  if ($modal) $modal.close();
 
-  startBattleTimer();  // currentBattleData / currentBattleId 그대로 사용
+  if (isSiege) {
+    // 공성전: 로비 닫고 개인탭으로 이동 → 플레이어 스스로 가챠 + 타이머
+    const roundDuration = publicLobbyBattle?.duration_sec ?? (siegePayload?.duration ?? 1500);
+    const isLucky = siegePayload?.isLucky ?? false;
+    const roundNum = publicLobbyBattle?.current_round ?? (siegePayload?.round ?? 1);
+
+    // activeBattleId 설정 (finishTimer에서 siege 판별용)
+    if (currentBattleData?.battle) {
+      activeBattleId = currentBattleData.battle.id;
+      localStorage.setItem('tomotto_activeBattleId', activeBattleId);
+    }
+    // 타이머 시간을 라운드 시간으로 프리셋 (플레이어가 시작 버튼 누를 때 적용)
+    timer.duration  = roundDuration;
+    timer.remaining = roundDuration;
+    updateTimerDisplay();
+
+    // 로비 닫기 (채널은 유지 — round_done 감지 필요)
+    if ($modal) $modal.close();
+
+    switchTab('personal');
+    _showNotifToast('achievement-toast--siege', '⚔️', `라운드 ${roundNum} 시작${isLucky ? ' 🍀 럭키!' : ''}`, '가챠를 돌리고 타이머를 눌러요!', 5000);
+  } else {
+    // 일반 공개 배틀: 기존 방식
+    if (publicLobbyChannel && sb) { sb.removeChannel(publicLobbyChannel); publicLobbyChannel = null; }
+    publicLobbyBattleId   = null;
+    publicLobbyBattle     = null;
+    if ($modal) $modal.close();
+    startBattleTimer();
+  }
+}
+
+/** 팀 공성전 라운드 결과 처리 (방장만 호출) */
+let _siegeProcessing = false;  // 중복 실행 방지
+async function _processSiegeRoundResult(battleId, battle, players) {
+  if (_siegeProcessing) return;
+  _siegeProcessing = true;
+
+  try {
+    const tomPlayers  = players.filter(p => p.team === 'tom');
+    const motoPlayers = players.filter(p => p.team === 'moto');
+    const tomTotal    = tomPlayers.reduce((s, p) => s + (p.round_elapsed_sec ?? 0), 0);
+    const motoTotal   = motoPlayers.reduce((s, p) => s + (p.round_elapsed_sec ?? 0), 0);
+    const tomAvg      = tomTotal / Math.max(tomPlayers.length, 1);
+    const motoAvg     = motoTotal / Math.max(motoPlayers.length, 1);
+
+    let newHpA = battle.team_a_hp ?? 100;
+    let newHpB = battle.team_b_hp ?? 100;
+
+    if (Math.abs(tomTotal - motoTotal) < 30) {
+      // 타이 (30초 이내): 양 팀 각각 평균 집중 시간(분)만큼 HP 차감
+      const tomDmg  = Math.round(tomAvg / 60);
+      const motoDmg = Math.round(motoAvg / 60);
+      newHpA = Math.max(0, newHpA - tomDmg);
+      newHpB = Math.max(0, newHpB - motoDmg);
+    } else if (tomTotal > motoTotal) {
+      // 팀 톰 승: 모토 HP -= (시간 차 분 × 1.5)
+      const dmg = Math.round((tomTotal - motoTotal) / 60 * 1.5);
+      newHpB = Math.max(0, newHpB - dmg);
+    } else {
+      // 팀 모토 승: 톰 HP -= (시간 차 분 × 1.5)
+      const dmg = Math.round((motoTotal - tomTotal) / 60 * 1.5);
+      newHpA = Math.max(0, newHpA - dmg);
+    }
+
+    const isGameOver = newHpA <= 0 || newHpB <= 0 || (battle.current_round ?? 0) >= (battle.max_rounds ?? 5);
+
+    // DB: HP 업데이트 + 플레이어 round_done/elapsed 리셋
+    await sb.from('battles')
+      .update({ team_a_hp: newHpA, team_b_hp: newHpB, updated_at: new Date().toISOString() })
+      .eq('id', battleId);
+
+    if (!isGameOver) {
+      await sb.from('battle_players')
+        .update({ round_done: false, round_elapsed_sec: 0 })
+        .eq('battle_id', battleId);
+    }
+
+    // 로컬 반영
+    if (publicLobbyBattle) {
+      publicLobbyBattle.team_a_hp = newHpA;
+      publicLobbyBattle.team_b_hp = newHpB;
+    }
+
+    if (isGameOver) {
+      const winner = newHpA > newHpB ? '팀 톰 🍅' : newHpA < newHpB ? '팀 모토 🎲' : null;
+      const msg = winner ? `${winner} 승리! 공성전 종료!` : '무승부! 공성전 종료!';
+      _showNotifToast('achievement-toast--siege', '⚔️', '공성전 종료', msg, 5000);
+
+      // 게임 종료: battles status done
+      await sb.from('battles')
+        .update({ status: 'done', updated_at: new Date().toISOString() })
+        .eq('id', battleId);
+
+      // 로비 오픈해서 결과 표시
+      const { data: finalPlayers } = await sb.from('battle_players')
+        .select('*').eq('battle_id', battleId).order('created_at', { ascending: true });
+      if (publicLobbyBattle) {
+        currentBattleData = { battle: publicLobbyBattle, players: finalPlayers ?? [] };
+        renderPublicLobby(publicLobbyBattle, finalPlayers ?? []);
+        const $modal = document.getElementById('publicLobbyModal');
+        if ($modal && !$modal.open) $modal.showModal();
+      }
+      return;
+    }
+
+    // 다음 라운드: 5분 휴식 카운트다운 in lobby
+    const $modal = document.getElementById('publicLobbyModal');
+    if ($modal && !$modal.open) $modal.showModal();
+    const $status = document.getElementById('pubLobbyStatus');
+
+    // 5분 휴식 카운트다운
+    let breakSec = 300;
+    const breakInterval = setInterval(() => {
+      breakSec--;
+      const mm = String(Math.floor(breakSec / 60)).padStart(2, '0');
+      const ss = String(breakSec % 60).padStart(2, '0');
+      if ($status) {
+        $status.textContent = `휴식 중 · 다음 라운드까지 ${mm}:${ss}`;
+        $status.className   = 'pub-lobby-status';
+      }
+      if (breakSec <= 0) {
+        clearInterval(breakInterval);
+        if (!isStartingPublicLobby) startPublicLobbyCountdown(false);
+      }
+    }, 1000);
+    if ($status) $status.textContent = `라운드 완료! 5분 후 다음 라운드 시작`;
+
+  } finally {
+    _siegeProcessing = false;
+  }
 }
 
 /** 로비 상태 완전 초기화 (방 삭제 or 나가기 시) */
@@ -6139,7 +6435,10 @@ function subscribePublicBattles() {
   if (!$modal) return;
 
   let selectedMaxPlayers = 2;
+  let selectedSiegeTeamSize = 1; // 팀 공성전: 팀당 인원
+  let isSiegeMode = false;
   const MIN_PLAYERS = 2, MAX_PLAYERS = 10;
+  const MIN_SIEGE = 1, MAX_SIEGE = 5;
 
   function updateStepperDisplay() {
     const $count = document.getElementById('pubPlayerCount');
@@ -6150,18 +6449,49 @@ function subscribePublicBattles() {
     if ($plus)  $plus.disabled  = selectedMaxPlayers >= MAX_PLAYERS;
   }
 
+  function updateSiegeStepperDisplay() {
+    const $count = document.getElementById('pubSiegeTeamCount');
+    if ($count) $count.textContent = selectedSiegeTeamSize;
+    const $minus = document.getElementById('pubSiegeTeamMinus');
+    const $plus  = document.getElementById('pubSiegeTeamPlus');
+    if ($minus) $minus.disabled = selectedSiegeTeamSize <= MIN_SIEGE;
+    if ($plus)  $plus.disabled  = selectedSiegeTeamSize >= MAX_SIEGE;
+  }
+
+  function switchMode(siege) {
+    isSiegeMode = siege;
+    document.getElementById('pubModeNormal').style.display = siege ? 'none' : '';
+    document.getElementById('pubModeSiege').style.display  = siege ? '' : 'none';
+    document.getElementById('pubModeTabTom').classList.toggle('pub-mode-tab--active', !siege);
+    document.getElementById('pubModeTabSiege').classList.toggle('pub-mode-tab--active', siege);
+    if ($confirm) $confirm.disabled = siege ? false : !currentTask;
+  }
+
+  document.getElementById('pubModeTabTom')?.addEventListener('click', () => switchMode(false));
+  document.getElementById('pubModeTabSiege')?.addEventListener('click', () => switchMode(true));
+
   document.getElementById('pubPlayerMinus')?.addEventListener('click', () => {
     if (selectedMaxPlayers > MIN_PLAYERS) { selectedMaxPlayers--; updateStepperDisplay(); }
   });
   document.getElementById('pubPlayerPlus')?.addEventListener('click', () => {
     if (selectedMaxPlayers < MAX_PLAYERS) { selectedMaxPlayers++; updateStepperDisplay(); }
   });
+  document.getElementById('pubSiegeTeamMinus')?.addEventListener('click', () => {
+    if (selectedSiegeTeamSize > MIN_SIEGE) { selectedSiegeTeamSize--; updateSiegeStepperDisplay(); }
+  });
+  document.getElementById('pubSiegeTeamPlus')?.addEventListener('click', () => {
+    if (selectedSiegeTeamSize < MAX_SIEGE) { selectedSiegeTeamSize++; updateSiegeStepperDisplay(); }
+  });
 
-  // 모달 열기 — TOM MODE 전용: 현재 task 미리보기 표시
+  // 모달 열기
   document.getElementById('createPublicBattleBtn')?.addEventListener('click', () => {
     if (!myNickname) { alert('닉네임을 먼저 설정해주세요.'); return; }
     selectedMaxPlayers = 2;
+    selectedSiegeTeamSize = 1;
+    isSiegeMode = false;
     updateStepperDisplay();
+    updateSiegeStepperDisplay();
+    switchMode(false);
     // task 미리보기 업데이트
     const $preview = document.getElementById('pubBattleTaskPreview');
     if ($preview) {
@@ -6194,37 +6524,55 @@ function subscribePublicBattles() {
   $cancel?.addEventListener('click', () => $modal.close());
 
   $confirm?.addEventListener('click', async () => {
-    const durationSec = parseInt(document.getElementById('pubBattleDuration')?.value || '1500', 10);
-    // TOM MODE 전용 — 방장의 현재 가챠 결과를 공통 목표로 사용
-    if (!currentTask) { alert('가챠를 먼저 돌려주세요!'); return; }
-    // 금칙어 필터 — 공개방 제목으로 사용 시 검사
-    if (hasBannedWord(currentTask)) {
-      alert('공개방 목표에 사용할 수 없는 단어가 포함되어 있어요.\n다른 목표로 가챠를 돌려주세요.');
-      return;
-    }
-
     const battleId = makeBattleId();
-    const battle = {
-      id: battleId,
-      creator_nickname: myNickname,
-      mode: 'common',
-      task_common: currentTask,
-      duration_sec: durationSec,
-      status: 'waiting',
-      is_public: true,
-      max_players: selectedMaxPlayers,
-      created_at: new Date().toISOString(),
-    };
+    let battle;
+
+    if (isSiegeMode) {
+      const maxRounds = parseInt(document.getElementById('pubSiegeRounds')?.value || '5', 10);
+      battle = {
+        id: battleId,
+        creator_nickname: myNickname,
+        mode: 'common',
+        task_common: null,
+        duration_sec: 1500,  // 공성전은 라운드마다 랜덤 설정됨 — 초기값
+        status: 'waiting',
+        is_public: true,
+        max_players: selectedSiegeTeamSize * 2,
+        team_mode: true,
+        team_a_hp: 100,
+        team_b_hp: 100,
+        current_round: 0,
+        max_rounds: maxRounds,
+        lucky_round_prob: 0.2,
+        created_at: new Date().toISOString(),
+      };
+    } else {
+      const durationSec = parseInt(document.getElementById('pubBattleDuration')?.value || '1500', 10);
+      if (!currentTask) { alert('가챠를 먼저 돌려주세요!'); return; }
+      if (hasBannedWord(currentTask)) {
+        alert('공개방 목표에 사용할 수 없는 단어가 포함되어 있어요.\n다른 목표로 가챠를 돌려주세요.');
+        return;
+      }
+      battle = {
+        id: battleId,
+        creator_nickname: myNickname,
+        mode: 'common',
+        task_common: currentTask,
+        duration_sec: durationSec,
+        status: 'waiting',
+        is_public: true,
+        max_players: selectedMaxPlayers,
+        created_at: new Date().toISOString(),
+      };
+    }
 
     $modal.close();
     $confirm.disabled = true;
 
     try {
       await saveBattle(battle);
-      // 공개 배틀은 친구 배틀 localStorage에 저장하지 않음 (분리)
-      unlockAchievement('F-1');   // 공개방 첫 생성
+      unlockAchievement('F-1');
       await renderPublicBattles();
-      // 만든 직후 로비 열기 (subscribeWatchBattle 대신 publicLobby 구독)
       await openPublicLobby(battleId);
     } catch (e) {
       alert('공개 방 만들기 실패: ' + (e.message || e));

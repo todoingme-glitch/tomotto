@@ -627,39 +627,72 @@
     </div>
   </dialog>
 
-  <!-- v0.1.83 — 공개 배틀방 만들기 모달 (TOM MODE 전용) -->
+  <!-- v0.1.83 — 공개 배틀방 만들기 모달 -->
   <dialog id="publicBattleCreateModal" class="modal modal-battle">
     <h3>공개 배틀방 만들기</h3>
 
-    <!-- TOM MODE 카드: 모드 라벨 + 공통 목표 텍스트 통합 -->
-    <div class="pub-battle-mode-badge">
-      <div class="pub-battle-mode-label">🍅 TOM MODE · 모두 같은 목표로 집중!</div>
-      <p id="pubBattleTaskPreview" class="pub-battle-task-preview"></p>
+    <!-- 모드 선택 토글 -->
+    <div class="pub-mode-toggle">
+      <button class="pub-mode-tab pub-mode-tab--active" id="pubModeTabTom" type="button">🍅 일반 배틀</button>
+      <button class="pub-mode-tab" id="pubModeTabSiege" type="button">⚔️ 팀 공성전</button>
     </div>
 
-    <!-- 인원 수 + 시간 설정: 같은 행에 배치 -->
-    <div class="pub-battle-settings-row">
-      <div class="pub-battle-settings-item">
-        <label>인원 수</label>
-        <div class="pub-player-stepper">
-          <button class="pub-stepper-btn" id="pubPlayerMinus" type="button">−</button>
-          <span class="pub-stepper-value"><span id="pubPlayerCount">2</span>명</span>
-          <button class="pub-stepper-btn" id="pubPlayerPlus" type="button">+</button>
+    <!-- 일반 TOM MODE 설정 -->
+    <div id="pubModeNormal">
+      <div class="pub-battle-mode-badge">
+        <div class="pub-battle-mode-label">🍅 TOM MODE · 모두 같은 목표로 집중!</div>
+        <p id="pubBattleTaskPreview" class="pub-battle-task-preview"></p>
+      </div>
+      <div class="pub-battle-settings-row">
+        <div class="pub-battle-settings-item">
+          <label>인원 수</label>
+          <div class="pub-player-stepper">
+            <button class="pub-stepper-btn" id="pubPlayerMinus" type="button">−</button>
+            <span class="pub-stepper-value"><span id="pubPlayerCount">2</span>명</span>
+            <button class="pub-stepper-btn" id="pubPlayerPlus" type="button">+</button>
+          </div>
+        </div>
+        <div class="pub-battle-settings-item">
+          <label>시간 설정</label>
+          <select id="pubBattleDuration">
+            <option value="30">30초 (테스트)</option>
+            <option value="600">10분 (짧게)</option>
+            <option value="1500" selected>25분 (기본)</option>
+            <option value="2700">45분</option>
+            <option value="3600">60분</option>
+          </select>
         </div>
       </div>
-      <div class="pub-battle-settings-item">
-        <label>시간 설정</label>
-        <select id="pubBattleDuration">
-          <option value="30">30초 (테스트)</option>
-          <option value="600">10분 (짧게)</option>
-          <option value="1500" selected>25분 (기본)</option>
-          <option value="2700">45분</option>
-          <option value="3600">60분</option>
-        </select>
-      </div>
     </div>
 
-    <p class="modal-hint">공개 방은 닉네임이 있는 누구나 참여할 수 있어요.</p>
+    <!-- 팀 공성전 설정 -->
+    <div id="pubModeSiege" style="display:none">
+      <div class="pub-battle-mode-badge pub-battle-mode-badge--siege">
+        <div class="pub-battle-mode-label">⚔️ 팀 톰 vs 팀 모토 · 5라운드 HP 공성전!</div>
+        <p class="pub-battle-task-preview" style="color:var(--text-muted);font-size:0.82rem">각 라운드마다 개인 가챠로 목표를 정해요. 집중 시간으로 상대 HP를 깎아요!</p>
+      </div>
+      <div class="pub-battle-settings-row">
+        <div class="pub-battle-settings-item">
+          <label>팀당 인원</label>
+          <div class="pub-player-stepper">
+            <button class="pub-stepper-btn" id="pubSiegeTeamMinus" type="button">−</button>
+            <span class="pub-stepper-value"><span id="pubSiegeTeamCount">1</span>명</span>
+            <button class="pub-stepper-btn" id="pubSiegeTeamPlus" type="button">+</button>
+          </div>
+        </div>
+        <div class="pub-battle-settings-item">
+          <label>최대 라운드</label>
+          <select id="pubSiegeRounds">
+            <option value="3">3라운드</option>
+            <option value="5" selected>5라운드</option>
+            <option value="7">7라운드</option>
+          </select>
+        </div>
+      </div>
+      <p class="modal-hint">입장 순서대로 팀 톰/모토 교차 배정 · 인원 충족 시 자동 잠금</p>
+    </div>
+
+    <p class="modal-hint" id="pubBattleHint">공개 방은 닉네임이 있는 누구나 참여할 수 있어요.</p>
 
     <div class="modal-actions modal-battle-create-actions">
       <button id="pubBattleCancelBtn" class="btn-modal btn-modal-secondary" type="button">취소</button>
@@ -671,6 +704,29 @@
   <dialog id="publicLobbyModal" class="modal modal-pub-lobby">
     <h3 id="pubLobbyTitle">공개 배틀 로비</h3>
     <p id="pubLobbyInfo" class="pub-lobby-info">접속 중···</p>
+
+    <!-- 팀 공성전 전용 HP/라운드 표시 (team_mode일 때만 표시) -->
+    <div id="siegeHpPanel" style="display:none" class="siege-hp-panel">
+      <div class="siege-round-label" id="siegeRoundLabel">라운드 1 / 5</div>
+      <div class="siege-hp-row">
+        <div class="siege-team siege-team--tom">
+          <span class="siege-team-name">팀 톰 🍅</span>
+          <div class="siege-hp-bar-wrap">
+            <div class="siege-hp-bar siege-hp-bar--tom" id="siegeHpBarTom" style="width:100%"></div>
+          </div>
+          <span class="siege-hp-num" id="siegeHpNumTom">100</span>
+        </div>
+        <span class="siege-vs">VS</span>
+        <div class="siege-team siege-team--moto">
+          <span class="siege-team-name">팀 모토 🎲</span>
+          <div class="siege-hp-bar-wrap">
+            <div class="siege-hp-bar siege-hp-bar--moto" id="siegeHpBarMoto" style="width:100%"></div>
+          </div>
+          <span class="siege-hp-num" id="siegeHpNumMoto">100</span>
+        </div>
+      </div>
+    </div>
+
     <div id="pubLobbyPlayers" class="pub-lobby-players"></div>
     <p id="pubLobbyStatus" class="pub-lobby-status">다른 플레이어를 기다리는 중···</p>
     <div class="pub-lobby-actions">

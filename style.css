@@ -45,7 +45,7 @@
 
 body {
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: #e8e2d8;  /* 사이드 박스 — 미색 */
+  background: #f0ece4;  /* 사이드 박스 — 밝은 미색 */
   color: var(--text);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
@@ -2769,11 +2769,20 @@ body:has(.container[data-tab="personal"]) .bg-hill {
   display: block;
 }
 
+/* 개인탭일 때 스크롤 완전 차단 */
+body:has(.container[data-tab="personal"]) {
+  overflow: hidden;
+  height: 100svh;
+}
+
 /* 개인탭일 때 컨테이너 배경 제거 + z-index 올리기 */
 body:has(.container[data-tab="personal"]) .container {
   background: none;
   position: relative;
   z-index: 3;
+  padding: 0;
+  overflow: hidden;
+  height: 100svh;
 }
 
 
@@ -3151,6 +3160,13 @@ body:has(.container[data-tab="personal"]) .container {
   color: var(--text-main);
   white-space: nowrap;
 }
+.pb-mode--siege {
+  color: #c62828;
+  background: #fce4ec;
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+}
 
 .pb-nick {
   font-size: 0.85rem;
@@ -3217,9 +3233,126 @@ body:has(.container[data-tab="personal"]) .container {
   .btn-mini-green { margin-left: auto; }
 }
 
+/* ====== 공개 배틀방 만들기 — 모드 토글 ====== */
+
+.pub-mode-toggle {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.pub-mode-tab {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.pub-mode-tab--active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.pub-battle-mode-badge--siege {
+  background: linear-gradient(135deg, #fff3e0, #fce4ec);
+  border-color: #ffb74d;
+}
+
 /* ====== v0.1.81 — 공개 배틀 로비 ====== */
 
-.modal-pub-lobby { max-width: 400px; }
+.modal-pub-lobby { max-width: 420px; }
+
+/* ──── 팀 공성전 HP 패널 ──── */
+.siege-hp-panel {
+  background: #1a1214;
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+}
+.siege-round-label {
+  text-align: center;
+  font-size: 0.78rem;
+  color: #d4b896;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.siege-hp-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.siege-team {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.siege-team-name {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #e8d5c0;
+}
+.siege-hp-bar-wrap {
+  background: #3a2826;
+  border-radius: 6px;
+  height: 10px;
+  overflow: hidden;
+}
+.siege-hp-bar {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.6s ease;
+}
+.siege-hp-bar--tom  { background: linear-gradient(90deg, #d94e3a, #ff7a5c); }
+.siege-hp-bar--moto { background: linear-gradient(90deg, #1565c0, #42a5f5); }
+.siege-hp-num {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #e8d5c0;
+  text-align: right;
+}
+.siege-team--moto .siege-team-name,
+.siege-team--moto .siege-hp-num { text-align: right; }
+.siege-vs {
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: #d4b896;
+  flex-shrink: 0;
+}
+
+/* ──── 팀 공성전 플레이어 두 컬럼 ──── */
+.siege-teams-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.siege-col-label {
+  font-size: 0.73rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-align: center;
+  margin-bottom: 4px;
+}
+.siege-elapsed {
+  font-size: 0.72rem;
+  color: var(--accent);
+  font-weight: 600;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.siege-round-announce {
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
 
 .pub-lobby-info {
   font-size: 0.82rem;
