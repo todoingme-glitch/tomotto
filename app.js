@@ -6244,7 +6244,16 @@ async function startPublicLobbyCountdown(isReceiver = false, siegePayload = null
     if ($modal) $modal.close();
 
     switchTab('personal');
-    _showNotifToast('achievement-toast--siege', '⚔️', `라운드 ${roundNum} 시작${isLucky ? ' 🍀 럭키!' : ''}`, '가챠를 돌리고 타이머를 눌러요!', 5000);
+
+    // 가챠 안 돌린 상태면 안내 모달 표시, 아니면 토스트만
+    if (!currentTask) {
+      const $guide = document.getElementById('siegeGachaGuideModal');
+      const $info  = document.getElementById('siegeGachaRoundInfo');
+      if ($info) $info.textContent = `라운드 ${roundNum} · ${Math.round(roundDuration / 60)}분${isLucky ? ' 🍀 럭키 라운드!' : ''}`;
+      if ($guide && typeof $guide.showModal === 'function') $guide.showModal();
+    } else {
+      _showNotifToast('achievement-toast--siege', '⚔️', `라운드 ${roundNum} 시작${isLucky ? ' 🍀 럭키!' : ''}`, '가챠를 돌리고 타이머를 눌러요!', 5000);
+    }
   } else {
     // 일반 공개 배틀: 기존 방식
     if (publicLobbyChannel && sb) { sb.removeChannel(publicLobbyChannel); publicLobbyChannel = null; }
@@ -6426,6 +6435,13 @@ function subscribePublicBattles() {
     )
     .subscribe();
 }
+
+// 공성전 가챠 안내 모달 — "가챠 돌리러 가기" 버튼
+document.getElementById('siegeGachaGoBtn')?.addEventListener('click', () => {
+  document.getElementById('siegeGachaGuideModal')?.close();
+  // 가챠 버튼으로 스크롤
+  document.getElementById('gachaBtn')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+});
 
 // 공개 방 만들기 모달 이벤트
 (function initPublicBattleModal() {
