@@ -2505,7 +2505,9 @@ dialog.modal input[type="text"]:focus {
 
 /* ── 개인탭 hotspot 레이어 ──────────────────────────── */
 #tab-personal {
-  min-height: 100svh;
+  min-height: 0;
+  height: 100svh;
+  overflow: hidden;
 }
 .hotspot-layer {
   position: absolute;
@@ -2517,18 +2519,27 @@ dialog.modal input[type="text"]:focus {
   border: none;
   border-radius: 14px;
   cursor: pointer;
-  color: transparent;
+  color: white;
   font-size: 13px;
+  font-weight: 700;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5);
   padding: 8px 14px;
   transition: transform 0.1s;
 }
 .hotspot:hover {
-  transform: scale(1.05);
+  transform: scale(1.08);
 }
-/* 임시 위치 — 나중에 배경 보면서 조정 */
-#hotspot-todo  { top: 30%;  left: 8%;  }
-#hotspot-gacha { top: 48%;  left: 8%;  }
-#hotspot-timer { top: 64%;  left: 8%;  }
+/* 버튼 위치 */
+#hotspot-todo  { top: 22%; left: 4%; }
+#hotspot-gacha { top: 38%; left: 4%; }
+#hotspot-timer { top: 54%; left: 4%; }
+
+/* 모바일 */
+@media (max-width: 480px) {
+  #hotspot-todo  { top: 18%; left: 2%; }
+  #hotspot-gacha { top: 32%; left: 2%; }
+  #hotspot-timer { top: 46%; left: 2%; }
+}
 
 /* ── 카드 다이얼로그 — 양피지 이미지 모달 ───────────── */
 .card-dialog {
