@@ -6497,13 +6497,15 @@ async function closePublicLobby(deleteRoom = false, leaveRoom = false) {
   document.getElementById('pubLobbyReadyBtn')?.addEventListener('click', () => {
     const btn = document.getElementById('pubLobbyReadyBtn');
     if (btn?.dataset.siegeGacha === 'true') {
-      // 공성전 가챠 미완료 → 로비 닫고 가챠 모달 바로 열기
+      // 공성전 가챠 미완료 → 로비 닫고 가챠(or 할일) 모달 바로 열기
       document.getElementById('publicLobbyModal')?.close();
       window._siegeReturnPending = true;
-      window._siegeReturnBattleId = publicLobbyBattle?.id ?? null;  // 돌아갈 로비 ID 저장
+      window._siegeReturnBattleId = publicLobbyBattle?.id ?? null;
       switchTab('personal');
       setTimeout(() => {
-        document.getElementById('dialog-gacha')?.showModal();
+        // 할일 카테고리가 하나도 없으면 할일 카드 먼저
+        const targetDialog = categories.length === 0 ? 'dialog-todo' : 'dialog-gacha';
+        document.getElementById(targetDialog)?.showModal();
       }, 200);
     } else {
       togglePublicReady();
