@@ -4832,7 +4832,7 @@ function finishTimer() {
           });
         const $lobbyModal = document.getElementById('publicLobbyModal');
         if (!$lobbyModal?.open) {
-          _showNotifToast('achievement-toast--siege', '⚔️', '라운드 완료', '로비를 열어 진행 상황을 확인하세요', 4000);
+          _showNotifToast('achievement-toast--siege', '⚔️', '내 라운드 완료! 🎉', '다른 팀원들을 기다리는 중···', 4000);
         }
       }
     } else {
@@ -6139,11 +6139,39 @@ function subscribePublicLobby(battleId) {
       if (!payload?.from || payload.from === myNickname) return;
       const $modal = document.getElementById('publicLobbyModal');
       if ($modal?.open) {
-        // 로비 열려있음 → 이모지 샤워 (토스트 없음, 상대가 눈앞에 있으니)
         showEmojiRainGreeting(payload.from, false);
       } else {
-        // 로비 닫혀있음 → 이모지 샤워 + 인사 도착 토스트
         showEmojiRainGreeting(payload.from, true);
+      }
+    })
+    // 비방장: 방장이 라운드 결과 집계 완료 → 휴식 시작 신호
+    .on('broadcast', { event: 'siege-break-start' }, ({ payload }) => {
+      if (!payload) return;
+      // HP 로컬 반영
+      if (publicLobbyBattle) {
+        publicLobbyBattle.team_a_hp = payload.hpA;
+        publicLobbyBattle.team_b_hp = payload.hpB;
+      }
+      _startSiegeBreakCountdown(payload.breakSec ?? 300, false);
+    })
+    // 비방장: 공성전 종료 신호
+    .on('broadcast', { event: 'siege-game-over' }, async ({ payload }) => {
+      if (!payload) return;
+      if (publicLobbyBattle) {
+        publicLobbyBattle.team_a_hp = payload.hpA;
+        publicLobbyBattle.team_b_hp = payload.hpB;
+      }
+      const winner = payload.winner;
+      const msg = winner ? `${winner} 승리!` : '무승부!';
+      _showNotifToast('achievement-toast--siege', '⚔️', '공성전 종료', msg, 5000);
+
+      const { data: finalPlayers } = await sb.from('battle_players')
+        .select('*').eq('battle_id', battleId).order('created_at', { ascending: true });
+      if (publicLobbyBattle) {
+        currentBattleData = { battle: publicLobbyBattle, players: finalPlayers ?? [] };
+        renderPublicLobby(publicLobbyBattle, finalPlayers ?? []);
+        const $modal = document.getElementById('publicLobbyModal');
+        if ($modal && !$modal.open) $modal.showModal();
       }
     })
     .subscribe();
@@ -6352,12 +6380,19 @@ async function _processSiegeRoundResult(battleId, battle, players) {
     if (isGameOver) {
       const winner = newHpA > newHpB ? '팀 톰 🍅' : newHpA < newHpB ? '팀 모토 🎲' : null;
       const msg = winner ? `${winner} 승리! 공성전 종료!` : '무승부! 공성전 종료!';
-      _showNotifToast('achievement-toast--siege', '⚔️', '공성전 종료', msg, 5000);
 
       // 게임 종료: battles status done
       await sb.from('battles')
         .update({ status: 'done', updated_at: new Date().toISOString() })
         .eq('id', battleId);
+
+      // 비방장에게도 종료 broadcast
+      publicLobbyChannel?.send({
+        type: 'broadcast', event: 'siege-game-over',
+        payload: { hpA: newHpA, hpB: newHpB, winner },
+      });
+
+      _showNotifToast('achievement-toast--siege', '⚔️', '공성전 종료', msg, 5000);
 
       // 로비 오픈해서 결과 표시
       const { data: finalPlayers } = await sb.from('battle_players')
@@ -6371,31 +6406,45 @@ async function _processSiegeRoundResult(battleId, battle, players) {
       return;
     }
 
-    // 다음 라운드: 5분 휴식 카운트다운 in lobby
-    const $modal = document.getElementById('publicLobbyModal');
-    if ($modal && !$modal.open) $modal.showModal();
-    const $status = document.getElementById('pubLobbyStatus');
+    // 다음 라운드 준비: 비방장에게 휴식 시작 broadcast (HP 결과 포함)
+    publicLobbyChannel?.send({
+      type: 'broadcast', event: 'siege-break-start',
+      payload: { hpA: newHpA, hpB: newHpB, breakSec: 300 },
+    });
 
-    // 5분 휴식 카운트다운
-    let breakSec = 300;
-    const breakInterval = setInterval(() => {
-      breakSec--;
-      const mm = String(Math.floor(breakSec / 60)).padStart(2, '0');
-      const ss = String(breakSec % 60).padStart(2, '0');
-      if ($status) {
-        $status.textContent = `휴식 중 · 다음 라운드까지 ${mm}:${ss}`;
-        $status.className   = 'pub-lobby-status';
-      }
-      if (breakSec <= 0) {
-        clearInterval(breakInterval);
-        if (!isStartingPublicLobby) startPublicLobbyCountdown(false);
-      }
-    }, 1000);
-    if ($status) $status.textContent = `라운드 완료! 5분 후 다음 라운드 시작`;
+    // 방장: 5분 휴식 카운트다운 시작
+    _startSiegeBreakCountdown(300, true);
 
   } finally {
     _siegeProcessing = false;
   }
+}
+
+/** 공성전 휴식 카운트다운 (방장/비방장 공용) */
+function _startSiegeBreakCountdown(initialSec, isCreator) {
+  const $modal  = document.getElementById('publicLobbyModal');
+  const $status = document.getElementById('pubLobbyStatus');
+  if ($modal && !$modal.open) $modal.showModal();
+
+  // HP 바 즉시 갱신
+  if (publicLobbyBattle) _renderSiegeHp(publicLobbyBattle);
+
+  let breakSec = initialSec;
+  const breakInterval = setInterval(() => {
+    breakSec--;
+    const mm = String(Math.floor(breakSec / 60)).padStart(2, '0');
+    const ss = String(breakSec % 60).padStart(2, '0');
+    if ($status) {
+      $status.textContent = `휴식 중 · 다음 라운드까지 ${mm}:${ss}`;
+      $status.className   = 'pub-lobby-status';
+    }
+    if (breakSec <= 0) {
+      clearInterval(breakInterval);
+      // 다음 라운드는 방장만 트리거
+      if (isCreator && !isStartingPublicLobby) startPublicLobbyCountdown(false);
+    }
+  }, 1000);
+  if ($status) $status.textContent = `라운드 완료! 5분 후 다음 라운드 시작`;
 }
 
 /** 로비 상태 완전 초기화 (방 삭제 or 나가기 시) */
