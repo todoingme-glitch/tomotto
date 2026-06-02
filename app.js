@@ -5894,11 +5894,13 @@ function renderPublicLobby(battle, players) {
   const $hpPanel  = document.getElementById('siegeHpPanel');
   if (!$list) return;
 
-  // HP 패널 표시/숨김
+  // HP 패널 + 규칙 버튼 표시/숨김
   if ($hpPanel) {
     $hpPanel.style.display = isSiege ? '' : 'none';
     if (isSiege) _renderSiegeHp(battle);
   }
+  const $rulesBtn = document.getElementById('siegeRulesBtn');
+  if ($rulesBtn) $rulesBtn.style.display = isSiege ? '' : 'none';
 
   if ($title) $title.textContent = isSiege
     ? `⚔️ 팀 공성전 · ${battle.max_rounds ?? 5}라운드`
@@ -6482,8 +6484,15 @@ function subscribePublicBattles() {
 // 공성전 가챠 안내 모달 — "가챠 돌리러 가기" 버튼
 document.getElementById('siegeGachaGoBtn')?.addEventListener('click', () => {
   document.getElementById('siegeGachaGuideModal')?.close();
-  // 가챠 버튼으로 스크롤
   document.getElementById('gachaBtn')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+});
+
+// 공성전 규칙 모달
+document.getElementById('siegeRulesBtn')?.addEventListener('click', () => {
+  document.getElementById('siegeRulesModal')?.showModal();
+});
+document.getElementById('siegeRulesCloseBtn')?.addEventListener('click', () => {
+  document.getElementById('siegeRulesModal')?.close();
 });
 
 // 공개 방 만들기 모달 이벤트

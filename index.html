@@ -700,6 +700,35 @@
     </div>
   </dialog>
 
+  <!-- 공성전 규칙 안내 모달 -->
+  <dialog id="siegeRulesModal" class="modal">
+    <h3>⚔️ 팀 공성전 규칙</h3>
+    <div class="siege-rules-body">
+      <div class="siege-rules-section">
+        <strong>🎯 목표</strong>
+        <p>팀 톰 vs 팀 모토, 상대 HP를 0으로 만들거나 5라운드 후 HP가 더 높은 팀이 승리!</p>
+      </div>
+      <div class="siege-rules-section">
+        <strong>⏱ 타이머</strong>
+        <p>라운드마다 <b>각자 랜덤 시간</b>을 뽑아요.<br>
+        일반: <b>15~25분</b> / 🍀 럭키 라운드: <b>25~40분</b></p>
+        <p class="siege-rules-hint">럭키 라운드는 매 라운드 20% 확률로 발동, 마지막 라운드는 항상 럭키!</p>
+      </div>
+      <div class="siege-rules-section">
+        <strong>💥 데미지 계산</strong>
+        <p><b>이긴 팀</b> (집중시간 합산이 더 큰 팀) → 진 팀 HP -= 시간 차이(분) × 1.5</p>
+        <p><b>무승부</b> (30초 이내 차이) → 양 팀 각각 HP -= 1인당 평균 집중시간(분)</p>
+      </div>
+      <div class="siege-rules-section">
+        <strong>🔄 라운드 흐름</strong>
+        <p>가챠로 목표 설정 → 타이머 완료 → 5분 휴식 → 다음 라운드</p>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button id="siegeRulesCloseBtn" class="btn-modal btn-modal-primary" type="button">확인!</button>
+    </div>
+  </dialog>
+
   <!-- 공성전 가챠 안내 모달 -->
   <dialog id="siegeGachaGuideModal" class="modal">
     <h3>⚔️ 라운드 시작!</h3>
@@ -714,7 +743,10 @@
 
   <!-- v0.1.81 — 공개 배틀 로비 모달 -->
   <dialog id="publicLobbyModal" class="modal modal-pub-lobby">
-    <h3 id="pubLobbyTitle">공개 배틀 로비</h3>
+    <div class="pub-lobby-title-row">
+      <h3 id="pubLobbyTitle">공개 배틀 로비</h3>
+      <button id="siegeRulesBtn" class="siege-rules-btn" type="button" style="display:none" title="공성전 규칙">❓</button>
+    </div>
     <p id="pubLobbyInfo" class="pub-lobby-info">접속 중···</p>
 
     <!-- 팀 공성전 전용 HP/라운드 표시 (team_mode일 때만 표시) -->
