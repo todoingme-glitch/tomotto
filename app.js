@@ -5960,16 +5960,27 @@ function renderPublicLobby(battle, players) {
 
   // 공성전 라운드 진행 중이면 준비 버튼 숨김
   const inRound = isSiege && (battle.current_round ?? 0) > 0 && battle.status === 'active';
+  // 공성전: 가챠 미완료 시 준비완료 불가 → 가챠 버튼 표시
+  const siegeNeedsGacha = isSiege && !currentTask && !inRound;
+
   if ($readyBtn) {
     $readyBtn.style.display = inRound ? 'none' : '';
     if (!inRound) {
-      if (myPlayer?.is_ready) {
+      if (siegeNeedsGacha) {
+        // 가챠 안 돌린 상태 → 준비완료 대신 가챠 버튼
+        $readyBtn.textContent = '🎰 가챠 돌리러 가기!';
+        $readyBtn.className   = 'btn-modal btn-modal-primary';
+        $readyBtn.disabled    = false;
+        $readyBtn.dataset.siegeGacha = 'true';
+      } else if (myPlayer?.is_ready) {
         $readyBtn.textContent = '준비 취소';
         $readyBtn.className   = 'btn-modal btn-modal-secondary';
+        $readyBtn.dataset.siegeGacha = '';
       } else {
         $readyBtn.textContent = isSiege ? (isFull ? '준비 완료' : '팀 구성 대기 중···') : '준비 완료';
         $readyBtn.className   = 'btn-modal btn-modal-basil';
         $readyBtn.disabled    = isSiege && !isFull;
+        $readyBtn.dataset.siegeGacha = '';
       }
     }
   }
@@ -5981,6 +5992,9 @@ function renderPublicLobby(battle, players) {
         ? '모두 완료! 결과 집계 중···'
         : `라운드 ${battle.current_round} 진행 중 · ${roundDoneCount}/${players.length}명 완료`;
       $status.className = 'pub-lobby-status pub-lobby-status--go';
+    } else if (siegeNeedsGacha) {
+      $status.textContent = '🎰 가챠를 먼저 돌리고 준비해주세요!';
+      $status.className   = 'pub-lobby-status';
     } else if (allReady) {
       $status.textContent = '모두 준비됐어요! 곧 시작돼요···';
       $status.className   = 'pub-lobby-status pub-lobby-status--go';
@@ -6404,7 +6418,19 @@ async function closePublicLobby(deleteRoom = false, leaveRoom = false) {
 
 // 로비 버튼 이벤트
 (function initPublicLobbyEvents() {
-  document.getElementById('pubLobbyReadyBtn')?.addEventListener('click', togglePublicReady);
+  document.getElementById('pubLobbyReadyBtn')?.addEventListener('click', () => {
+    const btn = document.getElementById('pubLobbyReadyBtn');
+    if (btn?.dataset.siegeGacha === 'true') {
+      // 공성전 가챠 미완료 → 로비 닫고 가챠 버튼으로 이동
+      document.getElementById('publicLobbyModal')?.close();
+      switchTab('personal');
+      setTimeout(() => {
+        document.getElementById('gachaBtn')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 200);
+    } else {
+      togglePublicReady();
+    }
+  });
 
   // "닫기" — 방장·참가자 모두: 창만 닫고 채널·상태 유지 (나중에 다시 열 수 있음)
   document.getElementById('pubLobbyLeaveBtn')?.addEventListener('click', async () => {
