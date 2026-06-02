@@ -697,6 +697,13 @@ async function saveNickname() {
   }
   // v0.1.14 — 닉네임 저장 후 대기 중인 곳(배틀 룸 등)에 알림
   document.dispatchEvent(new CustomEvent('nick-saved'));
+
+  // 초대 링크로 진입했으나 닉네임 없어서 미뤄뒀던 배틀룸 오픈
+  if (pendingInviteBattleId) {
+    const _pid = pendingInviteBattleId;
+    pendingInviteBattleId = null;
+    setTimeout(() => openBattleRoom(_pid), 100);
+  }
 }
 
 $nickSaveBtn.addEventListener('click', saveNickname);
@@ -2033,6 +2040,7 @@ let isStartingBattle = false;  // v0.1.19 — 중복 시작 방지 플래그
 let watchChannel = null;       // v0.1.27 — 배틀 생성 후 친구 수락 대기 전용 채널 (룸 뷰 채널과 독립)
 let watchBattleId = null;      // v0.1.27 — watchChannel이 감시 중인 battleId
 let battleRoomPollInterval = null; // v0.1.67 — Realtime 폴링 백업 (카카오톡 등 WebSocket 불안정 브라우저용)
+let pendingInviteBattleId = null;  // 닉네임 없이 초대 링크 진입 시 임시 저장 — 닉 저장 후 자동 오픈
 
 // v0.1.15 — 배틀 초대 URL로 들어온 경우 타이머 잠금 (B안)
 let lockedBattleId = null;
@@ -2109,15 +2117,8 @@ async function openBattleRoom(battleId) {
   // 닉네임 없으면 먼저 받기
   if (!myNickname) {
     closeBattleRoom();
+    pendingInviteBattleId = battleId;  // 닉 저장 후 자동 오픈을 위해 저장
     openNickModal('first');
-    // 닉네임 저장 후 다시 열기
-    const reopen = () => {
-      if (myNickname) {
-        openBattleRoom(battleId);
-        document.removeEventListener('nick-saved', reopen);
-      }
-    };
-    document.addEventListener('nick-saved', reopen);
     return;
   }
 
