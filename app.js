@@ -6284,10 +6284,11 @@ async function startPublicLobbyCountdown(isReceiver = false, siegePayload = null
     const isLucky = !!(siegePayload?.isLucky ?? false);
     const roundNum = publicLobbyBattle?.current_round ?? (siegePayload?.round ?? 1);
 
-    // 🎲 개인 랜덤 시간 뽑기
+    // 🎲 개인 랜덤 시간 뽑기 (테스트 모드: 방 설정 10초면 고정)
+    const siegeTestSec = publicLobbyBattle?.duration_sec === 10 ? 10 : null;
     const minSec = isLucky ? 1500 : 900;   // 럭키: 25~40분 / 일반: 15~25분
     const maxSec = isLucky ? 2400 : 1500;
-    const myRoundDuration = minSec + Math.floor(Math.random() * (maxSec - minSec + 1));
+    const myRoundDuration = siegeTestSec ?? (minSec + Math.floor(Math.random() * (maxSec - minSec + 1)));
 
     // activeBattleId 설정 (finishTimer에서 siege 판별용)
     if (currentBattleData?.battle) {
