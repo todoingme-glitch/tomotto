@@ -5912,19 +5912,30 @@ function renderPublicLobby(battle, players) {
     const motoPlayers = players.filter(p => p.team === 'moto');
     const perTeam     = Math.max(tomPlayers.length, motoPlayers.length, 1);
 
+    const inRoundNow = (battle.current_round ?? 0) > 0 && battle.status === 'active';
     function playerRow(p) {
       if (!p) return '<div class="pub-lobby-player pub-lobby-player--empty">—</div>';
       const isMe = p.nickname === myNickname;
       const nick = escapeHtml(truncEnd(p.nickname ?? '', 12));
-      const doneIcon = p.round_done ? '✅' : (p.is_ready ? '▶' : '⏳');
+      let stateIcon, stateLabel;
+      if (p.round_done) {
+        stateIcon = '✅'; stateLabel = '완료';
+      } else if (inRoundNow) {
+        stateIcon = '⏱'; stateLabel = '집중 중';
+      } else if (p.is_ready) {
+        stateIcon = '✔'; stateLabel = '준비';
+      } else {
+        stateIcon = '⏳'; stateLabel = '대기';
+      }
       return `<div class="pub-lobby-player${isMe ? ' is-me' : ''}${p.round_done ? ' is-ready' : ''}" data-nick="${escapeHtml(p.nickname ?? '')}">
-        <span class="pub-lobby-icon">${doneIcon}</span>
+        <span class="pub-lobby-icon" title="${stateLabel}">${stateIcon}</span>
         <span class="pub-lobby-nick">${nick}${isMe ? ' <span class="lb-me-badge">나</span>' : ''}</span>
         ${p.round_elapsed_sec ? `<span class="siege-elapsed">${Math.round(p.round_elapsed_sec / 60)}분</span>` : ''}
       </div>`;
     }
 
     $list.innerHTML = `
+      <div class="siege-legend">⏳대기 · ✔준비 · ⏱집중중 · ✅완료</div>
       <div class="siege-teams-row">
         <div class="siege-col siege-col--tom">
           <div class="siege-col-label">🍅 팀 톰</div>
@@ -6182,15 +6193,15 @@ async function startPublicLobbyCountdown(isReceiver = false, siegePayload = null
     if (isSiege) {
       const currentRound = (publicLobbyBattle?.current_round ?? 0);
       const nextRound = currentRound + 1;
-      const { duration, isLucky } = _calcSiegeRoundDuration(publicLobbyBattle, nextRound);
+      // isLucky만 결정 — 실제 시간은 각 플레이어가 개별 랜덤으로 뽑음
+      const { isLucky } = _calcSiegeRoundDuration(publicLobbyBattle, nextRound);
       dbUpdate.current_round = nextRound;
-      dbUpdate.duration_sec  = duration;
-      broadcastPayload = { team_mode: true, round: nextRound, duration, isLucky };
+      // duration_sec는 DB에 저장하지 않음 (플레이어마다 다름)
+      broadcastPayload = { team_mode: true, round: nextRound, isLucky };
 
       // 로컬 반영
       if (publicLobbyBattle) {
         publicLobbyBattle.current_round = nextRound;
-        publicLobbyBattle.duration_sec  = duration;
         if (currentRound === 0) publicLobbyBattle.status = 'active';
       }
     }
@@ -6203,7 +6214,6 @@ async function startPublicLobbyCountdown(isReceiver = false, siegePayload = null
     // 수신자: 로컬 publicLobbyBattle 갱신
     if (publicLobbyBattle) {
       publicLobbyBattle.current_round = siegePayload.round ?? publicLobbyBattle.current_round;
-      publicLobbyBattle.duration_sec  = siegePayload.duration ?? publicLobbyBattle.duration_sec;
       publicLobbyBattle.status = 'active';
     }
   }
@@ -6240,19 +6250,23 @@ async function startPublicLobbyCountdown(isReceiver = false, siegePayload = null
   isStartingPublicLobby = false;
 
   if (isSiege) {
-    // 공성전: 로비 닫고 개인탭으로 이동 → 플레이어 스스로 가챠 + 타이머
-    const roundDuration = publicLobbyBattle?.duration_sec ?? (siegePayload?.duration ?? 1500);
-    const isLucky = siegePayload?.isLucky ?? false;
+    // 공성전: 각 플레이어가 개별 랜덤 시간 뽑기 (같은 범위 안에서 각자 독립)
+    const isLucky = !!(siegePayload?.isLucky ?? false);
     const roundNum = publicLobbyBattle?.current_round ?? (siegePayload?.round ?? 1);
+
+    // 🎲 개인 랜덤 시간 뽑기
+    const minSec = isLucky ? 1500 : 900;   // 럭키: 25~40분 / 일반: 15~25분
+    const maxSec = isLucky ? 2400 : 1500;
+    const myRoundDuration = minSec + Math.floor(Math.random() * (maxSec - minSec + 1));
 
     // activeBattleId 설정 (finishTimer에서 siege 판별용)
     if (currentBattleData?.battle) {
       activeBattleId = currentBattleData.battle.id;
       localStorage.setItem('tomotto_activeBattleId', activeBattleId);
     }
-    // 타이머 시간을 라운드 시간으로 프리셋 (플레이어가 시작 버튼 누를 때 적용)
-    timer.duration  = roundDuration;
-    timer.remaining = roundDuration;
+    // 내 랜덤 타이머 시간 프리셋
+    timer.duration  = myRoundDuration;
+    timer.remaining = myRoundDuration;
     updateTimerDisplay();
 
     // 로비 닫기 (채널은 유지 — round_done 감지 필요)
@@ -6264,10 +6278,12 @@ async function startPublicLobbyCountdown(isReceiver = false, siegePayload = null
     if (!currentTask) {
       const $guide = document.getElementById('siegeGachaGuideModal');
       const $info  = document.getElementById('siegeGachaRoundInfo');
-      if ($info) $info.textContent = `라운드 ${roundNum} · ${Math.round(roundDuration / 60)}분${isLucky ? ' 🍀 럭키 라운드!' : ''}`;
+      if ($info) $info.textContent = `라운드 ${roundNum} · 내 시간 ${Math.round(myRoundDuration / 60)}분${isLucky ? ' 🍀 럭키!' : ''}`;
       if ($guide && typeof $guide.showModal === 'function') $guide.showModal();
     } else {
-      _showNotifToast('achievement-toast--siege', '⚔️', `라운드 ${roundNum} 시작${isLucky ? ' 🍀 럭키!' : ''}`, '가챠를 돌리고 타이머를 눌러요!', 5000);
+      _showNotifToast('achievement-toast--siege', '⚔️',
+        `라운드 ${roundNum} · 내 시간 ${Math.round(myRoundDuration / 60)}분${isLucky ? ' 🍀' : ''}`,
+        '가챠를 돌리고 타이머 시작!', 6000);
     }
   } else {
     // 일반 공개 배틀: 기존 방식
