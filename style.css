@@ -2513,20 +2513,16 @@ dialog.modal input[type="text"]:focus {
 }
 .hotspot {
   position: absolute;
-  background: rgba(255,255,255,0.15);
-  border: 2px dashed rgba(255,255,255,0.6);
+  background: transparent;
+  border: none;
   border-radius: 14px;
   cursor: pointer;
-  color: white;
+  color: transparent;
   font-size: 13px;
-  font-weight: 700;
-  text-shadow: 0 1px 4px rgba(0,0,0,0.4);
   padding: 8px 14px;
-  transition: background 0.15s, transform 0.1s;
-  backdrop-filter: blur(2px);
+  transition: transform 0.1s;
 }
 .hotspot:hover {
-  background: rgba(255,255,255,0.28);
   transform: scale(1.05);
 }
 /* 임시 위치 — 나중에 배경 보면서 조정 */
