@@ -3923,6 +3923,14 @@ function showGachaResult(task, animate = true) {
     spawnConfetti();
     // v0.1.15 — 배틀 초대 링크로 들어온 사람이 가챠 완료 시 배너 상태 전환
     if (lockedBattleId) updateBattleLockBanner();
+    // 공성전 로비에서 가챠 돌리러 온 경우 → 완료 후 로비 자동 재오픈
+    if (window._siegeReturnPending) {
+      window._siegeReturnPending = false;
+      setTimeout(() => {
+        document.getElementById('dialog-gacha')?.close();
+        openPublicLobby(window._siegeReturnBattleId);
+      }, 800);
+    }
     // v0.1.22 — MOTO MODE 친구: 가챠 완료 시 task를 Supabase에 저장 (창조자가 준비 상태 감지용)
     const battleIdForTask = lockedBattleId || currentBattleId;
     if (battleIdForTask && sb && myNickname) {
@@ -6489,11 +6497,13 @@ async function closePublicLobby(deleteRoom = false, leaveRoom = false) {
   document.getElementById('pubLobbyReadyBtn')?.addEventListener('click', () => {
     const btn = document.getElementById('pubLobbyReadyBtn');
     if (btn?.dataset.siegeGacha === 'true') {
-      // 공성전 가챠 미완료 → 로비 닫고 가챠 버튼으로 이동
+      // 공성전 가챠 미완료 → 로비 닫고 가챠 모달 바로 열기
       document.getElementById('publicLobbyModal')?.close();
+      window._siegeReturnPending = true;
+      window._siegeReturnBattleId = publicLobbyBattle?.id ?? null;  // 돌아갈 로비 ID 저장
       switchTab('personal');
       setTimeout(() => {
-        document.getElementById('gachaBtn')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        document.getElementById('dialog-gacha')?.showModal();
       }, 200);
     } else {
       togglePublicReady();
