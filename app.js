@@ -6595,6 +6595,12 @@ document.getElementById('siegeRulesCloseBtn')?.addEventListener('click', () => {
     document.getElementById('pubModeTabTom').classList.toggle('pub-mode-tab--active', !siege);
     document.getElementById('pubModeTabSiege').classList.toggle('pub-mode-tab--active', siege);
     if ($confirm) $confirm.disabled = siege ? false : !currentTask;
+    // 공성전일 때만 10초 테스트 옵션 표시
+    const $dur = document.getElementById('pubBattleDuration');
+    const $testOpt = $dur?.querySelector('option[value="10"]');
+    if ($testOpt) $testOpt.hidden = !siege;
+    // 일반 배틀로 돌아올 때 10초 선택돼 있으면 기본값으로 리셋
+    if (!siege && $dur?.value === '10') $dur.value = '1500';
   }
 
   document.getElementById('pubModeTabTom')?.addEventListener('click', () => switchMode(false));
