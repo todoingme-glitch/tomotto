@@ -2780,9 +2780,6 @@ body:has(.container[data-tab="personal"]) .container {
   background: none;
   position: relative;
   z-index: 3;
-  padding: 0;
-  overflow: hidden;
-  height: 100svh;
 }
 
 
