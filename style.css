@@ -3366,6 +3366,21 @@ body:has(.container[data-tab="personal"]) .container {
 }
 .siege-rules-btn:hover { opacity: 1; }
 
+.siege-test-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #fff8e1;
+  border: 1.5px dashed #ffd54f;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.83rem;
+  color: #795548;
+  margin-bottom: 4px;
+}
+.siege-test-toggle input { accent-color: #ff8f00; }
+
 /* ──── 팀 공성전 플레이어 두 컬럼 ──── */
 .siege-teams-row {
   display: grid;
