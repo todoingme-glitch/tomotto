@@ -4829,7 +4829,9 @@ function finishTimer() {
     if (isSiegeBattle) {
       // 팀 공성전 라운드 완료 기록 (battles status는 done으로 바꾸지 않음)
       if (sb && myNickname) {
-        const elapsedSec = timer.duration ?? 0;
+        // BUG-4 FIX: 실제 경과 시간 = 설정 시간 - 남은 시간 (정상 완료 시 remaining=0이므로 duration과 동일,
+        // 강제 완료·일시정지 누적 시에는 실제 집중 시간을 정확히 반영)
+        const elapsedSec = Math.max(0, (timer.duration ?? 0) - (timer.remaining ?? 0));
         sb.from('battle_players')
           .update({ round_done: true, round_elapsed_sec: elapsedSec })
           .eq('battle_id', activeBattleId)
