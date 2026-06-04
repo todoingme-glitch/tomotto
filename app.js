@@ -6098,6 +6098,12 @@ function subscribePublicLobby(battleId) {
         const allDone = players.length > 0 && players.every(p => p.round_done);
         if (allDone) _processSiegeRoundResult(battleId, publicLobbyBattle, players);
       }
+      // ISSUE-9 복구: break_started_at 있고 아직 휴식 카운트다운 안 시작됐으면 복구
+      if (publicLobbyBattle.break_started_at && !_siegeBreakRunning && !isCreator) {
+        const elapsedMs = Date.now() - new Date(publicLobbyBattle.break_started_at).getTime();
+        const remainSec = Math.max(0, 300 - Math.floor(elapsedMs / 1000));
+        if (remainSec > 0) _startSiegeBreakCountdown(remainSec, false);
+      }
     } else {
       // ── 일반 공개 배틀 로직 ──
       const allReady = (players?.length >= 2) && players.every(p => p.is_ready);
@@ -6356,27 +6362,15 @@ async function _processSiegeRoundResult(battleId, battle, players) {
     const motoPlayers = players.filter(p => p.team === 'moto');
     const tomTotal    = tomPlayers.reduce((s, p) => s + (p.round_elapsed_sec ?? 0), 0);
     const motoTotal   = motoPlayers.reduce((s, p) => s + (p.round_elapsed_sec ?? 0), 0);
-    const tomAvg      = tomTotal / Math.max(tomPlayers.length, 1);
-    const motoAvg     = motoTotal / Math.max(motoPlayers.length, 1);
-
     let newHpA = battle.team_a_hp ?? 100;
     let newHpB = battle.team_b_hp ?? 100;
 
-    if (Math.abs(tomTotal - motoTotal) < 30) {
-      // 타이 (30초 이내): 양 팀 각각 평균 집중 시간(분)만큼 HP 차감 (최소 1)
-      const tomDmg  = Math.max(1, Math.round(tomAvg / 60));
-      const motoDmg = Math.max(1, Math.round(motoAvg / 60));
-      newHpA = Math.max(0, newHpA - tomDmg);
-      newHpB = Math.max(0, newHpB - motoDmg);
-    } else if (tomTotal > motoTotal) {
-      // 팀 톰 승: 모토 HP -= (시간 차 분 × 1.5, 최소 1)
-      const dmg = Math.max(1, Math.round((tomTotal - motoTotal) / 60 * 1.5));
-      newHpB = Math.max(0, newHpB - dmg);
-    } else {
-      // 팀 모토 승: 톰 HP -= (시간 차 분 × 1.5, 최소 1)
-      const dmg = Math.max(1, Math.round((motoTotal - tomTotal) / 60 * 1.5));
-      newHpA = Math.max(0, newHpA - dmg);
-    }
+    // 상대팀이 집중한 시간(분) = 내 HP 감소 (최소 1)
+    // Tom의 집중시간 → Moto에게 데미지 / Moto의 집중시간 → Tom에게 데미지
+    const dmgToMoto = Math.max(1, Math.round(tomTotal / 60));
+    const dmgToTom  = Math.max(1, Math.round(motoTotal / 60));
+    newHpA = Math.max(0, newHpA - dmgToTom);
+    newHpB = Math.max(0, newHpB - dmgToMoto);
 
     const isGameOver = newHpA <= 0 || newHpB <= 0 || (battle.current_round ?? 0) >= (battle.max_rounds ?? 5);
 
@@ -6401,9 +6395,9 @@ async function _processSiegeRoundResult(battleId, battle, players) {
       const winner = newHpA > newHpB ? '팀 톰 🍅' : newHpA < newHpB ? '팀 모토 🎲' : null;
       const msg = winner ? `${winner} 승리! 공성전 종료!` : '무승부! 공성전 종료!';
 
-      // 게임 종료: battles status done
+      // 게임 종료: battles status done + break_started_at 초기화
       await sb.from('battles')
-        .update({ status: 'done', updated_at: new Date().toISOString() })
+        .update({ status: 'done', break_started_at: null, updated_at: new Date().toISOString() })
         .eq('id', battleId);
 
       // 비방장에게도 종료 broadcast
@@ -6426,8 +6420,15 @@ async function _processSiegeRoundResult(battleId, battle, players) {
       return;
     }
 
-    // 다음 라운드 준비: 절대 종료 시각 기준으로 broadcast (지연 무관하게 동기화)
+    // 다음 라운드 준비: 절대 종료 시각 기준으로 broadcast + DB 저장 (ISSUE-9 복구용)
     const breakEndAt = Date.now() + 300_000;
+    const breakStartedAt = new Date().toISOString();
+
+    // DB에 break_started_at 저장 → 비방장 broadcast 수신 실패 시 Realtime으로 복구
+    await sb.from('battles')
+      .update({ break_started_at: breakStartedAt, updated_at: new Date().toISOString() })
+      .eq('id', battleId);
+
     publicLobbyChannel?.send({
       type: 'broadcast', event: 'siege-break-start',
       payload: { hpA: newHpA, hpB: newHpB, breakEndAt },
@@ -6441,8 +6442,12 @@ async function _processSiegeRoundResult(battleId, battle, players) {
   }
 }
 
+let _siegeBreakRunning = false;  // 중복 countdown 방지
+
 /** 공성전 휴식 카운트다운 (방장/비방장 공용) */
 function _startSiegeBreakCountdown(initialSec, isCreator) {
+  if (_siegeBreakRunning) return;  // 이미 실행 중이면 무시
+  _siegeBreakRunning = true;
   const $modal  = document.getElementById('publicLobbyModal');
   const $status = document.getElementById('pubLobbyStatus');
   if ($modal && !$modal.open) $modal.showModal();
@@ -6461,6 +6466,7 @@ function _startSiegeBreakCountdown(initialSec, isCreator) {
     }
     if (breakSec <= 0) {
       clearInterval(breakInterval);
+      _siegeBreakRunning = false;
       // 다음 라운드는 방장만 트리거
       if (isCreator && !isStartingPublicLobby) startPublicLobbyCountdown(false);
     }
