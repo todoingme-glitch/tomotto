@@ -6078,7 +6078,9 @@ function subscribePublicLobby(battleId) {
     enrichLobbyWithPartnerBadges(players ?? []);
     renderPublicBattles();
 
-    const isCreator = players?.find(p => p.nickname === myNickname)?.is_creator;
+    // BUG-5 FIX: battle_players 누락 시 대비해 creator_nickname도 병행 확인
+    const isCreator = (players?.find(p => p.nickname === myNickname)?.is_creator)
+      || (publicLobbyBattle?.creator_nickname === myNickname);
 
     if (publicLobbyBattle.team_mode) {
       // ── 팀 공성전 로직 ──
@@ -6089,7 +6091,8 @@ function subscribePublicLobby(battleId) {
         startPublicLobbyCountdown(false);
       }
       // 라운드 진행 중 → 전원 round_done → 방장이 HP 계산
-      if ((publicLobbyBattle.current_round ?? 0) > 0 && isCreator) {
+      // BUG-2 FIX: status=done이면 이미 처리 완료, 중복 방지
+      if ((publicLobbyBattle.current_round ?? 0) > 0 && isCreator && publicLobbyBattle.status !== 'done') {
         const allDone = players.length > 0 && players.every(p => p.round_done);
         if (allDone) _processSiegeRoundResult(battleId, publicLobbyBattle, players);
       }
@@ -6153,13 +6156,15 @@ function subscribePublicLobby(battleId) {
       }
     })
     // 비방장: 방장이 라운드 결과 집계 완료 → 휴식 시작 신호
+    // BUG-3 FIX: 방장은 직접 _startSiegeBreakCountdown 호출 — 에코 수신 무시
     .on('broadcast', { event: 'siege-break-start' }, ({ payload }) => {
       if (!payload) return;
+      // 방장 자신의 에코는 무시 (방장은 이미 _processSiegeRoundResult에서 직접 호출)
+      if (publicLobbyBattle?.creator_nickname === myNickname) return;
       if (publicLobbyBattle) {
         publicLobbyBattle.team_a_hp = payload.hpA;
         publicLobbyBattle.team_b_hp = payload.hpB;
       }
-      // 절대 종료 시각 기준으로 남은 초 계산 → 네트워크 지연 보정
       const remainSec = payload.breakEndAt
         ? Math.max(0, Math.round((payload.breakEndAt - Date.now()) / 1000))
         : (payload.breakSec ?? 300);
@@ -6226,6 +6231,8 @@ async function startPublicLobbyCountdown(isReceiver = false, siegePayload = null
   if ($modal && !$modal.open) $modal.showModal();
 
   const isSiege = !!(publicLobbyBattle?.team_mode ?? siegePayload?.team_mode);
+  // BUG-1 FIX: 방장의 isLucky를 함수 스코프에 저장해 타이머 뽑기에도 사용
+  let _siegeIsLucky = !!(siegePayload?.isLucky ?? false);
 
   if (!isReceiver) {
     let dbUpdate = { status: 'active', countdown_started_at: new Date().toISOString() };
@@ -6234,10 +6241,9 @@ async function startPublicLobbyCountdown(isReceiver = false, siegePayload = null
     if (isSiege) {
       const currentRound = (publicLobbyBattle?.current_round ?? 0);
       const nextRound = currentRound + 1;
-      // isLucky만 결정 — 실제 시간은 각 플레이어가 개별 랜덤으로 뽑음
       const { isLucky } = _calcSiegeRoundDuration(publicLobbyBattle, nextRound);
+      _siegeIsLucky = isLucky;  // 방장도 자신의 타이머에 적용
       dbUpdate.current_round = nextRound;
-      // duration_sec는 DB에 저장하지 않음 (플레이어마다 다름)
       broadcastPayload = { team_mode: true, round: nextRound, isLucky };
 
       // 로컬 반영
@@ -6292,7 +6298,7 @@ async function startPublicLobbyCountdown(isReceiver = false, siegePayload = null
 
   if (isSiege) {
     // 공성전: 각 플레이어가 개별 랜덤 시간 뽑기 (같은 범위 안에서 각자 독립)
-    const isLucky = !!(siegePayload?.isLucky ?? false);
+    const isLucky = _siegeIsLucky;  // BUG-1 FIX: 방장/수신자 모두 올바른 isLucky 사용
     const roundNum = publicLobbyBattle?.current_round ?? (siegePayload?.round ?? 1);
 
     // 🎲 개인 랜덤 시간 뽑기 (테스트 모드: 방 설정 10초면 고정)
