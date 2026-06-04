@@ -3923,6 +3923,14 @@ function showGachaResult(task, animate = true) {
     spawnConfetti();
     // v0.1.15 — 배틀 초대 링크로 들어온 사람이 가챠 완료 시 배너 상태 전환
     if (lockedBattleId) updateBattleLockBanner();
+    // 공성전 로비에서 가챠 돌리러 온 경우 → 완료 후 로비 자동 재오픈
+    if (window._siegeReturnPending) {
+      window._siegeReturnPending = false;
+      setTimeout(() => {
+        document.getElementById('dialog-gacha')?.close();
+        openPublicLobby(window._siegeReturnBattleId);
+      }, 800);
+    }
     // v0.1.22 — MOTO MODE 친구: 가챠 완료 시 task를 Supabase에 저장 (창조자가 준비 상태 감지용)
     const battleIdForTask = lockedBattleId || currentBattleId;
     if (battleIdForTask && sb && myNickname) {
@@ -6147,12 +6155,15 @@ function subscribePublicLobby(battleId) {
     // 비방장: 방장이 라운드 결과 집계 완료 → 휴식 시작 신호
     .on('broadcast', { event: 'siege-break-start' }, ({ payload }) => {
       if (!payload) return;
-      // HP 로컬 반영
       if (publicLobbyBattle) {
         publicLobbyBattle.team_a_hp = payload.hpA;
         publicLobbyBattle.team_b_hp = payload.hpB;
       }
-      _startSiegeBreakCountdown(payload.breakSec ?? 300, false);
+      // 절대 종료 시각 기준으로 남은 초 계산 → 네트워크 지연 보정
+      const remainSec = payload.breakEndAt
+        ? Math.max(0, Math.round((payload.breakEndAt - Date.now()) / 1000))
+        : (payload.breakSec ?? 300);
+      _startSiegeBreakCountdown(remainSec, false, payload.breakEndAt);
     })
     // 비방장: 공성전 종료 신호
     .on('broadcast', { event: 'siege-game-over' }, async ({ payload }) => {
@@ -6194,12 +6205,11 @@ async function togglePublicReady() {
 function _calcSiegeRoundDuration(battle, nextRound) {
   const maxRounds = battle.max_rounds ?? 5;
   const luckyProb = battle.lucky_round_prob ?? 0.2;
-  const isTestMode = luckyProb > 1;  // lucky_round_prob > 1 = 테스트 모드 시그널
   const isLastRound = nextRound >= maxRounds;
-  const isLucky = isLastRound || Math.random() < (isTestMode ? 0.5 : luckyProb);
-  // 테스트 모드: 10~30초 / 럭키: 25~40분 / 일반: 15~25분
-  const minSec = isTestMode ? 10  : (isLucky ? 1500 : 900);
-  const maxSec = isTestMode ? 30  : (isLucky ? 2400 : 1500);
+  const isLucky = isLastRound || Math.random() < luckyProb;
+  // 럭키라운드: 25~40분, 일반: 15~25분
+  const minSec = isLucky ? 1500 : 900;
+  const maxSec = isLucky ? 2400 : 1500;
   const duration = minSec + Math.floor(Math.random() * (maxSec - minSec + 1));
   return { duration, isLucky };
 }
@@ -6285,11 +6295,11 @@ async function startPublicLobbyCountdown(isReceiver = false, siegePayload = null
     const isLucky = !!(siegePayload?.isLucky ?? false);
     const roundNum = publicLobbyBattle?.current_round ?? (siegePayload?.round ?? 1);
 
-    // 🎲 개인 랜덤 시간 뽑기 (테스트 모드: lucky_round_prob > 1)
-    const isTestMode = (publicLobbyBattle?.lucky_round_prob ?? 0.2) > 1;
-    const minSec = isTestMode ? 10  : (isLucky ? 1500 : 900);
-    const maxSec = isTestMode ? 30  : (isLucky ? 2400 : 1500);
-    const myRoundDuration = minSec + Math.floor(Math.random() * (maxSec - minSec + 1));
+    // 🎲 개인 랜덤 시간 뽑기 (테스트 모드: 방 설정 10초면 고정)
+    const siegeTestSec = publicLobbyBattle?.duration_sec === 10 ? 10 : null;
+    const minSec = isLucky ? 1500 : 900;   // 럭키: 25~40분 / 일반: 15~25분
+    const maxSec = isLucky ? 2400 : 1500;
+    const myRoundDuration = siegeTestSec ?? (minSec + Math.floor(Math.random() * (maxSec - minSec + 1)));
 
     // activeBattleId 설정 (finishTimer에서 siege 판별용)
     if (currentBattleData?.battle) {
@@ -6310,17 +6320,11 @@ async function startPublicLobbyCountdown(isReceiver = false, siegePayload = null
     if (!currentTask) {
       const $guide = document.getElementById('siegeGachaGuideModal');
       const $info  = document.getElementById('siegeGachaRoundInfo');
-    const timeLabel = isTestMode
-      ? `${myRoundDuration}초 🧪`
-      : `${Math.round(myRoundDuration / 60)}분${isLucky ? ' 🍀 럭키!' : ''}`;
-      if ($info) $info.textContent = `라운드 ${roundNum} · 내 시간 ${timeLabel}`;
+      if ($info) $info.textContent = `라운드 ${roundNum} · 내 시간 ${Math.round(myRoundDuration / 60)}분${isLucky ? ' 🍀 럭키!' : ''}`;
       if ($guide && typeof $guide.showModal === 'function') $guide.showModal();
     } else {
-      const timeLabel2 = isTestMode
-        ? `${myRoundDuration}초 🧪`
-        : `${Math.round(myRoundDuration / 60)}분${isLucky ? ' 🍀' : ''}`;
       _showNotifToast('achievement-toast--siege', '⚔️',
-        `라운드 ${roundNum} · 내 시간 ${timeLabel2}`,
+        `라운드 ${roundNum} · 내 시간 ${Math.round(myRoundDuration / 60)}분${isLucky ? ' 🍀' : ''}`,
         '가챠를 돌리고 타이머 시작!', 6000);
     }
   } else {
@@ -6351,18 +6355,18 @@ async function _processSiegeRoundResult(battleId, battle, players) {
     let newHpB = battle.team_b_hp ?? 100;
 
     if (Math.abs(tomTotal - motoTotal) < 30) {
-      // 타이 (30초 이내): 양 팀 각각 평균 집중 시간(분)만큼 HP 차감
-      const tomDmg  = Math.round(tomAvg / 60);
-      const motoDmg = Math.round(motoAvg / 60);
+      // 타이 (30초 이내): 양 팀 각각 평균 집중 시간(분)만큼 HP 차감 (최소 1)
+      const tomDmg  = Math.max(1, Math.round(tomAvg / 60));
+      const motoDmg = Math.max(1, Math.round(motoAvg / 60));
       newHpA = Math.max(0, newHpA - tomDmg);
       newHpB = Math.max(0, newHpB - motoDmg);
     } else if (tomTotal > motoTotal) {
-      // 팀 톰 승: 모토 HP -= (시간 차 분 × 1.5)
-      const dmg = Math.round((tomTotal - motoTotal) / 60 * 1.5);
+      // 팀 톰 승: 모토 HP -= (시간 차 분 × 1.5, 최소 1)
+      const dmg = Math.max(1, Math.round((tomTotal - motoTotal) / 60 * 1.5));
       newHpB = Math.max(0, newHpB - dmg);
     } else {
-      // 팀 모토 승: 톰 HP -= (시간 차 분 × 1.5)
-      const dmg = Math.round((motoTotal - tomTotal) / 60 * 1.5);
+      // 팀 모토 승: 톰 HP -= (시간 차 분 × 1.5, 최소 1)
+      const dmg = Math.max(1, Math.round((motoTotal - tomTotal) / 60 * 1.5));
       newHpA = Math.max(0, newHpA - dmg);
     }
 
@@ -6414,14 +6418,15 @@ async function _processSiegeRoundResult(battleId, battle, players) {
       return;
     }
 
-    // 다음 라운드 준비: 비방장에게 휴식 시작 broadcast (HP 결과 포함)
+    // 다음 라운드 준비: 절대 종료 시각 기준으로 broadcast (지연 무관하게 동기화)
+    const breakEndAt = Date.now() + 300_000;
     publicLobbyChannel?.send({
       type: 'broadcast', event: 'siege-break-start',
-      payload: { hpA: newHpA, hpB: newHpB, breakSec: 300 },
+      payload: { hpA: newHpA, hpB: newHpB, breakEndAt },
     });
 
-    // 방장: 5분 휴식 카운트다운 시작
-    _startSiegeBreakCountdown(300, true);
+    // 방장: 휴식 카운트다운 시작
+    _startSiegeBreakCountdown(300, true, breakEndAt);
 
   } finally {
     _siegeProcessing = false;
@@ -6496,11 +6501,15 @@ async function closePublicLobby(deleteRoom = false, leaveRoom = false) {
   document.getElementById('pubLobbyReadyBtn')?.addEventListener('click', () => {
     const btn = document.getElementById('pubLobbyReadyBtn');
     if (btn?.dataset.siegeGacha === 'true') {
-      // 공성전 가챠 미완료 → 로비 닫고 가챠 버튼으로 이동
+      // 공성전 가챠 미완료 → 로비 닫고 가챠(or 할일) 모달 바로 열기
       document.getElementById('publicLobbyModal')?.close();
+      window._siegeReturnPending = true;
+      window._siegeReturnBattleId = publicLobbyBattle?.id ?? null;
       switchTab('personal');
       setTimeout(() => {
-        document.getElementById('gachaBtn')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // 할일 카테고리가 하나도 없으면 할일 카드 먼저
+        const targetDialog = categories.length === 0 ? 'dialog-todo' : 'dialog-gacha';
+        document.getElementById(targetDialog)?.showModal();
       }, 200);
     } else {
       togglePublicReady();
@@ -6587,10 +6596,15 @@ document.getElementById('siegeRulesCloseBtn')?.addEventListener('click', () => {
     isSiegeMode = siege;
     document.getElementById('pubModeNormal').style.display = siege ? 'none' : '';
     document.getElementById('pubModeSiege').style.display  = siege ? '' : 'none';
-    document.getElementById('pubSiegeTestRow').style.display = siege ? '' : 'none';
     document.getElementById('pubModeTabTom').classList.toggle('pub-mode-tab--active', !siege);
     document.getElementById('pubModeTabSiege').classList.toggle('pub-mode-tab--active', siege);
     if ($confirm) $confirm.disabled = siege ? false : !currentTask;
+    // 공성전일 때만 10초 테스트 옵션 표시
+    const $dur = document.getElementById('pubBattleDuration');
+    const $testOpt = $dur?.querySelector('option[value="10"]');
+    if ($testOpt) $testOpt.hidden = !siege;
+    // 일반 배틀로 돌아올 때 10초 선택돼 있으면 기본값으로 리셋
+    if (!siege && $dur?.value === '10') $dur.value = '1500';
   }
 
   document.getElementById('pubModeTabTom')?.addEventListener('click', () => switchMode(false));
@@ -6615,8 +6629,6 @@ document.getElementById('siegeRulesCloseBtn')?.addEventListener('click', () => {
     selectedMaxPlayers = 2;
     selectedSiegeTeamSize = 1;
     isSiegeMode = false;
-    const $testCheck = document.getElementById('pubSiegeTestMode');
-    if ($testCheck) $testCheck.checked = false;
     updateStepperDisplay();
     updateSiegeStepperDisplay();
     switchMode(false);
@@ -6657,13 +6669,12 @@ document.getElementById('siegeRulesCloseBtn')?.addEventListener('click', () => {
 
     if (isSiegeMode) {
       const maxRounds = parseInt(document.getElementById('pubSiegeRounds')?.value || '5', 10);
-      const isTestMode = document.getElementById('pubSiegeTestMode')?.checked ?? false;
       battle = {
         id: battleId,
         creator_nickname: myNickname,
         mode: 'common',
         task_common: null,
-        duration_sec: 1500,
+        duration_sec: 1500,  // 공성전은 라운드마다 랜덤 설정됨 — 초기값
         status: 'waiting',
         is_public: true,
         max_players: selectedSiegeTeamSize * 2,
@@ -6672,8 +6683,7 @@ document.getElementById('siegeRulesCloseBtn')?.addEventListener('click', () => {
         team_b_hp: 100,
         current_round: 0,
         max_rounds: maxRounds,
-        // lucky_round_prob > 1 = 테스트 모드 시그널 (10~30초 타이머)
-        lucky_round_prob: isTestMode ? 9.99 : 0.2,
+        lucky_round_prob: 0.2,
         created_at: new Date().toISOString(),
       };
     } else {
