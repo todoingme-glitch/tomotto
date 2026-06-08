@@ -2587,17 +2587,19 @@ body:has(.container[data-tab="personal"]) .bg-hill {
   display: block;
 }
 
-/* 개인탭일 때 스크롤 완전 차단 */
+/* 개인탭일 때 body 스크롤 차단 — 컨테이너/탭패널이 직접 스크롤 담당 */
 body:has(.container[data-tab="personal"]) {
   overflow: hidden;
   height: 100svh;
 }
 
-/* 개인탭일 때 컨테이너 배경 제거 + z-index 올리기 */
+/* 개인탭일 때 컨테이너 배경 제거 + z-index 올리기 + 전체 높이 스크롤 */
 body:has(.container[data-tab="personal"]) .container {
   background: none;
   position: relative;
   z-index: 3;
+  height: 100svh;
+  overflow-y: auto;
 }
 
 
