@@ -2506,6 +2506,7 @@ dialog.modal input[type="text"]:focus {
 /* ── 개인탭 카드 레이아웃 ──────────────────────────── */
 #tab-personal {
   padding-top: 8px;
+  overflow-y: auto;
 }
 
 /* ── 탭별 배경 ────────────────────────────────────────── */
