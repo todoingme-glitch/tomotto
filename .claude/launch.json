@@ -4,7 +4,7 @@
     {
       "name": "tomotto",
       "runtimeExecutable": "powershell.exe",
-      "runtimeArgs": ["-ExecutionPolicy", "Bypass", "-File", ".claude\\serve.ps1"],
+      "runtimeArgs": ["-ExecutionPolicy", "Bypass", "-File", "serve.ps1"],
       "port": 8787
     }
   ]
