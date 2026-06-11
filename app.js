@@ -8157,26 +8157,36 @@ function checkAchievementsOnTimerComplete() {
 
 // ====== 로파이 미니 플레이어 ======
 window.addEventListener('load', () => {
-  const $select = document.getElementById('lofiSelect');
-  const $wrap   = document.getElementById('lofiIframeWrap');
-  const $iframe = document.getElementById('lofiIframe');
-  const $close  = document.getElementById('lofiCloseBtn');
-  if (!$select || !$wrap || !$iframe) return;
+  const $select  = document.getElementById('lofiSelect');
+  const $stage   = document.getElementById('lofiStage');
+  const $audio   = document.getElementById('lofiAudio');
+  const $close   = document.getElementById('lofiCloseBtn');
+  const $nowPlay = document.getElementById('lofiNowPlaying');
+  if (!$select || !$audio) return;
+
+  const CHANNEL_NAMES = {
+    'https://ice6.somafm.com/groovesalad-128-aac': 'Groove Salad',
+    'https://ice6.somafm.com/indiepop-128-mp3': 'Indie Pop',
+    'https://ice6.somafm.com/dronezone-128-aac': 'Drone Zone',
+    'https://streams.ilovemusic.de/iloveradio17.mp3': 'Lofi Radio',
+  };
+
+  function stopLofi() {
+    $audio.pause();
+    $audio.src = '';
+    if ($stage) $stage.hidden = true;
+    if ($nowPlay) $nowPlay.textContent = '';
+    $select.value = '';
+  }
 
   $select.addEventListener('change', () => {
-    const vid = $select.value;
-    if (!vid) {
-      $wrap.hidden = true;
-      $iframe.src = '';
-      return;
-    }
-    $iframe.src = `https://www.youtube-nocookie.com/embed/${vid}?autoplay=1&controls=1`;
-    $wrap.hidden = false;
+    const url = $select.value;
+    if (!url) { stopLofi(); return; }
+    $audio.src = url;
+    $audio.play().catch(() => {});
+    if ($stage) $stage.hidden = false;
+    if ($nowPlay) $nowPlay.textContent = CHANNEL_NAMES[url] ?? '';
   });
 
-  $close?.addEventListener('click', () => {
-    $wrap.hidden = true;
-    $iframe.src = '';
-    $select.value = '';
-  });
+  $close?.addEventListener('click', stopLofi);
 });

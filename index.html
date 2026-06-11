@@ -259,22 +259,25 @@
           <div class="lofi-player-btns">
             <select id="lofiSelect" class="lofi-select">
               <option value="">— 채널 선택 —</option>
-              <option value="jfKfPfyJRdk">Lofi Girl · study</option>
-              <option value="rUxyKA_-grg">Lofi Girl · chill</option>
-              <option value="5yx6BWlEVcY">Chillhop Music</option>
-              <option value="aLqc-RFoqqw">Tokyo Music Walker</option>
+              <option value="https://ice6.somafm.com/groovesalad-128-aac">Groove Salad · ambient</option>
+              <option value="https://ice6.somafm.com/indiepop-128-mp3">Indie Pop · chill</option>
+              <option value="https://ice6.somafm.com/dronezone-128-aac">Drone Zone · deep focus</option>
+              <option value="https://streams.ilovemusic.de/iloveradio17.mp3">Lofi Radio</option>
             </select>
             <button id="lofiCloseBtn" class="lofi-close-btn" type="button" title="닫기">✕</button>
           </div>
         </div>
-        <div class="lofi-iframe-wrap" id="lofiIframeWrap" hidden>
-          <iframe id="lofiIframe" class="lofi-iframe"
-            allow="autoplay; encrypted-media"
-            allowfullscreen
-            frameborder="0"
-            title="Lofi music stream">
-          </iframe>
+        <!-- 픽셀 토마토 걷기 애니메이션 스테이지 -->
+        <div class="lofi-stage" id="lofiStage" hidden>
+          <div class="lofi-tomato-wrap" id="lofiTomatoWrap">
+            <span class="lofi-tomato">🍅</span>
+          </div>
+          <div class="lofi-ground">
+            <span class="lofi-ground-tile">🌿</span><span class="lofi-ground-tile">🌿</span><span class="lofi-ground-tile">🌿</span><span class="lofi-ground-tile">🌿</span><span class="lofi-ground-tile">🌿</span><span class="lofi-ground-tile">🌿</span><span class="lofi-ground-tile">🌿</span><span class="lofi-ground-tile">🌿</span>
+          </div>
+          <span class="lofi-now-playing" id="lofiNowPlaying"></span>
         </div>
+        <audio id="lofiAudio" preload="none"></audio>
       </div>
 
       <!-- 완료 카운트 + 인증샷 -->

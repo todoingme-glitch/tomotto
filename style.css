@@ -1118,14 +1118,56 @@ br.mobile-br { display: none; }
   border-radius: 3px;
 }
 .lofi-close-btn:hover { background: var(--border); }
-.lofi-iframe-wrap {
-  width: 100%;
-  aspect-ratio: 16 / 9;
+/* 픽셀 애니메이션 스테이지 */
+.lofi-stage {
+  position: relative;
+  height: 72px;
+  background: linear-gradient(to bottom, #b8e4f7 0%, #d4f0c4 70%, #8bc34a 100%);
+  border-top: 1.5px solid var(--border);
+  overflow: hidden;
 }
-.lofi-iframe {
-  width: 100%;
-  height: 100%;
-  display: block;
+.lofi-tomato-wrap {
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  animation: lofi-walk 8s linear infinite;
+}
+.lofi-tomato {
+  display: inline-block;
+  font-size: 22px;
+  animation: lofi-step 0.4s steps(1) infinite;
+  image-rendering: pixelated;
+}
+@keyframes lofi-walk {
+  0%   { left: 4%;  transform: scaleX(1); }
+  48%  { left: 80%; transform: scaleX(1); }
+  50%  { left: 80%; transform: scaleX(-1); }
+  98%  { left: 4%;  transform: scaleX(-1); }
+  100% { left: 4%;  transform: scaleX(1); }
+}
+@keyframes lofi-step {
+  0%  { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+.lofi-ground {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-around;
+  font-size: 14px;
+  line-height: 1;
+  padding-bottom: 2px;
+}
+.lofi-now-playing {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 10px;
+  color: rgba(0,0,0,0.45);
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 /* Footer */
