@@ -757,8 +757,11 @@
         <button id="pubLobbyQuitBtn" class="btn-modal btn-modal-danger pub-lobby-quit" type="button" style="display:none">방 나가기</button>
         <button id="pubLobbyLeaveBtn" class="btn-modal btn-modal-secondary" type="button">창 닫기</button>
       </div>
-      <!-- 오른쪽: 준비 완료 -->
-      <button id="pubLobbyReadyBtn" class="btn-modal btn-modal-primary" type="button">준비 완료</button>
+      <!-- 오른쪽: 강제 시작(방장 전용, 공성전) + 준비 완료 -->
+      <div class="pub-lobby-right-btns">
+        <button id="pubLobbyForceStartBtn" class="btn-modal btn-modal-warning" type="button" style="display:none">강제 시작</button>
+        <button id="pubLobbyReadyBtn" class="btn-modal btn-modal-primary" type="button">준비 완료</button>
+      </div>
     </div>
   </dialog>
 

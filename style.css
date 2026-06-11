@@ -1244,6 +1244,17 @@ dialog.modal input[type="text"]:focus {
   border-color: var(--accent);
 }
 
+.btn-modal-warning {
+  background: #f59e0b;
+  color: white;
+  border-color: #f59e0b;
+}
+
+.btn-modal-warning:hover {
+  background: #d97706;
+  border-color: #d97706;
+}
+
 /* v0.1.10 — 인앱 카메라 모달 */
 .modal-camera {
   max-width: 460px;
@@ -3344,6 +3355,12 @@ body:has(.container[data-tab="personal"]) .container {
 }
 
 .pub-lobby-left-btns {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.pub-lobby-right-btns {
   display: flex;
   gap: 8px;
   align-items: center;

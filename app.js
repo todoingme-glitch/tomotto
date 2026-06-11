@@ -5647,6 +5647,7 @@ let publicLobbyBattleId   = null;
 let publicLobbyBattle     = null;
 let publicLobbyChannel    = null;
 let isStartingPublicLobby = false;
+let _lobbyReadyTimeoutId  = null;  // 5분 준비 타임아웃
 
 /** 공개 배틀방 로비 열기 (참여 or 생성 후 호출) */
 async function openPublicLobby(battleId) {
@@ -5717,6 +5718,9 @@ async function openPublicLobby(battleId) {
   renderPublicLobby(publicLobbyBattle, players);
   enrichLobbyWithPartnerBadges(players); // 참여자도 입장 즉시 배지 표시
   subscribePublicLobby(battleId);
+
+  // 5분 준비 타임아웃 — 공성전 방장만
+  _startLobbyReadyTimeout(battleId);
 
   if ($modal && typeof $modal.showModal === 'function') $modal.showModal();
 }
@@ -5979,10 +5983,22 @@ function renderPublicLobby(battle, players) {
     ? (isFull && players.every(p => p.is_ready))
     : (players.length >= 2 && players.every(p => p.is_ready));
 
-  const $leaveBtn = document.getElementById('pubLobbyLeaveBtn');
-  const $quitBtn  = document.getElementById('pubLobbyQuitBtn');
+  const $leaveBtn      = document.getElementById('pubLobbyLeaveBtn');
+  const $quitBtn       = document.getElementById('pubLobbyQuitBtn');
+  const $forceStartBtn = document.getElementById('pubLobbyForceStartBtn');
   if ($leaveBtn) $leaveBtn.textContent = '창 닫기';
   if ($quitBtn)  $quitBtn.style.display = myPlayer?.is_creator ? 'none' : '';
+
+  // 강제 시작 버튼: 공성전 방장 + 최소 2명 + 라운드 0(대기) + 아직 미시작
+  const isCreatorLocal = myPlayer?.is_creator || (battle.creator_nickname === myNickname);
+  if ($forceStartBtn) {
+    const showForceStart = isSiege
+      && isCreatorLocal
+      && players.length >= 2
+      && (battle.current_round ?? 0) === 0
+      && battle.status !== 'active';
+    $forceStartBtn.style.display = showForceStart ? '' : 'none';
+  }
 
   // 공성전 라운드 진행 중이면 준비 버튼 숨김
   const inRound = isSiege && (battle.current_round ?? 0) > 0 && battle.status === 'active';
@@ -6510,11 +6526,58 @@ async function closePublicLobby(deleteRoom = false, leaveRoom = false) {
     _cleanupLobbyState();
   }
   // 방장이 그냥 닫기: 아무것도 안 함 (publicLobbyBattleId·channel 유지)
+  _clearLobbyReadyTimeout();
   document.getElementById('publicLobbyModal')?.close();
+}
+
+/** 5분 준비 타임아웃 시작 — 공성전 방장 전용 */
+function _startLobbyReadyTimeout(battleId) {
+  _clearLobbyReadyTimeout();
+  // 공성전 방장만 타임아웃 등록
+  const isSiege    = !!publicLobbyBattle?.team_mode;
+  const isCreator  = publicLobbyBattle?.creator_nickname === myNickname;
+  if (!isSiege || !isCreator) return;
+
+  _lobbyReadyTimeoutId = setTimeout(async () => {
+    // 이미 게임 시작됐거나 로비가 닫혔으면 무시
+    if (!publicLobbyBattleId || publicLobbyBattle?.status === 'active') return;
+    const players = currentBattleData?.players ?? [];
+    const notReady = players.filter(p => !p.is_ready);
+    if (notReady.length === 0) return; // 모두 준비됨 — 필요 없음
+    const ok = confirm(`준비 안 한 인원이 ${notReady.length}명 있어요.\n강제 시작할까요?`);
+    if (ok) _forceStartSiege();
+  }, 5 * 60 * 1000);
+}
+
+/** 타임아웃 취소 */
+function _clearLobbyReadyTimeout() {
+  if (_lobbyReadyTimeoutId !== null) {
+    clearTimeout(_lobbyReadyTimeoutId);
+    _lobbyReadyTimeoutId = null;
+  }
+}
+
+/** 강제 시작 — 준비 안 한 플레이어 일괄 ready 처리 후 라운드 시작 */
+async function _forceStartSiege() {
+  if (!publicLobbyBattleId || !sb) return;
+  _clearLobbyReadyTimeout();
+  // 준비 안 한 플레이어 전원 is_ready = true 로 강제 업데이트
+  await sb.from('battle_players')
+    .update({ is_ready: true })
+    .eq('battle_id', publicLobbyBattleId)
+    .eq('is_ready', false);
+  // 라운드 시작 트리거
+  if (!isStartingPublicLobby) startPublicLobbyCountdown(false);
 }
 
 // 로비 버튼 이벤트
 (function initPublicLobbyEvents() {
+  // 강제 시작 버튼 (공성전 방장 전용)
+  document.getElementById('pubLobbyForceStartBtn')?.addEventListener('click', () => {
+    if (!confirm('준비 안 한 플레이어를 무시하고 지금 바로 시작할까요?')) return;
+    _forceStartSiege();
+  });
+
   document.getElementById('pubLobbyReadyBtn')?.addEventListener('click', () => {
     const btn = document.getElementById('pubLobbyReadyBtn');
     if (btn?.dataset.siegeGacha === 'true') {
