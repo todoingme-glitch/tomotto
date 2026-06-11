@@ -5531,6 +5531,16 @@ function subscribeFocusFeed() {
 
 let publicBattleChannel = null;
 let pubBattleEditMode   = false; // 편집 모드 (방 숨기기·신고)
+const selectedPubBattleIds = new Set();
+
+function _updatePubBattleSelUI() {
+  const $btn = document.getElementById('pubBattleSelectDeleteBtn');
+  const $cnt = document.getElementById('pubBattleSelCount');
+  if (!$btn) return;
+  const n = selectedPubBattleIds.size;
+  $btn.style.display = (pubBattleEditMode && n > 0) ? '' : 'none';
+  if ($cnt) $cnt.textContent = n;
+}
 
 async function renderPublicBattles() {
   const $body = document.getElementById('publicBattleBody');
@@ -5611,9 +5621,9 @@ async function renderPublicBattles() {
       }
     }
 
-    // 삭제 버튼: 편집 모드일 때만 방장 카드에 표시
+    // 편집 모드 + 방장: 개별 삭제 버튼 → 체크박스로 교체
     const deleteBtn = (isMe && pubBattleEditMode)
-      ? `<button class="btn-mini btn-delete-public" data-battle-id="${b.id}" type="button" title="방 삭제">🗑</button>`
+      ? `<input type="checkbox" class="pub-battle-select-cb battle-select-cb" data-battle-id="${b.id}" ${selectedPubBattleIds.has(b.id) ? 'checked' : ''}>`
       : '';
 
     const modeChip = b.team_mode
@@ -5661,15 +5671,16 @@ async function renderPublicBattles() {
     });
   });
 
-  $body.querySelectorAll('.btn-delete-public').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      if (!confirm('이 공개 방을 삭제할까요?')) return;
-      const ok = await deleteBattleSilent(btn.dataset.battleId);
-      if (!ok) { alert('삭제 중 오류가 발생했어요.'); return; }
-      await renderMyBattles();
-      renderPublicBattles();
+  // 체크박스 선택
+  $body.querySelectorAll('.pub-battle-select-cb').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const id = cb.dataset.battleId;
+      cb.checked ? selectedPubBattleIds.add(id) : selectedPubBattleIds.delete(id);
+      _updatePubBattleSelUI();
     });
   });
+
+  _updatePubBattleSelUI();
 }
 
 // ====== v0.1.81 — 공개 배틀 로비 / 레디 시스템 ======
@@ -6776,10 +6787,11 @@ document.getElementById('siegeRulesCloseBtn')?.addEventListener('click', () => {
     $modal.showModal();
   });
 
-  // 편집 버튼 — 방 목록 편집 모드 토글 (숨기기·신고)
+  // 편집 버튼 — 방 목록 편집 모드 토글 (숨기기·신고·다중삭제)
   const $editBtn = document.getElementById('editPublicBattleBtn');
   $editBtn?.addEventListener('click', async () => {
     pubBattleEditMode = !pubBattleEditMode;
+    if (!pubBattleEditMode) selectedPubBattleIds.clear();
     if ($editBtn) {
       $editBtn.textContent = pubBattleEditMode ? '완료' : '편집';
       $editBtn.classList.toggle('btn-mini--editing', pubBattleEditMode);
@@ -6788,6 +6800,18 @@ document.getElementById('siegeRulesCloseBtn')?.addEventListener('click', () => {
     if (pubBattleEditMode) {
       document.getElementById('publicBattleBody')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
+  });
+
+  // 다중 선택 삭제 버튼
+  document.getElementById('pubBattleSelectDeleteBtn')?.addEventListener('click', async () => {
+    if (selectedPubBattleIds.size === 0) return;
+    const ids = [...selectedPubBattleIds];
+    if (!confirm(`선택한 ${ids.length}개 공개 방을 삭제할까요? 되돌릴 수 없어요.`)) return;
+    selectedPubBattleIds.clear();
+    _updatePubBattleSelUI();
+    for (const id of ids) await deleteBattleSilent(id);
+    await renderMyBattles();
+    renderPublicBattles();
   });
 
   $cancel?.addEventListener('click', () => $modal.close());
