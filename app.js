@@ -3282,6 +3282,7 @@ if ('serviceWorker' in navigator) {
 window.addEventListener('load', () => {
   loadNickname(); // 이미 IIFE 전에 호출됐지만 재호출로 확실히 반영
   loadHamsal();   // v0.1.204 — STORAGE 정의 후 호출 (load 이벤트 내)
+  updateLevelUI(); // 레벨 배지 초기화
   // v0.1.65/66 — 탭별 초기 렌더 (닉네임 로드 후)
   const _activeTab = localStorage.getItem('tomotto_active_tab');
   if (_activeTab === 'social') {
@@ -3380,7 +3381,81 @@ const STORAGE = {
   pauseFreeCount: 'tomotto_pause_free',      // v0.1.70 — 일시정지 없이 완료 횟수 (B-4/B-5)
   hiddenTabCount: 'tomotto_hidden_tab',      // v0.1.70 — 타이머 중 탭 이탈 횟수 (E-1)
   hamsal: 'tomotto_hamsal',                  // v0.1.204 — 햇살 재화 잔고
+  xp:     'tomotto_xp',                      // 누적 경험치
 };
+
+// ====== 레벨 시스템 ======
+// XP 획득: 타이머 완료(+10), 배틀 완료(+20), 공성전 라운드(+15)
+// 레벨업 시 로파이 채널 해금 + 토스트 알림
+
+const LEVEL_DEFS = [
+  { lv: 1,  xp: 0    },
+  { lv: 2,  xp: 100,  unlock: '🎵 Groove Salad · ambient 해금!' },
+  { lv: 3,  xp: 250,  unlock: '🎵 Indie Pop · chill 해금!' },
+  { lv: 4,  xp: 450  },
+  { lv: 5,  xp: 700,  unlock: '🎵 Drone Zone · focus 해금!' },
+  { lv: 6,  xp: 1000 },
+  { lv: 7,  xp: 1350, unlock: '🎵 Lofi Radio 해금!' },
+  { lv: 8,  xp: 1750 },
+  { lv: 9,  xp: 2200 },
+  { lv: 10, xp: 2700, unlock: '🏆 Lv.10 달성 칭호 해금!' },
+];
+
+function getXP() {
+  return parseInt(localStorage.getItem(STORAGE.xp) || '0', 10);
+}
+
+function levelFromXP(xp) {
+  let lv = LEVEL_DEFS[0];
+  for (const def of LEVEL_DEFS) {
+    if (xp >= def.xp) lv = def;
+    else break;
+  }
+  return lv;
+}
+
+function xpToNextLevel(xp) {
+  const cur = levelFromXP(xp);
+  const nextDef = LEVEL_DEFS.find(d => d.lv === cur.lv + 1);
+  if (!nextDef) return { pct: 100, remaining: 0 }; // 최고 레벨
+  const pct = Math.round(((xp - cur.xp) / (nextDef.xp - cur.xp)) * 100);
+  return { pct, remaining: nextDef.xp - xp };
+}
+
+function updateLevelUI() {
+  const xp  = getXP();
+  const cur = levelFromXP(xp);
+  const { pct } = xpToNextLevel(xp);
+  const $lv   = document.getElementById('levelBadgeLv');
+  const $fill = document.getElementById('levelXpFill');
+  if ($lv)   $lv.textContent = `Lv.${cur.lv}`;
+  if ($fill) $fill.style.width = `${pct}%`;
+  // 레벨에 따라 로파이 옵션 활성화
+  document.querySelectorAll('#lofiSelect option[data-unlock-lv]').forEach(opt => {
+    const need = parseInt(opt.dataset.unlockLv, 10);
+    opt.disabled = cur.lv < need;
+    if (cur.lv < need) {
+      if (!opt.dataset.origText) opt.dataset.origText = opt.textContent;
+      opt.textContent = `🔒 Lv.${need} (${opt.dataset.origText})`;
+    } else if (opt.dataset.origText) {
+      opt.textContent = opt.dataset.origText;
+      delete opt.dataset.origText;
+    }
+  });
+}
+
+function addXP(amount, source = '') {
+  const prev   = getXP();
+  const prevLv = levelFromXP(prev);
+  const next   = prev + amount;
+  localStorage.setItem(STORAGE.xp, String(next));
+  const nextLv = levelFromXP(next);
+  updateLevelUI();
+  if (nextLv.lv > prevLv.lv) {
+    const unlockMsg = nextLv.unlock ? `<br><small>${nextLv.unlock}</small>` : '';
+    _showNotifToast('achievement-toast--levelup', '⭐', `레벨업! Lv.${nextLv.lv}`, `축하해! +${amount} XP${unlockMsg}`, 5000);
+  }
+}
 
 // ====== 금칙어 필터 (닉네임·친구 배틀·공개방 제목에 적용) ======
 // 카테고리 이름(개인 탭)은 필터링 대상이 아님
@@ -4802,6 +4877,10 @@ function finishTimer() {
   // v0.1.69 — 타이머 완료 업적 체크
   checkAchievementsOnTimerComplete();
 
+  // 레벨 XP 적립
+  const _xpGain = activeBattleId ? 20 : 10;
+  addXP(_xpGain, 'timer');
+
   // v0.1.204 — 햇살 재화 지급
   const _hamsalAmount = calcHamsalEarned(timer.duration || 0, {
     paused:   _pausedThisSession,
@@ -4874,6 +4953,7 @@ function finishTimer() {
             if (!error) console.log('[Siege] round_done 기록:', elapsedSec, '초');
             else console.warn('[Siege] round_done 기록 실패:', error.message);
           });
+        addXP(15, 'siege-round');
         const $lobbyModal = document.getElementById('publicLobbyModal');
         if (!$lobbyModal?.open) {
           _showNotifToast('achievement-toast--siege', '⚔️', '내 라운드 완료! 🎉', '다른 팀원들을 기다리는 중···', 4000);

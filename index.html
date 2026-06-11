@@ -41,6 +41,13 @@
       <button id="settingsBtn" class="header-settings-btn" type="button" aria-label="설정">
         <img src="assets/설정 아이콘.svg" width="22" height="22" alt="" aria-hidden="true">
       </button>
+      <!-- 레벨 배지 -->
+      <div class="level-badge" id="levelBadge" title="내 레벨">
+        <span class="level-badge-lv" id="levelBadgeLv">Lv.1</span>
+        <div class="level-xp-bar" title="경험치">
+          <div class="level-xp-fill" id="levelXpFill" style="width:0%"></div>
+        </div>
+      </div>
       <div class="logo-wrap" id="logoWrap" title="한 번 더 하이파이브! 🍅">
         <svg class="logo-svg" id="tomottoLogo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 506.18 183.13" aria-label="Tomotto logo">
           <defs>
@@ -259,10 +266,10 @@
           <div class="lofi-player-btns">
             <select id="lofiSelect" class="lofi-select">
               <option value="">— 채널 선택 —</option>
-              <option value="https://ice6.somafm.com/groovesalad-128-aac">Groove Salad · ambient</option>
-              <option value="https://ice6.somafm.com/indiepop-128-mp3">Indie Pop · chill</option>
-              <option value="https://ice6.somafm.com/dronezone-128-aac">Drone Zone · deep focus</option>
-              <option value="https://streams.ilovemusic.de/iloveradio17.mp3">Lofi Radio</option>
+              <option value="https://ice6.somafm.com/groovesalad-128-aac" data-unlock-lv="2">Groove Salad · ambient</option>
+              <option value="https://ice6.somafm.com/indiepop-128-mp3"    data-unlock-lv="3">Indie Pop · chill</option>
+              <option value="https://ice6.somafm.com/dronezone-128-aac"   data-unlock-lv="5">Drone Zone · focus</option>
+              <option value="https://streams.ilovemusic.de/iloveradio17.mp3" data-unlock-lv="7">Lofi Radio</option>
             </select>
             <button id="lofiCloseBtn" class="lofi-close-btn" type="button" title="닫기">✕</button>
           </div>
