@@ -692,7 +692,11 @@ async function saveNickname() {
   renderBattleNickname();
   closeNickModal();
   // v0.1.69 — 첫 닉네임 설정 업적
-  if (!oldNickname) unlockAchievement('A-4');
+  if (!oldNickname) {
+    unlockAchievement('A-4');
+    // 닉네임 없이 쌓인 로컬 기록 소급 동기화
+    syncPastLogsOnNicknameSet();
+  }
   // v0.1.66 — 닉네임 변경 시 DB 기존 데이터 마이그레이션 (리더보드 횟수 유지)
   // v0.1.95 — partner_stats 자기 행 마이그레이션 + 닉네임 이력 기록
   if (sb && oldNickname && oldNickname !== v) {
@@ -5067,6 +5071,60 @@ function getSessionScore(durationSec) {
   else if (min >= 25) bonus = 8;
   else if (min >= 5) bonus = 3;
   return timeScore + bonus;
+}
+
+// 닉네임 첫 설정 시 로컬 로그 소급 동기화
+async function syncPastLogsOnNicknameSet() {
+  if (!sb || !myNickname) return;
+  const logs = loadLogs(); // 로컬 기록 전체
+  if (!logs.length) return;
+
+  // 기간별(week/month)로 count·total_seconds·score 집계
+  const map = {}; // key: 'week|2026-W23' → { period_type, period_key, count, total_seconds, score }
+  for (const log of logs) {
+    if (!log.completedAt && !log.date) continue;
+    const d = new Date(log.completedAt || log.date);
+    const secs = log.durationSec ?? 0;
+    for (const [type, key] of [['week', getWeekKey(d)], ['month', getMonthKey(d)]]) {
+      const k = `${type}|${key}`;
+      if (!map[k]) map[k] = { period_type: type, period_key: key, count: 0, total_seconds: 0, score: 0 };
+      map[k].count++;
+      map[k].total_seconds += secs;
+      map[k].score += getSessionScore(secs);
+    }
+  }
+
+  const titleEmoji = getCurrentTitle()?.emoji ?? null;
+  const rows = Object.values(map).map(r => ({
+    nickname: myNickname,
+    period_type: r.period_type,
+    period_key: r.period_key,
+    count: r.count,
+    total_seconds: r.total_seconds,
+    score: r.score,
+    title_emoji: titleEmoji,
+  }));
+
+  try {
+    // 이미 존재하는 행이 있으면 덮어쓰지 않고 max 값으로 병합 (혹시 일부 동기화된 경우 대비)
+    for (const row of rows) {
+      const { data: ex } = await sb.from('user_stats')
+        .select('count, total_seconds, score')
+        .eq('nickname', myNickname).eq('period_type', row.period_type).eq('period_key', row.period_key)
+        .maybeSingle();
+      const merged = {
+        ...row,
+        count:         Math.max(row.count,         ex?.count         ?? 0),
+        total_seconds: Math.max(row.total_seconds, ex?.total_seconds ?? 0),
+        score:         Math.max(row.score,          ex?.score         ?? 0),
+      };
+      await sb.from('user_stats').upsert(merged, { onConflict: 'nickname,period_type,period_key' });
+    }
+    console.log(`[소급동기화] ${logs.length}개 기록 → ${rows.length}개 기간 업서트 완료`);
+    renderLeaderboard();
+  } catch (e) {
+    console.warn('[소급동기화] 실패:', e);
+  }
 }
 
 // 타이머 완료 시 Supabase user_stats에 카운트 업데이트
