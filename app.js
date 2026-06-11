@@ -3926,6 +3926,13 @@ function showGachaResult(task, animate = true) {
       setTimeout(() => {
         openPublicLobby(window._siegeReturnBattleId);
       }, 800);
+    } else if (window._siegeNeedTimer) {
+      // 공성전 라운드 시작 후 가챠 안내 모달 경유 → 가챠 완료 시 타이머로 안내
+      window._siegeNeedTimer = false;
+      setTimeout(() => {
+        document.getElementById('card-timer')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        _showNotifToast('achievement-toast--siege', '⏱', '가챠 완료!', '타이머 시작 버튼을 눌러 집중을 시작하세요!', 5000);
+      }, 800);
     }
     // v0.1.22 — MOTO MODE 친구: 가챠 완료 시 task를 Supabase에 저장 (창조자가 준비 상태 감지용)
     const battleIdForTask = lockedBattleId || currentBattleId;
@@ -6559,7 +6566,8 @@ function subscribePublicBattles() {
 // 공성전 가챠 안내 모달 — "가챠 돌리러 가기" 버튼
 document.getElementById('siegeGachaGoBtn')?.addEventListener('click', () => {
   document.getElementById('siegeGachaGuideModal')?.close();
-  document.getElementById('gachaBtn')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  window._siegeNeedTimer = true; // 가챠 완료 후 타이머 카드로 안내
+  document.getElementById('card-gacha')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 
 // 공성전 규칙 모달
