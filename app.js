@@ -3312,17 +3312,29 @@ window.addEventListener('load', () => {
   }
 
   if (battleId) {
-    // v0.1.70 — 실제 참여자인 경우에만 잠금 배너 표시 (카드 삭제 후 재진입 버그 방지)
-    loadMyBattles().then(list => {
-      if (list?.some(b => b.id === battleId)) showBattleLock(battleId);
-    });
+    // ?battle= 파라미터 처리: 공개 배틀(is_public)이면 openPublicLobby, 아니면 친구 배틀 openBattleRoom
+    const handleBattleParam = async (id) => {
+      if (!sb) { return; }
+      const { data } = await sb.from('battles').select('id, is_public').eq('id', id).single();
+      if (data?.is_public) {
+        // 공개 배틀 초대 링크
+        switchTab('social');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setTimeout(() => openPublicLobby(id), 300);
+      } else {
+        // 친구 배틀 초대 링크 (기존 로직)
+        // v0.1.70 — 실제 참여자인 경우에만 잠금 배너 표시 (카드 삭제 후 재진입 버그 방지)
+        loadMyBattles().then(list => {
+          if (list?.some(b => b.id === id)) showBattleLock(id);
+        });
+        switchTab('social');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setTimeout(() => openBattleRoom(id), 300);
+      }
+    };
     // 온보딩 완료 후 소셜탭으로 이동하고 배틀룸 오픔
     // (초대받은 신규 유저도 앱 설명을 먼저 봐야 하므로 온보딩 유지)
-    initOnboardingTooltip(() => {
-      switchTab('social');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      setTimeout(() => openBattleRoom(battleId), 300);
-    });
+    initOnboardingTooltip(() => handleBattleParam(battleId));
   } else {
     // 일반 진입: 온보딩 + v0.1.69 파트너 배틀룸 입장 확인
     // initOnboarding();        // v0.1.34 — Shepherd.js 버전 (보관)
@@ -6626,6 +6638,24 @@ async function _forceStartSiege() {
     await closePublicLobby(false, true);
     // 공개 배틀은 친구 배틀 목록과 무관 — renderMyBattles() 호출 제거
     renderPublicBattles();
+  });
+
+  // "초대 링크" — 누구나: 현재 공개 배틀 링크를 클립보드에 복사
+  document.getElementById('pubLobbyInviteBtn')?.addEventListener('click', async () => {
+    const battle = publicLobbyBattle;
+    if (!battle) return;
+    const link = makeInviteLink(battle.id);
+    const label = battle.team_mode ? '⚔️ 공성전 초대' : '🍅 공개 배틀 초대';
+    const text = `${label}\n${link}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      const btn = document.getElementById('pubLobbyInviteBtn');
+      const orig = btn.textContent;
+      btn.textContent = '✅ 복사됨!';
+      setTimeout(() => { btn.textContent = orig; }, 2000);
+    } catch {
+      prompt('링크를 복사하세요:', link);
+    }
   });
 })();
 
