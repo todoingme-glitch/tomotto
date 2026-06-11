@@ -5531,20 +5531,14 @@ function subscribeFocusFeed() {
 
 let publicBattleChannel = null;
 let pubBattleEditMode   = false; // 편집 모드 (방 숨기기·신고)
-const selectedPubBattleIds = new Set(); // 내 방 (삭제용)
-const selectedPubHideIds   = new Set(); // 남 방 (숨기기용)
+const selectedPubBattleIds = new Set(); // 선택된 방 (내 방=삭제, 남 방=숨기기)
 
 function _updatePubBattleSelUI() {
-  const $delBtn  = document.getElementById('pubBattleSelectDeleteBtn');
-  const $hideBtn = document.getElementById('pubBattleSelectHideBtn');
-  const $delCnt  = document.getElementById('pubBattleSelCount');
-  const $hideCnt = document.getElementById('pubBattleHideCount');
-  const nd = selectedPubBattleIds.size;
-  const nh = selectedPubHideIds.size;
-  if ($delBtn)  $delBtn.style.display  = (pubBattleEditMode && nd > 0) ? '' : 'none';
-  if ($hideBtn) $hideBtn.style.display = (pubBattleEditMode && nh > 0) ? '' : 'none';
-  if ($delCnt)  $delCnt.textContent  = nd;
-  if ($hideCnt) $hideCnt.textContent = nh;
+  const $btn = document.getElementById('pubBattleSelectActionBtn');
+  const $cnt = document.getElementById('pubBattleSelCount');
+  const n = selectedPubBattleIds.size;
+  if ($btn) $btn.style.display = (pubBattleEditMode && n > 0) ? '' : 'none';
+  if ($cnt) $cnt.textContent = n;
 }
 
 async function renderPublicBattles() {
@@ -5624,11 +5618,9 @@ async function renderPublicBattles() {
       }
     }
 
-    // 편집 모드: 내 방=삭제용, 남 방=숨기기용 체크박스
+    // 편집 모드: 모든 행 체크박스 (내 방=삭제, 남 방=숨기기 — 액션은 버튼 클릭 시 결정)
     const deleteBtn = pubBattleEditMode
-      ? isMe
-        ? `<input type="checkbox" class="pub-battle-select-cb battle-select-cb" data-battle-id="${b.id}" data-type="delete" ${selectedPubBattleIds.has(b.id) ? 'checked' : ''}>`
-        : `<input type="checkbox" class="pub-battle-hide-cb battle-select-cb" data-battle-id="${b.id}" data-type="hide" ${selectedPubHideIds.has(b.id) ? 'checked' : ''}>`
+      ? `<input type="checkbox" class="pub-battle-select-cb battle-select-cb" data-battle-id="${b.id}" data-is-me="${isMe ? '1' : '0'}" ${selectedPubBattleIds.has(b.id) ? 'checked' : ''}>`
       : '';
 
     const modeChip = b.team_mode
@@ -5676,20 +5668,11 @@ async function renderPublicBattles() {
     });
   });
 
-  // 삭제 체크박스 (내 방)
+  // 체크박스 (내 방=삭제, 남 방=숨기기 — 통합)
   $body.querySelectorAll('.pub-battle-select-cb').forEach(cb => {
     cb.addEventListener('change', () => {
       const id = cb.dataset.battleId;
       cb.checked ? selectedPubBattleIds.add(id) : selectedPubBattleIds.delete(id);
-      _updatePubBattleSelUI();
-    });
-  });
-
-  // 숨기기 체크박스 (남 방)
-  $body.querySelectorAll('.pub-battle-hide-cb').forEach(cb => {
-    cb.addEventListener('change', () => {
-      const id = cb.dataset.battleId;
-      cb.checked ? selectedPubHideIds.add(id) : selectedPubHideIds.delete(id);
       _updatePubBattleSelUI();
     });
   });
@@ -6805,7 +6788,7 @@ document.getElementById('siegeRulesCloseBtn')?.addEventListener('click', () => {
   const $editBtn = document.getElementById('editPublicBattleBtn');
   $editBtn?.addEventListener('click', async () => {
     pubBattleEditMode = !pubBattleEditMode;
-    if (!pubBattleEditMode) { selectedPubBattleIds.clear(); selectedPubHideIds.clear(); }
+    if (!pubBattleEditMode) selectedPubBattleIds.clear();
     if ($editBtn) {
       $editBtn.textContent = pubBattleEditMode ? '완료' : '편집';
       $editBtn.classList.toggle('btn-mini--editing', pubBattleEditMode);
@@ -6816,24 +6799,23 @@ document.getElementById('siegeRulesCloseBtn')?.addEventListener('click', () => {
     }
   });
 
-  // 다중 선택 삭제 버튼
-  document.getElementById('pubBattleSelectDeleteBtn')?.addEventListener('click', async () => {
+  // 다중 선택 일괄 처리 (내 방=삭제, 남 방=숨기기)
+  document.getElementById('pubBattleSelectActionBtn')?.addEventListener('click', async () => {
     if (selectedPubBattleIds.size === 0) return;
-    const ids = [...selectedPubBattleIds];
-    if (!confirm(`선택한 ${ids.length}개 공개 방을 삭제할까요? 되돌릴 수 없어요.`)) return;
+    const rows = [...document.querySelectorAll('.pub-battle-select-cb:checked')];
+    const toDelete = rows.filter(cb => cb.dataset.isMe === '1').map(cb => cb.dataset.battleId);
+    const toHide   = rows.filter(cb => cb.dataset.isMe === '0').map(cb => cb.dataset.battleId);
+    const msg = toDelete.length && toHide.length
+      ? `내 방 ${toDelete.length}개 삭제, 남 방 ${toHide.length}개 숨기기 처리할까요?`
+      : toDelete.length
+      ? `선택한 ${toDelete.length}개 방을 삭제할까요? 되돌릴 수 없어요.`
+      : `선택한 ${toHide.length}개 방을 숨길까요?`;
+    if (!confirm(msg)) return;
     selectedPubBattleIds.clear();
     _updatePubBattleSelUI();
-    for (const id of ids) await deleteBattleSilent(id);
-    await renderMyBattles();
-    renderPublicBattles();
-  });
-
-  // 다중 선택 숨기기 버튼
-  document.getElementById('pubBattleSelectHideBtn')?.addEventListener('click', () => {
-    if (selectedPubHideIds.size === 0) return;
-    for (const id of selectedPubHideIds) toggleHiddenBattle(id);
-    selectedPubHideIds.clear();
-    _updatePubBattleSelUI();
+    for (const id of toDelete) await deleteBattleSilent(id);
+    for (const id of toHide)   toggleHiddenBattle(id);
+    if (toDelete.length) await renderMyBattles();
     renderPublicBattles();
   });
 
