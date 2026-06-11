@@ -5531,15 +5531,20 @@ function subscribeFocusFeed() {
 
 let publicBattleChannel = null;
 let pubBattleEditMode   = false; // 편집 모드 (방 숨기기·신고)
-const selectedPubBattleIds = new Set();
+const selectedPubBattleIds = new Set(); // 내 방 (삭제용)
+const selectedPubHideIds   = new Set(); // 남 방 (숨기기용)
 
 function _updatePubBattleSelUI() {
-  const $btn = document.getElementById('pubBattleSelectDeleteBtn');
-  const $cnt = document.getElementById('pubBattleSelCount');
-  if (!$btn) return;
-  const n = selectedPubBattleIds.size;
-  $btn.style.display = (pubBattleEditMode && n > 0) ? '' : 'none';
-  if ($cnt) $cnt.textContent = n;
+  const $delBtn  = document.getElementById('pubBattleSelectDeleteBtn');
+  const $hideBtn = document.getElementById('pubBattleSelectHideBtn');
+  const $delCnt  = document.getElementById('pubBattleSelCount');
+  const $hideCnt = document.getElementById('pubBattleHideCount');
+  const nd = selectedPubBattleIds.size;
+  const nh = selectedPubHideIds.size;
+  if ($delBtn)  $delBtn.style.display  = (pubBattleEditMode && nd > 0) ? '' : 'none';
+  if ($hideBtn) $hideBtn.style.display = (pubBattleEditMode && nh > 0) ? '' : 'none';
+  if ($delCnt)  $delCnt.textContent  = nd;
+  if ($hideCnt) $hideCnt.textContent = nh;
 }
 
 async function renderPublicBattles() {
@@ -5596,10 +5601,8 @@ async function renderPublicBattles() {
 
     let actionHtml;
     if (pubBattleEditMode && !isMe) {
-      // 편집 모드: 숨기기 / 신고 버튼
-      actionHtml = `
-        <button class="btn-mini btn-hide-battle${isHidden ? ' btn-hide-battle--active' : ''}" data-battle-id="${b.id}" type="button">${isHidden ? '보이기' : '숨기기'}</button>
-        <button class="btn-mini btn-report-battle" data-battle-id="${b.id}" data-creator="${escapeHtml(b.creator_nickname)}" type="button">🚩</button>`;
+      // 편집 모드 남 방: 신고 버튼만 개별, 숨기기는 체크박스로
+      actionHtml = `<button class="btn-mini btn-report-battle" data-battle-id="${b.id}" data-creator="${escapeHtml(b.creator_nickname)}" type="button">🚩</button>`;
     } else if (isMe) {
       // 방장: 본인 제외 전원 준비 완료 시 초록, 아니면 회색
       const bPlayers = b.battle_players ?? [];
@@ -5621,9 +5624,11 @@ async function renderPublicBattles() {
       }
     }
 
-    // 편집 모드 + 방장: 개별 삭제 버튼 → 체크박스로 교체
-    const deleteBtn = (isMe && pubBattleEditMode)
-      ? `<input type="checkbox" class="pub-battle-select-cb battle-select-cb" data-battle-id="${b.id}" ${selectedPubBattleIds.has(b.id) ? 'checked' : ''}>`
+    // 편집 모드: 내 방=삭제용, 남 방=숨기기용 체크박스
+    const deleteBtn = pubBattleEditMode
+      ? isMe
+        ? `<input type="checkbox" class="pub-battle-select-cb battle-select-cb" data-battle-id="${b.id}" data-type="delete" ${selectedPubBattleIds.has(b.id) ? 'checked' : ''}>`
+        : `<input type="checkbox" class="pub-battle-hide-cb battle-select-cb" data-battle-id="${b.id}" data-type="hide" ${selectedPubHideIds.has(b.id) ? 'checked' : ''}>`
       : '';
 
     const modeChip = b.team_mode
@@ -5671,11 +5676,20 @@ async function renderPublicBattles() {
     });
   });
 
-  // 체크박스 선택
+  // 삭제 체크박스 (내 방)
   $body.querySelectorAll('.pub-battle-select-cb').forEach(cb => {
     cb.addEventListener('change', () => {
       const id = cb.dataset.battleId;
       cb.checked ? selectedPubBattleIds.add(id) : selectedPubBattleIds.delete(id);
+      _updatePubBattleSelUI();
+    });
+  });
+
+  // 숨기기 체크박스 (남 방)
+  $body.querySelectorAll('.pub-battle-hide-cb').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const id = cb.dataset.battleId;
+      cb.checked ? selectedPubHideIds.add(id) : selectedPubHideIds.delete(id);
       _updatePubBattleSelUI();
     });
   });
@@ -6791,7 +6805,7 @@ document.getElementById('siegeRulesCloseBtn')?.addEventListener('click', () => {
   const $editBtn = document.getElementById('editPublicBattleBtn');
   $editBtn?.addEventListener('click', async () => {
     pubBattleEditMode = !pubBattleEditMode;
-    if (!pubBattleEditMode) selectedPubBattleIds.clear();
+    if (!pubBattleEditMode) { selectedPubBattleIds.clear(); selectedPubHideIds.clear(); }
     if ($editBtn) {
       $editBtn.textContent = pubBattleEditMode ? '완료' : '편집';
       $editBtn.classList.toggle('btn-mini--editing', pubBattleEditMode);
@@ -6811,6 +6825,15 @@ document.getElementById('siegeRulesCloseBtn')?.addEventListener('click', () => {
     _updatePubBattleSelUI();
     for (const id of ids) await deleteBattleSilent(id);
     await renderMyBattles();
+    renderPublicBattles();
+  });
+
+  // 다중 선택 숨기기 버튼
+  document.getElementById('pubBattleSelectHideBtn')?.addEventListener('click', () => {
+    if (selectedPubHideIds.size === 0) return;
+    for (const id of selectedPubHideIds) toggleHiddenBattle(id);
+    selectedPubHideIds.clear();
+    _updatePubBattleSelUI();
     renderPublicBattles();
   });
 
@@ -8148,3 +8171,30 @@ function checkAchievementsOnTimerComplete() {
   // 완료 후 스핀 카운터 리셋
   _spinsSinceReset = 0;
 }
+
+
+// ====== 로파이 미니 플레이어 ======
+window.addEventListener('load', () => {
+  const $select = document.getElementById('lofiSelect');
+  const $wrap   = document.getElementById('lofiIframeWrap');
+  const $iframe = document.getElementById('lofiIframe');
+  const $close  = document.getElementById('lofiCloseBtn');
+  if (!$select || !$wrap || !$iframe) return;
+
+  $select.addEventListener('change', () => {
+    const vid = $select.value;
+    if (!vid) {
+      $wrap.hidden = true;
+      $iframe.src = '';
+      return;
+    }
+    $iframe.src = `https://www.youtube-nocookie.com/embed/${vid}?autoplay=1&controls=1`;
+    $wrap.hidden = false;
+  });
+
+  $close?.addEventListener('click', () => {
+    $wrap.hidden = true;
+    $iframe.src = '';
+    $select.value = '';
+  });
+});

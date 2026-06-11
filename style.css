@@ -1069,6 +1069,65 @@ br.mobile-br { display: none; }
   font-weight: 500;
 }
 
+/* ── 로파이 미니 플레이어 ── */
+.lofi-player {
+  margin-top: 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.lofi-player-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  gap: 8px;
+}
+.lofi-player-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-soft);
+  white-space: nowrap;
+}
+.lofi-player-btns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  justify-content: flex-end;
+}
+.lofi-select {
+  font-size: 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 6px;
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  max-width: 170px;
+}
+.lofi-close-btn {
+  background: none;
+  border: none;
+  font-size: 13px;
+  color: var(--text-soft);
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
+  border-radius: 3px;
+}
+.lofi-close-btn:hover { background: var(--border); }
+.lofi-iframe-wrap {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+}
+.lofi-iframe {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 /* Footer */
 footer {
   text-align: center;

@@ -252,6 +252,31 @@
       </div>
       <p id="timerStatus" class="timer-status"></p>
 
+      <!-- 로파이 미니 플레이어 -->
+      <div class="lofi-player" id="lofiPlayer">
+        <div class="lofi-player-header">
+          <span class="lofi-player-title">🎵 집중 음악</span>
+          <div class="lofi-player-btns">
+            <select id="lofiSelect" class="lofi-select">
+              <option value="">— 채널 선택 —</option>
+              <option value="jfKfPfyJRdk">Lofi Girl · study</option>
+              <option value="rUxyKA_-grg">Lofi Girl · chill</option>
+              <option value="5yx6BWlEVcY">Chillhop Music</option>
+              <option value="aLqc-RFoqqw">Tokyo Music Walker</option>
+            </select>
+            <button id="lofiCloseBtn" class="lofi-close-btn" type="button" title="닫기">✕</button>
+          </div>
+        </div>
+        <div class="lofi-iframe-wrap" id="lofiIframeWrap" hidden>
+          <iframe id="lofiIframe" class="lofi-iframe"
+            allow="autoplay; encrypted-media"
+            allowfullscreen
+            frameborder="0"
+            title="Lofi music stream">
+          </iframe>
+        </div>
+      </div>
+
       <!-- 완료 카운트 + 인증샷 -->
       <div class="completed-log">
         <div class="completed-counter">
@@ -319,6 +344,7 @@
         <div class="pub-battle-header-btns">
           <button id="editPublicBattleBtn" class="btn-mini" type="button">편집</button>
           <button id="pubBattleSelectDeleteBtn" class="btn-mini btn-danger-mini" type="button" style="display:none">🗑 <span id="pubBattleSelCount">0</span>개 삭제</button>
+          <button id="pubBattleSelectHideBtn" class="btn-mini" type="button" style="display:none">숨기기 <span id="pubBattleHideCount">0</span>개</button>
           <button id="createPublicBattleBtn" class="btn-mini btn-mini-accent" type="button">+ 만들기</button>
         </div>
       </div>
