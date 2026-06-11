@@ -389,10 +389,23 @@ function initOnboardingTooltip(onComplete) {
       pos: 'bottom'
     },
     {
-      target: '#bottomTab',
+      target: '.battle-section',
+      tab: 'social',
       speaker: 'moto', name: '모토',
-      msg: '<strong>소셜</strong>에서 배틀, <strong>기록</strong>에서 로그!<br>자, 이제 시작해봐 🍅',
-      pos: 'top'
+      msg: '<strong>친구 배틀</strong>을 만들고 초대 링크를 보내봐!<br>같은 시간 동안 집중하고 결과를 비교할 수 있어 🍅',
+      pos: 'bottom'
+    },
+    {
+      target: '.public-battle-section',
+      tab: 'social',
+      speaker: 'tom', name: '톰',
+      msg: '<strong>공개 배틀방</strong>에서 모르는 사람과도 집중!<br>팀을 나눠 HP를 깎는 <strong>공성전</strong>도 있어 ⚔️<br><small style="opacity:.7">공성전 = 팀원들 집중 시간(분) → 상대팀 HP 데미지</small>',
+      pos: 'bottom'
+    },
+    {
+      target: null,
+      speaker: 'both',
+      msg: '다 봤어! 오늘도 집중 화이팅 🍅<br><small style="opacity:.7">기록 탭에서 내 집중 히스토리도 확인해봐</small>'
     }
   ];
 
@@ -551,7 +564,13 @@ function initOnboardingTooltip(onComplete) {
       ttEl.querySelector('.onb-tt-skip').onclick = finish;
       ttEl.querySelector('.onb-tt-next').onclick = isLast ? finish : () => render(idx + 1);
 
-      position(step);
+      // 스텝에 tab 속성이 있으면 해당 탭으로 전환 후 위치 계산
+      if (step.tab) {
+        switchTab(step.tab);
+        setTimeout(() => position(step), 80);
+      } else {
+        position(step);
+      }
     }, 200); // opacity 0.2s transition 완료 후
   }
 

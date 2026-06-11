@@ -202,13 +202,13 @@ header {
   .tagline-brand { font-size: 15px; } /* 모바일은 이미 균형 맞음 */
 }
 
-/* Card */
+/* Card — 픽셀 감성 드롭섀도 */
 .card {
   background: var(--bg-card);
-  border-radius: var(--radius);
+  border-radius: 4px;
   padding: 24px;
-  box-shadow: var(--shadow);
-  border: 1px solid var(--border);
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.13);
+  border: 1.5px solid var(--border);
   margin-bottom: 16px;
   max-width: 480px;
   margin-left: auto;
@@ -270,10 +270,15 @@ header {
   background: var(--accent);
   color: white;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: 4px;
+  box-shadow: 3px 3px 0 rgba(0,0,0,0.18);
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, box-shadow 0.1s, transform 0.1s;
   white-space: nowrap;
+}
+.btn-add:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 rgba(0,0,0,0.18);
 }
 
 .btn-add:hover {
@@ -608,16 +613,20 @@ br.mobile-br { display: none; }
   background: var(--tomato-gradient);
   color: white;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: 4px;
   cursor: pointer;
-  transition: transform 0.05s, box-shadow 0.15s, opacity 0.15s;
-  box-shadow: var(--shadow-lg);
+  transition: transform 0.05s, box-shadow 0.1s, opacity 0.15s;
+  box-shadow: 4px 4px 0 rgba(160, 40, 20, 0.35);
   letter-spacing: 0.02em;
 }
 
 .btn-gacha:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(217, 78, 58, 0.28);
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 rgba(160, 40, 20, 0.35);
+}
+.btn-gacha:active:not(:disabled) {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0 rgba(160, 40, 20, 0.35);
 }
 
 .btn-gacha:active:not(:disabled) {
