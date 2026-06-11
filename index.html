@@ -41,13 +41,6 @@
       <button id="settingsBtn" class="header-settings-btn" type="button" aria-label="설정">
         <img src="assets/설정 아이콘.svg" width="22" height="22" alt="" aria-hidden="true">
       </button>
-      <!-- 레벨 배지 -->
-      <div class="level-badge" id="levelBadge" title="내 레벨">
-        <span class="level-badge-lv" id="levelBadgeLv">Lv.1</span>
-        <div class="level-xp-bar" title="경험치">
-          <div class="level-xp-fill" id="levelXpFill" style="width:0%"></div>
-        </div>
-      </div>
       <div class="logo-wrap" id="logoWrap" title="한 번 더 하이파이브! 🍅">
         <svg class="logo-svg" id="tomottoLogo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 506.18 183.13" aria-label="Tomotto logo">
           <defs>
@@ -336,6 +329,16 @@
             <button id="battleNickEditBtn" class="btn-mini" type="button">수정</button>
           </div>
         </div>
+      </div>
+      <!-- 레벨 박스 -->
+      <div class="level-box" id="levelBox">
+        <div class="level-box-left">
+          <span class="level-box-lv" id="levelBoxLv">Lv.1</span>
+          <div class="level-box-bar">
+            <div class="level-xp-fill" id="levelXpFill" style="width:0%"></div>
+          </div>
+        </div>
+        <span class="level-box-xp" id="levelBoxXp">0 XP</span>
       </div>
 
       <button id="battleCreateBtn" class="btn-battle-create" type="button">+ 새 배틀 만들기</button>

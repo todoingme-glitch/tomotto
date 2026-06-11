@@ -353,9 +353,7 @@ function initOnboardingTooltip(onComplete) {
   // 개인 탭 요소들을 정확히 잡기 위해 개인 탭으로 전환
   switchTab('personal');
 
-  // 온보딩 중 스크롤 잠금
-  document.body.style.overflow = 'hidden';
-  document.documentElement.style.overflow = 'hidden';
+  // 온보딩 중 모바일 터치 스크롤 방지 (overflow:hidden을 html에 걸면 position:fixed 좌표 틀어짐)
   const _preventTouch = (e) => e.preventDefault();
   document.addEventListener('touchmove', _preventTouch, { passive: false });
 
@@ -576,9 +574,6 @@ function initOnboardingTooltip(onComplete) {
 
   function finish() {
     stopTracking();
-    // 스크롤 잠금 해제
-    document.body.style.overflow = '';
-    document.documentElement.style.overflow = '';
     document.removeEventListener('touchmove', _preventTouch);
 
     overlay.remove();
@@ -3425,12 +3420,17 @@ function xpToNextLevel(xp) {
 function updateLevelUI() {
   const xp  = getXP();
   const cur = levelFromXP(xp);
-  const { pct } = xpToNextLevel(xp);
-  const $lv   = document.getElementById('levelBadgeLv');
+  const { pct, remaining } = xpToNextLevel(xp);
+  const isMax = cur.lv >= LEVEL_DEFS[LEVEL_DEFS.length - 1].lv;
+
+  const $lv   = document.getElementById('levelBoxLv');
   const $fill = document.getElementById('levelXpFill');
-  if ($lv)   $lv.textContent = `Lv.${cur.lv}`;
-  if ($fill) $fill.style.width = `${pct}%`;
-  // 레벨에 따라 로파이 옵션 활성화
+  const $xpTxt = document.getElementById('levelBoxXp');
+  if ($lv)    $lv.textContent  = `Lv.${cur.lv}`;
+  if ($fill)  $fill.style.width = `${pct}%`;
+  if ($xpTxt) $xpTxt.textContent = isMax ? `${xp} XP · MAX` : `${xp} XP · 다음 레벨까지 ${remaining}`;
+
+  // 로파이 옵션 잠금/해제
   document.querySelectorAll('#lofiSelect option[data-unlock-lv]').forEach(opt => {
     const need = parseInt(opt.dataset.unlockLv, 10);
     opt.disabled = cur.lv < need;

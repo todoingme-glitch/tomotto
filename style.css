@@ -90,38 +90,47 @@ header {
 }
 .header-settings-btn:hover { background: var(--border-soft); }
 
-/* ── 레벨 배지 (헤더 왼쪽) ── */
-.level-badge {
-  position: absolute;
-  top: 4px;
-  left: 4px;
+/* ── 레벨 박스 (소셜탭 닉네임 아래) ── */
+.level-box {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 3px;
-  cursor: default;
-  z-index: 10;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-top: 8px;
+  gap: 10px;
 }
-.level-badge-lv {
-  font-size: 11px;
+.level-box-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+.level-box-lv {
+  font-size: 13px;
   font-weight: 700;
   color: var(--tomato);
-  line-height: 1;
-  letter-spacing: 0.03em;
+  white-space: nowrap;
 }
-.level-xp-bar {
-  width: 44px;
-  height: 5px;
+.level-box-bar {
+  flex: 1;
+  height: 6px;
   background: var(--border);
   border-radius: 3px;
   overflow: hidden;
-  border: 1px solid var(--border);
 }
 .level-xp-fill {
   height: 100%;
   background: var(--tomato-gradient, var(--tomato));
   border-radius: 3px;
   transition: width 0.4s ease;
+}
+.level-box-xp {
+  font-size: 11px;
+  color: var(--text-soft);
+  white-space: nowrap;
 }
 
 /* v0.1.11 — SVG 로고 + 하이파이브 애니메이션 */
